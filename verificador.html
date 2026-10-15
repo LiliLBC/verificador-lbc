@@ -9,7 +9,7 @@
 :root{--bg:#F7F6F3;--surface:#fff;--surface2:#F2F1EE;--border:#E4E2DC;--border-strong:#C8C5BC;--text:#1A1916;--text-muted:#6B6860;--text-faint:#9D9B94;--accent:#7B6EAF;--accent-light:#EDE9F8;--accent-dark:#4F4580;--green:#2D7D4F;--green-light:#E8F5EE;--amber:#A05C1A;--amber-light:#FDF3E3;--red:#B53A2F;--red-light:#FDECEA;--blue:#1A5FA0;--blue-light:#E6F0FB;--shadow:0 1px 3px rgba(0,0,0,.06)}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;min-height:100vh}
-.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 2rem;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:var(--shadow)}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:.5rem 2rem;min-height:52px;flex-wrap:wrap;gap:.5rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:var(--shadow)}
 .page-title{font-size:14px;font-weight:600}
 .page-sub{font-size:11px;color:var(--text-faint);margin-left:.5rem}
 .container{max-width:1080px;margin:0 auto;padding:1.75rem 1.5rem 4rem}
@@ -42,7 +42,7 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
 </head>
 <body>
 <div class="topbar">
-  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-15.3</span></div>
+  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-16.1</span></div>
   <div style="display:flex;gap:.6rem;align-items:center"><span id="login-info" style="font-size:11px;color:var(--text-faint)"></span>
     <button class="btn" id="btn-entrar" onclick="entrar()">Entrar</button>
     <button class="btn btn-p" id="btn-desc" onclick="descarregar()" disabled>Descarregar Word revisto</button></div>
@@ -360,7 +360,7 @@ dr.addEventListener('drop',e=>escolher(e.dataTransfer.files[0]));
 $('data-ato').value=new Date().toISOString().slice(0,10);
 
 /* ═══════════ PROCURAÇÕES REGISTADAS · e regras do termo (15/10/2026) ═══════════
-   Lista «Procuracoes» no SharePoint (site lbcsolicitadora2): Título = entidade,
+   Lista «proc_bancos» no SharePoint (site lbcsolicitadora2): Título = entidade,
    Dados = JSON {aliases[], codigos[], procuradores[], notas, atualizado}.
    Todos os que entram leem a lista e a verificação usa-a; só a conta da
    Liliana vê e altera o registo. (A garantia verdadeira é a permissão da lista
@@ -385,8 +385,10 @@ async function carregarProcs(){
     if(!SITE)SITE=(await gq(`${GRAPH}/sites/lbcsolicitadorapt.sharepoint.com:/sites/lbcsolicitadora2`)).id;
     if(!LID){
       const ls=await gq(`${GRAPH}/sites/${SITE}/lists?$select=id,name,displayName`);
-      const l=(ls.value||[]).find(x=>/^procura[cç][oõ]es$/.test(norm(x.name))||/^procura[cç][oõ]es$/.test(norm(x.displayName)));
-      if(!l){av.innerHTML='<div class="nota" style="color:var(--amber)">Falta criar no SharePoint (site lbcsolicitadora2) a lista <b>Procuracoes</b>, com a coluna <b>Dados</b> (várias linhas de texto, texto simples).</div>';return;}
+      /* Nome da lista: proc_bancos (escolha da Liliana, 16/10/2026); aceita também «Procurações». */
+      const ok=n=>/^(proc[ _-]?bancos|procuracoes)$/.test(norm(n));
+      const l=(ls.value||[]).find(x=>ok(x.name)||ok(x.displayName));
+      if(!l){av.innerHTML='<div class="nota" style="color:var(--amber)">Falta criar no SharePoint (site lbcsolicitadora2) a lista <b>proc_bancos</b>, com a coluna <b>Dados</b> (várias linhas de texto, texto simples).</div>';return;}
       LID=l.id;
       const cs=await gq(`${GRAPH}/sites/${SITE}/lists/${LID}/columns?$select=name,displayName`);
       const c=(cs.value||[]).find(x=>norm(x.name)==='dados'||norm(x.displayName)==='dados');if(c)COLD=c.name;
