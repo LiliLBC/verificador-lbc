@@ -42,7 +42,7 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
 </head>
 <body>
 <div class="topbar">
-  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-16.4</span></div>
+  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-16.5</span></div>
   <div style="display:flex;gap:.6rem;align-items:center"><span id="login-info" style="font-size:11px;color:var(--text-faint)"></span>
     <button class="btn" id="btn-entrar" onclick="entrar()">Entrar</button>
     <button class="btn btn-p" id="btn-desc" onclick="descarregar()" disabled>Descarregar Word revisto</button></div>
@@ -65,9 +65,9 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
   </div>
 
   <div class="card">
-    <div class="card-h"><div class="num">3</div><div><div class="card-t">Documentos de apoio <span class="tag">piloto</span></div><div class="card-d">Caderneta, certidão permanente predial e fichas do cartão de cidadão, em PDF. O nome dos ficheiros não importa: reconheço-os pelo conteúdo e cruzo-os com a escritura.</div></div></div>
+    <div class="card-h"><div class="num">3</div><div><div class="card-t">Documentos de apoio <span class="tag">piloto</span></div><div class="card-d">Caderneta, certidão permanente predial, fichas do cartão de cidadão e, nas da CGD, o boletim de contrato (PDF) e o documento complementar (Word). O nome dos ficheiros não importa: reconheço-os pelo conteúdo e cruzo-os com a escritura.</div></div></div>
     <div class="drop" id="drop-apoio" onclick="document.getElementById('fich-apoio').click()">Arraste para aqui os PDFs de apoio — vários ficheiros, ou um só com tudo junto</div>
-    <input type="file" id="fich-apoio" accept=".pdf" multiple style="display:none">
+    <input type="file" id="fich-apoio" accept=".pdf,.docx" multiple style="display:none">
     <div id="apoio-lista" style="margin-top:.7rem"></div>
   </div>
 
@@ -159,7 +159,7 @@ function paragrafos(xml){
 }
 
 /* ── Regras ── */
-const R={cruzamento:'Documentos de apoio',procuracao:'Procuração',condominio:'Condomínio',grafia:'Grafia',espaco:'Espaços',preencher:'Por preencher',repetida:'Palavra repetida',nif:'NIF/NIPC',validade:'Validade',valor:'Valor e extenso',concord:'Concordância'};
+const R={cgd:'CGD (boletim/complementar)',cruzamento:'Documentos de apoio',procuracao:'Procuração',condominio:'Condomínio',grafia:'Grafia',espaco:'Espaços',preencher:'Por preencher',repetida:'Palavra repetida',nif:'NIF/NIPC',validade:'Validade',valor:'Valor e extenso',concord:'Concordância'};
 function regras(P,dataAto){
   const A=[];const add=(p,tipo,grav,msg,ini,len,corr)=>{const o={p:p.i,tipo,grav,msg,ini,len,txt:p.txt,corr:!!corr};A.push(o);return o;};
   const nifs={};
@@ -482,6 +482,7 @@ window.escolherSug=(k,campo,val)=>{const e=ESCOLHAS[k]=ESCOLHAS[k]||{op:'',campo
 const RE_PR=/PR-\d{5}-\d{5}-\d{5}/gi;
 function regrasDocumento(P,add){
   try{apoioCruzar(P,add,APOIO,$('data-ato').value);}catch(e){console.error('cruzamento',e);}
+  try{cgdCruzar(P,add,APOIO);}catch(e){console.error('cgd',e);}
   const tudo=P.map(p=>p.txt).join('\n');
   /* Procurações registadas */
   PROCS.forEach(pr=>{
@@ -534,7 +535,7 @@ const AP_D=t=>String(t||'').replace(/\D/g,'');
 const isoPT=iso=>{const m=String(iso||'').match(/(\d{4})-(\d{2})-(\d{2})/);return m?`${m[3]}/${m[2]}/${m[1]}`:'';};
 function apoioTipo(L){
   const t=L.join('\n');
-  if(/CADERNETA PREDIAL (URBANA|R[ÚU]STICA)/i.test(t))return'CAD';
+  if(/CADERNETA PREDIAL (URBANA|R[ÚU]STICA)/.test(t))return'CAD';
   if(/Dados de Cart[ãa]o de Cidad[ãa]o/i.test(t))return'CC';
   if(/Certid[ãa]o Permanente/i.test(t)&&/C[óo]digo de acesso:\s*PP-/i.test(t))return'CRP';
   return'';
@@ -667,6 +668,114 @@ function apoioCruzar(P,add,docs,dataAto){
   });
 }
 
+/* ═══════════ CGD · boletim de contrato e documento complementar (16/10/2026) ═══════════
+   A CGD manda o Boletim de Contrato (PDF) e o Documento Complementar (Word)
+   e às vezes atualiza-os à última hora. O verificador lê a versão que se lhe
+   der e confere a escritura por ela: montante, prazo, juros, despesas,
+   montante máximo, mutuários, imóvel e a hipoteca a cancelar. */
+const numBC=t=>{const s=String(t||'').replace(/[^\d,.]/g,'');if(!s)return null;
+  const n=s.includes(',')?s.replace(/\./g,'').replace(',','.'):s.replace(/\.(?=\d{3}\b)/g,'');return parseFloat(n);};
+const fmtEUR=n=>n==null||isNaN(n)?'':n.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+function apoioBC(L){
+  const t=L.join('\n');const g=(re,i=1)=>(t.match(re)||[])[i]||'';
+  const mut=[...t.matchAll(/MUT[UÚ]ARIO\s+([^\n]+)\n[\s\S]*?NIF\s*:\s*(\d{9})(?:[\s\S]*?Estado Civil\s*:\s*([^\n]+))?/g)].map(m=>({nome:m[1].trim(),nif:m[2],ec:(m[3]||'').trim()}));
+  const enc=[...t.matchAll(/Inscri[çc][ãa]o\s+(AP\.\s*\d+\s+de\s+\d{4}\/\d{2}\/\d{2})[^\n]*?(A CANCELAR[^\n]*)?\n/g)].map(m=>({ap:m[1].replace(/\s+/g,' '),cancelar:!!m[2]}));
+  return{tipo:'BC',
+    emprestimo:g(/Empr[ée]stimo\s*:\s*-?\s*([\d.]+)/),
+    contaDO:g(/Conta DO\s*:\s*([\d.]+)/),
+    mutuarios:mut,
+    aquisicao:numBC(g(/Montante de\s*\n?\s*([\d.]+,\d{2})\s*EUR/)),
+    capital:numBC(g(/Valor Contratado\s*:\s*([\d.]+,\d{2})/)),
+    prazo:g(/(\d+)\s*MESES a contar/),
+    prestacao:numBC(g(/Valor da 1[ªa] Presta[çc][ãa]o\s*:\s*([\d.]+,\d{2})/)),
+    tan:g(/Taxa Nominal\s*:\s*([\d,]+)\s*%/),
+    juroAte:g(/ao juro de at[ée]\s*([\d,]+)\s*%/),
+    sobretaxa:g(/sobretaxa at[ée]\s*([\d,]+)\s*%/),
+    despesas:numBC(g(/despesas extrajudiciais de\s*([\d.]+,\d{2})/)),
+    maximo:numBC(g(/montante m[áa]ximo de capital e acess[óo]rios[^\n]*?([\d.]+,\d{2})/)),
+    avaliacao:numBC(g(/Valor Total\s*:\s*([\d.]+,\d{2})/)),
+    fracao:g(/Fra[çc][ãa]o Aut[óo]noma designada pela letra\s+([A-Z]+)/i),
+    apPH:g(/letra\s+[A-Z]+,\s*inscri[çc][ãa]o\s+(AP\.\s*\d+\s+de\s+\d{4}\/\d{2}\/\d{2})/i),
+    conservatoria:g(/Conservat[óo]ria do Registo Predial de\s+([^,\n]+)/),
+    descricao:g(/sob o n[úu]mero\s+(\d+)/),
+    artigo:g(/art\.?º?\s*(\d+)\s+urbano|art\.º\s*(\d+)/)||g(/art\.º\s*(\d+)/),
+    encargos:enc,
+    emitido:g(/(\d{2}\/\d{2}\/\d{4})\s*\n?\s*O\. E\. Gestor/)||g(/\n\s*(\d{2}\/\d{2}\/\d{4})\s*\n/)};
+}
+function apoioDC(L){
+  const t=L.join('\n');const g=(re,i=1)=>(t.match(re)||[])[i]||'';
+  return{tipo:'DC',
+    devedores:(g(/Parte devedora:\s*([^;\n]+)/)||'').split(/\s+e\s+|,\s*/).map(x=>x.trim()).filter(Boolean),
+    contrato:g(/CONTRATO N[ÚU]MERO:\s*(PT\s*\d+)/i).replace(/\s/g,''),
+    capitalExt:g(/Montante total do cr[ée]dito:\s*([^.\n]+)/),
+    prazoExt:g(/reembolso do capital do empr[ée]stimo [ée] de\s+([a-zà-ú ]+?)\s+meses/i),
+    prestacaoExt:g(/montante da presta[çc][ãa]o[^.\n]*?[ée] de\s+([^.\n]+)/i),
+    entregaExt:g(/quantia emprestada, no montante de\s+([^,\n]+)/i)};
+}
+/* Compara extensos sem ligar à forma de pôr os «e». */
+const extIgual=(a,b)=>{const f=x=>AP_N(x).replace(/\bE\b/g,' ').replace(/\s+/g,' ').trim();return f(a)===f(b);};
+function cgdCruzar(P,add,docs){
+  const bc=docs.find(d=>d.dados&&d.dados.tipo==='BC')?.dados,dc=docs.find(d=>d.dados&&d.dados.tipo==='DC')?.dados;
+  if(!bc&&!dc)return;
+  const tudo=P.map(p=>p.txt).join('\n'),N=AP_N(tudo);
+  const onde=re=>P.find(p=>re.test(p.txt))||P.find(p=>p.txt.trim())||P[0];
+  const valoresEm=re=>[...tudo.matchAll(re)].map(m=>numBC(m[1]));
+  const confere=(rot,esperado,lidos,re,orig)=>{
+    if(esperado==null||isNaN(esperado))return;
+    if(!lidos.length){add(onde(re),'cgd','aviso',`${orig}: ${rot} — ${fmtEUR(esperado)} € — não encontrei este valor na escritura`,0,0);return;}
+    lidos.filter(v=>Math.abs(v-esperado)>0.004).forEach(v=>add(onde(re),'cgd','erro',`${orig}: ${rot} — ${fmtEUR(esperado)} € no ${orig==='Boletim da CGD'?'boletim':'documento'}, ${fmtEUR(v)} € na escritura`,0,0));
+  };
+  if(bc){
+    const O='Boletim da CGD';
+    confere('Montante do empréstimo',bc.capital,valoresEm(/empr[ée]stimo no montante de\s*([\d\s. ]+,\d{2})/gi),/empr[ée]stimo no montante/i,O);
+    confere('Capital da hipoteca',bc.capital,valoresEm(/o capital de\s*([\d\s. ]+,\d{2})/gi),/o capital de/i,O);
+    confere('Preço (valor de aquisição)',bc.aquisicao,valoresEm(/convencionado o pre[çc]o de\s*([\d\s. ]+,\d{2})/gi),/convencionado o pre[çc]o/i,O);
+    confere('Despesas garantidas pela hipoteca',bc.despesas,valoresEm(/encargos contratuais[^.;]*?montante de\s*([\d\s. ]+,\d{2})/gi),/encargos contratuais/i,O);
+    confere('Montante máximo da hipoteca',bc.maximo,valoresEm(/montante m[áa]ximo[^.;]*?fixado em\s*([\d\s. ]+,\d{2})/gi),/montante m[áa]ximo/i,O);
+    if(bc.avaliacao){const v=valoresEm(/atribuem o valor de\s*([\d\s. ]+,\d{2})/gi);
+      v.filter(x=>Math.abs(x-bc.avaliacao)>0.004).forEach(x=>add(onde(/atribuem o valor/i),'cgd','aviso',`${O}: o valor da garantia é ${fmtEUR(bc.avaliacao)} €; a escritura atribui ${fmtEUR(x)} € — confirme`,0,0));}
+    if(bc.prazo){const m=[...tudo.matchAll(/pelo prazo de\s*(\d+)/gi)].map(x=>x[1]);
+      if(!m.length)add(onde(/prazo/i),'cgd','aviso',`${O}: prazo de ${bc.prazo} meses — não o encontrei`,0,0);
+      m.filter(x=>x!==bc.prazo).forEach(x=>add(onde(/pelo prazo de/i),'cgd','erro',`${O}: o prazo é de ${bc.prazo} meses, mas a escritura diz ${x}`,0,0));}
+    const pct=s=>parseFloat(String(s).replace(',','.'));
+    if(bc.juroAte){const m=[...tudo.matchAll(/juros remunerat[óo]rios,? fixados em at[ée]\s*([\d,]+)\s*%/gi)].map(x=>x[1]);
+      m.filter(x=>pct(x)!==pct(bc.juroAte)).forEach(x=>add(onde(/juros remunerat/i),'cgd','erro',`${O}: juros até ${bc.juroAte}%, mas a escritura diz ${x}%`,0,0));}
+    if(bc.sobretaxa){const m=[...tudo.matchAll(/sobretaxa at[ée]\s*([\d,]+)\s*%/gi)].map(x=>x[1]);
+      m.filter(x=>pct(x)!==pct(bc.sobretaxa)).forEach(x=>add(onde(/sobretaxa/i),'cgd','erro',`${O}: sobretaxa até ${bc.sobretaxa}%, mas a escritura diz ${x}%`,0,0));}
+    bc.mutuarios.forEach(m=>{
+      if(!AP_D(tudo).includes(m.nif))add(P[0],'cgd','erro',`${O}: o mutuário ${m.nome} (NIF ${m.nif}) não aparece na escritura`,0,0);
+      else{const falta=AP_N(m.nome).split(' ').filter(w=>w.length>2&&!N.includes(w));
+        if(falta.length)add(P[0],'cgd','aviso',`${O}: o nome do mutuário é «${m.nome}» — confirme na escritura (${falta.join(', ')})`,0,0);}});
+    if(bc.descricao&&!new RegExp(`(n[úu]mero|n\\.\\s*[º°o])\\s*${bc.descricao}\\b`,'i').test(tudo))
+      add(onde(/Conservat/i),'cgd','erro',`${O}: o imóvel hipotecado está descrito sob o n.º ${bc.descricao} — não coincide com a escritura`,0,0);
+    if(bc.artigo&&!new RegExp(`artigo(?:\\s+matricial)?\\s+${bc.artigo}\\b`,'i').test(tudo))
+      add(onde(/matriz/i),'cgd','erro',`${O}: o artigo matricial do imóvel hipotecado é o ${bc.artigo} — não coincide com a escritura`,0,0);
+    if(bc.fracao&&!new RegExp(`letra\\s*[«"“'‘]?\\s*${bc.fracao}\\b`,'i').test(tudo))
+      add(onde(/fra[çc][ãa]o/i),'cgd','erro',`${O}: a fração hipotecada é a «${bc.fracao}»`,0,0);
+    bc.encargos.filter(e=>e.cancelar).forEach(e=>{
+      if(!new RegExp(e.ap.replace(/[.*+?^${}()|[\]\\/]/g,'\\$&').replace(/\s+/g,'\\s*'),'i').test(tudo))
+        add(onde(/hipoteca|ren[úu]ncia|cancelamento/i),'cgd','erro',`${O}: a hipoteca ${e.ap} tem de ser cancelada (renúncia) — a escritura não a refere`,0,0);});
+  }
+  if(dc){
+    const O='Documento complementar';
+    if(bc&&bc.capital&&dc.capitalExt&&!extIgual(dc.capitalExt,valorExtenso(bc.capital)))
+      add(P[0],'cgd','erro',`${O} e boletim não batem certo: o complementar diz «${dc.capitalExt}», o boletim ${fmtEUR(bc.capital)} € — a CGD terá mudado um deles`,0,0);
+    if(bc&&bc.prazo&&dc.prazoExt&&!extIgual(dc.prazoExt,porExtenso(+bc.prazo)))
+      add(P[0],'cgd','erro',`${O} e boletim não batem certo no prazo: «${dc.prazoExt}» meses vs ${bc.prazo}`,0,0);
+    if(bc&&bc.prestacao&&dc.prestacaoExt&&!extIgual(dc.prestacaoExt,valorExtenso(bc.prestacao)))
+      add(P[0],'cgd','aviso',`${O} e boletim: a prestação no complementar é «${dc.prestacaoExt}», no boletim ${fmtEUR(bc.prestacao)} €`,0,0);
+    /* O complementar contra a escritura: montante e prazo por extenso. */
+    const emp=valoresEm(/empr[ée]stimo no montante de\s*([\d\s. ]+,\d{2})/gi)[0];
+    if(emp!=null&&dc.capitalExt&&!extIgual(dc.capitalExt,valorExtenso(emp)))
+      add(onde(/empr[ée]stimo no montante/i),'cgd','erro',`${O}: o montante do crédito é «${dc.capitalExt}» — a escritura diz ${fmtEUR(emp)} €`,0,0);
+    const pz=(tudo.match(/pelo prazo de\s*(\d+)/i)||[])[1];
+    if(pz&&dc.prazoExt&&!extIgual(dc.prazoExt,porExtenso(+pz)))
+      add(onde(/pelo prazo de/i),'cgd','erro',`${O}: o prazo é de «${dc.prazoExt}» meses — a escritura diz ${pz}`,0,0);
+    dc.devedores.forEach(n=>{const falta=AP_N(n).split(' ').filter(w=>w.length>2&&!N.includes(w));
+      if(falta.length)add(P[0],'cgd','aviso',`${O}: a parte devedora «${n}» não aparece igual na escritura (${falta.join(', ')})`,0,0);});
+  }
+}
+
 /* ── Leitura dos PDFs no navegador (pdf.js) ── */
 let APOIO=[],PDFJS=null;
 const PDFJS_URL='https://cdn.jsdelivr.net/npm/pdfjs-dist@6.2.108/build/pdf.min.mjs';
@@ -691,16 +800,25 @@ function separarDocumentos(paginas){
     let ini='';
     if(/Dados de Cart[ãa]o de Cidad[ãa]o/i.test(t))ini='CC';
     else if(/Certid[ãa]o Permanente/i.test(t)&&/C[óo]digo de acesso:\s*PP-/i.test(t))ini='CRP';
-    else if(/CADERNETA PREDIAL/i.test(t)&&(!atual||atual.tipo!=='CAD'||/P[áa]gina\s+1\s+de/i.test(t)))ini='CAD';
+    else if(/BOLETIM DE CONTRATO/i.test(t)&&/Caixa Geral de Dep[óo]sitos/i.test(t))ini='BC';
+    else if(/CADERNETA PREDIAL (URBANA|R[ÚU]STICA)/.test(t)&&(!atual||atual.tipo!=='CAD'||/P[áa]gina\s+1\s+de/i.test(t)))ini='CAD';
     if(ini){atual={tipo:ini,linhas:[...L],pags:[i+1]};docs.push(atual);}
     else if(atual){atual.linhas.push(...L);atual.pags.push(i+1);}
     else docs.push(atual={tipo:'',linhas:[...L],pags:[i+1]});
   });
   return{docs,imagens};
 }
-const ROT_APOIO={CAD:'Caderneta predial',CRP:'Certidão predial',CC:'Cartão de cidadão'};
+const ROT_APOIO={CAD:'Caderneta predial',CRP:'Certidão predial',CC:'Cartão de cidadão',BC:'Boletim CGD',DC:'Complementar CGD'};
 async function juntarApoio(files){
   for(const f of files){
+    if(/\.docx$/i.test(f.name)){
+      APOIO=APOIO.filter(x=>x.ficheiro!==f.name);
+      try{const z=await JSZip.loadAsync(await f.arrayBuffer());const x=await z.file('word/document.xml').async('string');
+        const L=paragrafos(x).map(p=>p.txt.trim()).filter(Boolean);const t=L.join('\n');
+        const tipo=/DOCUMENTO COMPLEMENTAR/i.test(t)&&/Caixa Geral de Dep[óo]sitos/i.test(t)?'DC':'';
+        APOIO.push({ficheiro:f.name,nome:f.name,tipo,dados:tipo?apoioDC(L):null,nota:tipo?'':'Este Word não parece um documento complementar da CGD.'});
+      }catch(e){APOIO.push({ficheiro:f.name,nome:f.name,tipo:'',dados:null,nota:'Não consegui abrir: '+e.message});}
+      continue;}
     if(!/\.pdf$/i.test(f.name)){continue;}
     APOIO=APOIO.filter(x=>x.ficheiro!==f.name);
     try{
@@ -708,7 +826,7 @@ async function juntarApoio(files){
       const varios=docs.length+(imagens?1:0)>1;
       docs.forEach(d=>{const L=d.linhas;
         const reg={ficheiro:f.name,nome:f.name+(varios?` (pág. ${d.pags[0]}${d.pags.length>1?'–'+d.pags[d.pags.length-1]:''})`:''),tipo:d.tipo,nota:'',
-          dados:d.tipo==='CAD'?apoioCAD(L):d.tipo==='CRP'?apoioCRP(L):d.tipo==='CC'?apoioCC(L):null};
+          dados:d.tipo==='CAD'?apoioCAD(L):d.tipo==='CRP'?apoioCRP(L):d.tipo==='CC'?apoioCC(L):d.tipo==='BC'?apoioBC(L):null};
         if(!d.tipo)reg.nota='Não reconheço este tipo de documento (por agora: caderneta, certidão predial e ficha do cartão de cidadão).';
         APOIO.push(reg);});
       if(imagens)APOIO.push({ficheiro:f.name,nome:f.name+(varios?` (${imagens} pág. em imagem)`:''),tipo:'',dados:null,nota:`${imagens>1?imagens+' páginas são digitalizações':'É uma digitalização'} (imagem) — ainda não ${imagens>1?'as':'a'} consigo ler.`});
@@ -723,6 +841,8 @@ function pintarApoio(){
   $('apoio-lista').innerHTML=APOIO.map((d,i)=>`<div class="item" style="border-left-color:${d.tipo?'var(--green)':'var(--border-strong)'}">
       <div class="cab"><span class="tag">${d.tipo?ROT_APOIO[d.tipo]:'—'}</span>${esc(d.nome)}<button class="btn" style="margin-left:auto;padding:1px 8px" onclick="tirarApoio(${i})">×</button></div>
       ${d.nota?`<div class="nota">${esc(d.nota)}</div>`:''}
+      ${d.tipo==='BC'?`<table style="font-size:12px">${linha('Empréstimo',d.dados.emprestimo)}${linha('Mutuários',d.dados.mutuarios.map(m=>m.nome+' ('+m.nif+')').join('; '))}${linha('Aquisição',fmtEUR(d.dados.aquisicao)+' €')}${linha('Capital',fmtEUR(d.dados.capital)+' €')}${linha('Prazo',d.dados.prazo+' meses')}${linha('Juros até / sobretaxa',d.dados.juroAte+'% / '+d.dados.sobretaxa+'%')}${linha('Despesas',fmtEUR(d.dados.despesas)+' €')}${linha('Montante máximo',fmtEUR(d.dados.maximo)+' €')}${linha('Imóvel',`fração ${d.dados.fracao||'—'}, descrição ${d.dados.descricao||'—'}, artigo ${d.dados.artigo||'—'}`)}${linha('A cancelar',d.dados.encargos.filter(e=>e.cancelar).map(e=>e.ap).join('; '))}</table>`:''}
+      ${d.tipo==='DC'?`<table style="font-size:12px">${linha('Contrato',d.dados.contrato)}${linha('Parte devedora',d.dados.devedores.join('; '))}${linha('Montante',d.dados.capitalExt)}${linha('Prazo',d.dados.prazoExt+' meses')}${linha('Prestação',d.dados.prestacaoExt)}</table>`:''}
       ${d.tipo==='CC'?`<table style="font-size:12px">${linha('Nome',d.dados.nome)}${linha('NIF',d.dados.nif)}${linha('Cartão',d.dados.numero)}${linha('Válido até',isoPT(d.dados.validade))}${linha('Morada',[d.dados.arruamento,d.dados.localidade,d.dados.postal].filter(Boolean).join(', '))}</table>`:''}
     </div>`).join('')
     +(im?`<div class="item" style="border-left-color:var(--accent)"><div class="cab">Ficha do imóvel, a partir dos documentos</div><table style="font-size:12px">
