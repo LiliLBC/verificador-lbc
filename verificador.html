@@ -42,7 +42,7 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
 </head>
 <body>
 <div class="topbar">
-  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-16.2</span></div>
+  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-16.4</span></div>
   <div style="display:flex;gap:.6rem;align-items:center"><span id="login-info" style="font-size:11px;color:var(--text-faint)"></span>
     <button class="btn" id="btn-entrar" onclick="entrar()">Entrar</button>
     <button class="btn btn-p" id="btn-desc" onclick="descarregar()" disabled>Descarregar Word revisto</button></div>
@@ -62,6 +62,13 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
     </div>
     <div class="nota" id="proc-estado" style="margin-top:.7rem"></div>
     <div id="proc-aviso"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-h"><div class="num">3</div><div><div class="card-t">Documentos de apoio <span class="tag">piloto</span></div><div class="card-d">Caderneta, certidão permanente predial e fichas do cartão de cidadão, em PDF. O nome dos ficheiros não importa: reconheço-os pelo conteúdo e cruzo-os com a escritura.</div></div></div>
+    <div class="drop" id="drop-apoio" onclick="document.getElementById('fich-apoio').click()">Arraste para aqui os PDFs de apoio — vários ficheiros, ou um só com tudo junto</div>
+    <input type="file" id="fich-apoio" accept=".pdf" multiple style="display:none">
+    <div id="apoio-lista" style="margin-top:.7rem"></div>
   </div>
 
   <div class="card" id="card-proc" style="display:none">
@@ -89,6 +96,7 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
       <b>Valores</b> — o número e o extenso entre parênteses não coincidem.<br>
       <b>Concordância</b> — «o Primeira», «a Segundo», «os Segundos Outorgante»; «portador» com estado civil no feminino e vice-versa.<br>
       <b>Procurações</b> — com a sessão iniciada, confere os códigos (PR-…) das entidades registadas e, se houver lista, os procuradores.<br>
+      <b>Documentos de apoio (piloto)</b> — com a caderneta, a certidão predial e as fichas dos cartões: descrição, conservatória, artigo, fração, freguesia, câmara do concelho certo, VPT, áreas, titular inscrito, ónus por cancelar, validade da certidão e dados de cada cartão de cidadão.<br>
       <b>Condomínio</b> — havendo fração autónoma, o termo tem de mencionar a declaração do condomínio (art. 1424.º-A do Código Civil).
     </div>
   </div>
@@ -151,7 +159,7 @@ function paragrafos(xml){
 }
 
 /* ── Regras ── */
-const R={procuracao:'Procuração',condominio:'Condomínio',grafia:'Grafia',espaco:'Espaços',preencher:'Por preencher',repetida:'Palavra repetida',nif:'NIF/NIPC',validade:'Validade',valor:'Valor e extenso',concord:'Concordância'};
+const R={cruzamento:'Documentos de apoio',procuracao:'Procuração',condominio:'Condomínio',grafia:'Grafia',espaco:'Espaços',preencher:'Por preencher',repetida:'Palavra repetida',nif:'NIF/NIPC',validade:'Validade',valor:'Valor e extenso',concord:'Concordância'};
 function regras(P,dataAto){
   const A=[];const add=(p,tipo,grav,msg,ini,len,corr)=>{const o={p:p.i,tipo,grav,msg,ini,len,txt:p.txt,corr:!!corr};A.push(o);return o;};
   const nifs={};
@@ -473,6 +481,7 @@ window.escolherSug=(k,campo,val)=>{const e=ESCOLHAS[k]=ESCOLHAS[k]||{op:'',campo
 /* ── Regras que dependem do documento inteiro ── */
 const RE_PR=/PR-\d{5}-\d{5}-\d{5}/gi;
 function regrasDocumento(P,add){
+  try{apoioCruzar(P,add,APOIO,$('data-ato').value);}catch(e){console.error('cruzamento',e);}
   const tudo=P.map(p=>p.txt).join('\n');
   /* Procurações registadas */
   PROCS.forEach(pr=>{
@@ -514,6 +523,220 @@ function regrasDocumento(P,add){
     }
   }
 }
+
+/* ═══════════ DOCUMENTOS DE APOIO · piloto (16/10/2026) ═══════════
+   Lê os PDFs de apoio (caderneta, certidão permanente predial, ficha do
+   cartão de cidadão), reconhece cada um pelo CONTEÚDO — o nome do ficheiro
+   não importa — e cruza os dados com a escritura. As digitalizações (imagens)
+   ainda não se leem: ficam assinaladas. */
+const AP_N=t=>String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]+/g,' ').trim();
+const AP_D=t=>String(t||'').replace(/\D/g,'');
+const isoPT=iso=>{const m=String(iso||'').match(/(\d{4})-(\d{2})-(\d{2})/);return m?`${m[3]}/${m[2]}/${m[1]}`:'';};
+function apoioTipo(L){
+  const t=L.join('\n');
+  if(/CADERNETA PREDIAL (URBANA|R[ÚU]STICA)/i.test(t))return'CAD';
+  if(/Dados de Cart[ãa]o de Cidad[ãa]o/i.test(t))return'CC';
+  if(/Certid[ãa]o Permanente/i.test(t)&&/C[óo]digo de acesso:\s*PP-/i.test(t))return'CRP';
+  return'';
+}
+function apoioCAD(L){
+  const t=L.join('\n');const g=(re,i=1)=>(t.match(re)||[])[i]||'';
+  const rod=t.match(/(\d{6}) - (.+?) - ([URM]) - (\d+)(?: - ([A-Z]+))?\s+P[áa]gina/);
+  const tit=[...t.matchAll(/Identifica[çc][ãa]o fiscal:\s*(\d{9})\s+Nome:\s*(.+)/g)].map(m=>({nif:m[1],nome:m[2].trim()}));
+  return{tipo:'CAD',
+    natureza:/R[ÚU]STICA/i.test(L[0]||'')?'rústica':'urbana',
+    concelho:g(/CONCELHO:\s*\d+\s*-\s*(.+?)\s+FREGUESIA:/),
+    freguesia:rod?rod[2]:g(/FREGUESIA:\s*\d+\s*-\s*(.+)/),
+    artigo:rod?rod[4]:g(/ARTIGO MATRICIAL:\s*(\d+)/),
+    fracao:rod&&rod[5]?rod[5]:g(/FRAC?[ÇC][ÃA]O AUT[ÓO]NOMA:\s*([A-Z]+)/),
+    vpt:g(/Valor patrimonial actual \(CIMI\):\s*€?\s*([\d.]+,\d{2})/),
+    abp:g(/[ÁA]rea bruta privativa:\s*([\d.,]+)/),
+    ati:g(/[ÁA]rea do terreno integrante:\s*([\d.,]+)/),
+    emitida:g(/Emitido via internet em\s*(\d{4}-\d{2}-\d{2})/),
+    titulares:tit};
+}
+function apoioCRP(L){
+  const t=L.join('\n');const g=(re,i=1)=>(t.match(re)||[])[i]||'';
+  const cab=t.match(/Autom[óo]veis de\s*\n?\s*(.+?)\s+(\d+)\/(\d{8})(?:\s*-\s*([A-Z]+))?/);
+  const val=t.match(/v[áa]lida at[ée]\s*(\d{2})-(\d{2})-(\d{4})/i);
+  /* Inscrições em vigor: cada AP com o tipo e os sujeitos ativos. */
+  const blocos=t.split(/\n(?=AP\.\s*\d+\s+de\s+\d{4}\/\d{2}\/\d{2})/).slice(1).map(b=>{
+    const cab=b.match(/^AP\.\s*(\d+)\s+de\s+(\d{4}\/\d{2}\/\d{2})[^\n]*?-\s*([^\n]+)/);if(!cab)return null;
+    const at=(b.split(/SUJEITO\(S\) ATIVO\(S\):/)[1]||'').split(/SUJEITO\(S\) PASSIVO\(S\):|\n-{5,}/)[0];
+    const pessoas=[...at.matchAll(/\*\*\s*([^\n]+)(?:\n(?:NIF|NIPC)\s*(\d{9}))?/g)].map(m=>({nome:m[1].trim(),nif:m[2]||''}));
+    return{ap:`AP. ${cab[1]} de ${cab[2]}`,num:cab[1],data:cab[2],tipo:cab[3].replace(/\s+$/,''),pessoas,
+      capital:(b.match(/CAPITAL:\s*([\d.,]+)/)||[])[1]||''};
+  }).filter(Boolean);
+  return{tipo:'CRP',
+    conservatoria:cab?cab[1].trim():'',descricao:cab?cab[2]:'',fracao:cab&&cab[4]?cab[4]:'',
+    freguesia:g(/Freguesia\s+([^\n]+)/)||g(/FREGUESIA:\s*([^\n]+)/),
+    codigo:g(/(PP-[\d-]+\d)/),validade:val?`${val[3]}-${val[2]}-${val[1]}`:'',
+    matriz:g(/MATRIZ n[ºo°]:\s*(\d+)/),
+    ac:g(/a\.c\.\s*de\s*([\d,]+)\s*m/i),ad:g(/a\.d\.\s*de\s*([\d,]+)\s*m/i),
+    composicao:g(/COMPOSI[ÇC][ÃA]O:\s*\n([\s\S]+?)\n(?:Valor Tribut|O\(A\))/).replace(/\n/g,' '),
+    inscricoes:blocos};
+}
+function apoioCC(L){
+  const t=L.join('\n');const g=(re,i=1)=>(t.match(re)||[])[i]||'';
+  return{tipo:'CC',nome:g(/Nome:\s*([^\n]+)/).trim(),numero:g(/Identifica[çc][ãa]o C[íi]vil:\s*(\S+)/),
+    validade:g(/Data de Validade:\s*(\d{4}-\d{2}-\d{2})/),nif:g(/Identifica[çc][ãa]o Fiscal:\s*(\d{9})/),
+    nascimento:g(/Data de Nascimento:\s*(\d{4}-\d{2}-\d{2})/),
+    localidade:g(/Localidade:\s*([^\n]+)/).trim(),postal:g(/Endere[çc]o Postal:\s*([^\n]+)/).trim(),
+    arruamento:g(/Arruamento:\s*([^\n]+)/).trim()};
+}
+/* Junta as certidões (prédio e fração) e a caderneta numa ficha do imóvel. */
+function apoioImovel(docs){
+  const crp=docs.filter(d=>d.dados&&d.dados.tipo==='CRP').map(d=>d.dados);
+  const cad=docs.find(d=>d.dados&&d.dados.tipo==='CAD')?.dados;
+  if(!crp.length&&!cad)return null;
+  const im={conservatoria:'',descricao:'',fracao:'',freguesia:'',codigo:'',validade:'',ac:'',ad:'',inscricoes:[]};
+  crp.forEach(c=>{['conservatoria','descricao','freguesia','codigo','validade','ac','ad','composicao','matriz'].forEach(k=>{if(c[k]&&!im[k])im[k]=c[k];});
+    if(c.fracao)im.fracao=c.fracao;
+    c.inscricoes.forEach(i=>{if(!im.inscricoes.some(x=>x.ap===i.ap&&x.tipo===i.tipo))im.inscricoes.push(i);});});
+  const aq=im.inscricoes.filter(i=>/Aquisi/i.test(i.tipo)).sort((a,b)=>a.data<b.data?-1:1).pop();
+  im.titulares=aq?aq.pessoas:[];im.apAquisicao=aq?aq.ap:'';
+  im.apPH=(im.inscricoes.find(i=>/Propriedade Horizontal/i.test(i.tipo))||{}).ap||'';
+  im.onus=im.inscricoes.filter(i=>/Hipoteca|Penhora|Arresto|Usufruto|Servid|Arrendamento|Loca[çc][ãa]o|Apreens|Ac[çc][ãa]o/i.test(i.tipo));
+  im.cad=cad||null;
+  if(cad){im.concelho=cad.concelho;im.artigo=cad.artigo||im.matriz;im.vpt=cad.vpt;if(!im.fracao)im.fracao=cad.fracao;if(!im.freguesia)im.freguesia=cad.freguesia;}
+  else im.artigo=im.matriz;
+  return im;
+}
+/* ── Cruzamento com a escritura ── */
+function apoioCruzar(P,add,docs,dataAto){
+  if(!docs||!docs.length)return;
+  const tudo=P.map(p=>p.txt).join('\n'),N=AP_N(tudo),C=tudo.replace(/\s+/g,'').toUpperCase();
+  const onde=re=>P.find(p=>re.test(p.txt))||P.find(p=>p.txt.trim())||P[0];
+  const im=apoioImovel(docs);
+  if(im){
+    const alvo=onde(/descrit[oa]\s+na\s+Conservat/i);
+    if(im.descricao&&!new RegExp(`(n[úu]mero|n\\.\\s*[º°o])\\s*${im.descricao}\\b`,'i').test(tudo))
+      add(alvo,'cruzamento','erro',`Certidão predial: o prédio está descrito sob o n.º ${im.descricao} — não encontrei esse número na escritura`,0,0);
+    if(im.conservatoria){const cons=AP_N(im.conservatoria);
+      P.forEach(p=>{for(const m of p.txt.matchAll(/Conservat[óo]ria do Registo Predial de ([A-ZÀ-Ýa-zà-ÿ\- ]+?)(?=[,.;\s]+(?:sob|com|n\.|da|do|e\b|$))/g))
+        if(AP_N(m[1])!==cons)add(p,'cruzamento','erro',`Conservatória: a certidão é da de ${im.conservatoria}, não da de ${m[1]}`,m.index,m[0].length);});}
+    if(im.artigo){
+      if(!new RegExp(`artigo(?:\\s+matricial)?\\s+(?:n\\.\\s*[º°o]\\s*)?${im.artigo}\\b`,'i').test(tudo))
+        add(onde(/matriz/i),'cruzamento','erro',`Caderneta: o artigo matricial é o ${im.artigo} — não o encontrei na escritura`,0,0);
+      for(const m of tudo.matchAll(/matriz predial[^.;]{0,60}?sob o artigo(?:\s+matricial)?\s+(\d+)/gi))
+        if(m[1]!==im.artigo){const p=onde(new RegExp(`sob o artigo(?:\\s+matricial)?\\s+${m[1]}`));add(p,'cruzamento','erro',`Artigo ${m[1]} na escritura, mas o da caderneta/certidão é o ${im.artigo}`,Math.max(0,p.txt.indexOf(m[1])),m[1].length);}
+    }
+    if(im.fracao&&!new RegExp(`letra\\s*[«"“'‘]?\\s*${im.fracao}\\s*[»"”'’]?`,'i').test(tudo))
+      add(onde(/fra[çc][ãa]o/i),'cruzamento','erro',`Certidão: a fração é a «${im.fracao}» — não a encontrei designada assim na escritura`,0,0);
+    if(im.freguesia){const f=AP_N(im.freguesia);
+      if(N.includes(f)&&/NOSSA SENHORA/.test(f)&&/\bN(OSSA)? ?S(RA)? DA\b|\bN S DA\b/.test(N.replace(/NOSSA SENHORA/g,'')))
+        add(onde(/\bN(ossa)?\.?\s*Sra\.|\bN\.\s*S\.\s/),'cruzamento','aviso',`Freguesia abreviada em algum sítio: escrever sempre «${im.freguesia}» por extenso`,0,0);
+      if(!N.includes(f)){const ab=f.replace(/NOSSA SENHORA/,'N(OSSA)? ?S(RA|ENHORA)?');
+        add(onde(/freguesia/i),'cruzamento',new RegExp(ab).test(N)?'aviso':'erro',new RegExp(ab).test(N)?`Freguesia abreviada: escrever por extenso «${im.freguesia}»`:`Freguesia: a dos documentos é «${im.freguesia}» — não a encontrei na escritura`,0,0);}}
+    if(im.concelho){const conc=AP_N(im.concelho);
+      const concB=AP_N(im.conservatoria)===conc?im.conservatoria:im.concelho.toLowerCase().replace(/(^|[\s-])(\S)/g,(m,a,b)=>a+(/^(de|do|da|o|e)$/.test(b)?b:b.toUpperCase())).replace(/-O-/,'-o-');
+      P.forEach(p=>{for(const m of p.txt.matchAll(/C[âa]mara Municipal de ([A-ZÀ-Ýa-zà-ÿ\- ]+?)(?=[,.;)\s]+(?:a\b|que|e\b|o\b|n|em|manifest|$)|[,.;)]|$)/g))
+        if(AP_N(m[1])!==conc)add(p,'cruzamento','erro',`Câmara Municipal de ${m[1]}: o prédio é do concelho de ${concB} — confirme a câmara que emitiu o documento`,m.index,m[0].length);});}
+    if(im.vpt){const v=im.vpt.replace(/\./g,' '),re=new RegExp(v.replace(/ /g,'[\\s.\\u00a0]?'));
+      if(!re.test(tudo))add(onde(/valor patrimonial/i),'cruzamento',/valor patrimonial/i.test(tudo)?'erro':'aviso',`Caderneta: o VPT é ${v} € — não coincide com o da escritura (ou não está indicado)`,0,0);}
+    if(im.ac&&/[áa]rea coberta/i.test(tudo)&&!new RegExp(`[áa]rea coberta de ${im.ac}\\s*m`,'i').test(tudo))
+      add(onde(/[áa]rea coberta/i),'cruzamento','erro',`Certidão: a área coberta é de ${im.ac} m²`,0,0);
+    if(im.ad&&/[áa]rea descoberta/i.test(tudo)&&!new RegExp(`[áa]rea descoberta de ${im.ad}\\s*m`,'i').test(tudo))
+      add(onde(/[áa]rea descoberta/i),'cruzamento','erro',`Certidão: a área descoberta é de ${im.ad} m²`,0,0);
+    if(im.cad&&im.ad&&im.cad.ati&&Math.round(parseFloat(im.cad.ati.replace(',','.')))!==Math.round(parseFloat(im.ad.replace(',','.'))))
+      add(onde(/[áa]rea descoberta|logradouro/i),'cruzamento','aviso',`Registo e matriz não coincidem: área descoberta ${im.ad} m² na certidão, terreno integrante ${Math.round(parseFloat(im.cad.ati.replace(',','.')))} m² na caderneta (informativo)`,0,0);
+    [['apPH','constituição da propriedade horizontal'],['apAquisicao','aquisição a favor de quem vende']].forEach(([k,r])=>{
+      if(im[k]&&!new RegExp(im[k].replace(/[.*+?^${}()|[\]\\/]/g,'\\$&').replace(/\s+/g,'\\s*'),'i').test(tudo))
+        add(onde(/AP\.|inscri/i),'cruzamento','aviso',`Certidão: a ${r} é a ${im[k]} — não a encontrei na escritura`,0,0);});
+    im.titulares.forEach(t=>{
+      const ok=(t.nif&&C.includes(AP_D(t.nif).replace(/(\d{3})(\d{3})(\d{3})/,'$1.$2.$3').toUpperCase()))||(t.nif&&AP_D(tudo).includes(t.nif))||N.includes(AP_N(t.nome));
+      if(!ok)add(P[0],'cruzamento','erro',`Certidão: o prédio está inscrito a favor de ${t.nome}${t.nif?' (NIF '+t.nif+')':''}, que não aparece na escritura — confirme o trato sucessivo`,0,0);});
+    if(im.cad&&im.cad.titulares.length&&im.titulares.length&&!im.cad.titulares.some(c=>im.titulares.some(t=>t.nif?t.nif===c.nif:AP_N(t.nome)===AP_N(c.nome))))
+      add(P[0],'cruzamento','aviso',`O titular na caderneta (${im.cad.titulares.map(x=>x.nome).join(', ')}) não é o do registo (${im.titulares.map(x=>x.nome).join(', ')})`,0,0);
+    im.onus.forEach(o=>{
+      if(!new RegExp(`AP\\.\\s*${o.num}\\s+de\\s+${o.data.replace(/\//g,'\\/')}`,'i').test(tudo))
+        add(onde(/hipoteca|cancelamento|ren[úu]ncia|distrate/i),'cruzamento','erro',`Está em vigor ${o.tipo.toLowerCase()} pela ${o.ap}${o.pessoas.length?' a favor de '+o.pessoas.map(x=>x.nome).join(', '):''}${o.capital?' (capital '+o.capital+' €)':''} — a escritura não trata do cancelamento`,0,0);});
+    if(im.validade&&dataAto&&im.validade<dataAto)add(onde(/PP-/i),'cruzamento','erro',`A certidão permanente caducou em ${isoPT(im.validade)}`,0,0);
+    if(im.codigo&&!C.includes(im.codigo.toUpperCase()))add(onde(/certid[ãa]o permanente/i),'cruzamento','aviso',`O código da certidão (${im.codigo}) não aparece na escritura`,0,0);
+  }
+  docs.filter(d=>d.dados&&d.dados.tipo==='CC').forEach(d=>{const c=d.dados;
+    const nomeP=onde(new RegExp(AP_N(c.nome).split(' ')[0],'i'));
+    const pp=P.find(p=>AP_N(p.txt).includes(AP_N(c.nome)))||nomeP;
+    if(!N.includes(AP_N(c.nome)))add(nomeP,'cruzamento','erro',`Cartão de cidadão: o nome é «${c.nome}» — não aparece assim na escritura`,0,0);
+    if(c.nif&&!AP_D(tudo).includes(c.nif))add(pp,'cruzamento','erro',`${c.nome}: o NIF do cartão é ${c.nif} e não aparece na escritura`,0,0);
+    if(c.numero&&!C.includes(c.numero.toUpperCase()))add(pp,'cruzamento','erro',`${c.nome}: o n.º do cartão é ${c.numero.replace(/^(\d{8})(\d)/,'$1 $2')} — o da escritura é diferente`,0,0);
+    if(c.validade){
+      if(!tudo.includes(isoPT(c.validade)))add(pp,'cruzamento','erro',`${c.nome}: o cartão é válido até ${isoPT(c.validade)} — a escritura tem outra data`,0,0);
+      if(dataAto&&c.validade<dataAto)add(pp,'cruzamento','erro',`${c.nome}: o cartão de cidadão caducou em ${isoPT(c.validade)}`,0,0);}
+    const loc=AP_N(c.localidade);if(loc&&!N.includes(loc))add(pp,'cruzamento','aviso',`${c.nome}: a morada do cartão é em ${c.localidade} — confirme a residência na escritura`,0,0);
+  });
+}
+
+/* ── Leitura dos PDFs no navegador (pdf.js) ── */
+let APOIO=[],PDFJS=null;
+const PDFJS_URL='https://cdn.jsdelivr.net/npm/pdfjs-dist@6.2.108/build/pdf.min.mjs';
+async function pdfLinhas(buf){
+  if(!PDFJS){PDFJS=await import(PDFJS_URL);PDFJS.GlobalWorkerOptions.workerSrc=PDFJS_URL.replace('pdf.min.mjs','pdf.worker.min.mjs');}
+  const doc=await PDFJS.getDocument({data:new Uint8Array(buf),verbosity:0}).promise;const paginas=[];
+  for(let n=1;n<=doc.numPages;n++){const tc=await (await doc.getPage(n)).getTextContent();const out=[];
+    const its=tc.items.filter(i=>i.str!==undefined).map(i=>({s:i.str,x:i.transform[4],y:Math.round(i.transform[5])}));
+    const g={};its.forEach(i=>{const k=Object.keys(g).find(y=>Math.abs(y-i.y)<=2);(g[k??i.y]=g[k??i.y]||[]).push(i);});
+    Object.keys(g).map(Number).sort((a,b)=>b-a).forEach(y=>out.push(g[y].sort((a,b)=>a.x-b.x).map(i=>i.s).join(' ').replace(/\s+/g,' ').trim()));
+    paginas.push(out.filter(Boolean));}
+  return paginas;
+}
+/* Um PDF pode trazer vários documentos seguidos (tudo digitalizado num só
+   ficheiro). Cada página que começa um documento conhecido abre um novo;
+   as páginas seguintes juntam-se-lhe. Páginas-imagem ficam de fora. */
+function separarDocumentos(paginas){
+  const docs=[];let atual=null,imagens=0;
+  paginas.forEach((L,i)=>{
+    const t=L.join('\n');
+    if(t.replace(/\s/g,'').length<30){imagens++;atual=null;return;}
+    let ini='';
+    if(/Dados de Cart[ãa]o de Cidad[ãa]o/i.test(t))ini='CC';
+    else if(/Certid[ãa]o Permanente/i.test(t)&&/C[óo]digo de acesso:\s*PP-/i.test(t))ini='CRP';
+    else if(/CADERNETA PREDIAL/i.test(t)&&(!atual||atual.tipo!=='CAD'||/P[áa]gina\s+1\s+de/i.test(t)))ini='CAD';
+    if(ini){atual={tipo:ini,linhas:[...L],pags:[i+1]};docs.push(atual);}
+    else if(atual){atual.linhas.push(...L);atual.pags.push(i+1);}
+    else docs.push(atual={tipo:'',linhas:[...L],pags:[i+1]});
+  });
+  return{docs,imagens};
+}
+const ROT_APOIO={CAD:'Caderneta predial',CRP:'Certidão predial',CC:'Cartão de cidadão'};
+async function juntarApoio(files){
+  for(const f of files){
+    if(!/\.pdf$/i.test(f.name)){continue;}
+    APOIO=APOIO.filter(x=>x.ficheiro!==f.name);
+    try{
+      const {docs,imagens}=separarDocumentos(await pdfLinhas(await f.arrayBuffer()));
+      const varios=docs.length+(imagens?1:0)>1;
+      docs.forEach(d=>{const L=d.linhas;
+        const reg={ficheiro:f.name,nome:f.name+(varios?` (pág. ${d.pags[0]}${d.pags.length>1?'–'+d.pags[d.pags.length-1]:''})`:''),tipo:d.tipo,nota:'',
+          dados:d.tipo==='CAD'?apoioCAD(L):d.tipo==='CRP'?apoioCRP(L):d.tipo==='CC'?apoioCC(L):null};
+        if(!d.tipo)reg.nota='Não reconheço este tipo de documento (por agora: caderneta, certidão predial e ficha do cartão de cidadão).';
+        APOIO.push(reg);});
+      if(imagens)APOIO.push({ficheiro:f.name,nome:f.name+(varios?` (${imagens} pág. em imagem)`:''),tipo:'',dados:null,nota:`${imagens>1?imagens+' páginas são digitalizações':'É uma digitalização'} (imagem) — ainda não ${imagens>1?'as':'a'} consigo ler.`});
+    }catch(e){APOIO.push({ficheiro:f.name,nome:f.name,tipo:'',dados:null,nota:'Não consegui abrir: '+e.message});}
+  }
+  pintarApoio();if(DOC)analisar();
+}
+window.tirarApoio=i=>{APOIO.splice(i,1);pintarApoio();if(DOC)analisar();};
+function pintarApoio(){
+  const im=apoioImovel(APOIO);
+  const linha=(r,v)=>v?`<tr><td style="color:var(--text-faint);padding:1px 10px 1px 0;white-space:nowrap">${r}</td><td>${esc(v)}</td></tr>`:'';
+  $('apoio-lista').innerHTML=APOIO.map((d,i)=>`<div class="item" style="border-left-color:${d.tipo?'var(--green)':'var(--border-strong)'}">
+      <div class="cab"><span class="tag">${d.tipo?ROT_APOIO[d.tipo]:'—'}</span>${esc(d.nome)}<button class="btn" style="margin-left:auto;padding:1px 8px" onclick="tirarApoio(${i})">×</button></div>
+      ${d.nota?`<div class="nota">${esc(d.nota)}</div>`:''}
+      ${d.tipo==='CC'?`<table style="font-size:12px">${linha('Nome',d.dados.nome)}${linha('NIF',d.dados.nif)}${linha('Cartão',d.dados.numero)}${linha('Válido até',isoPT(d.dados.validade))}${linha('Morada',[d.dados.arruamento,d.dados.localidade,d.dados.postal].filter(Boolean).join(', '))}</table>`:''}
+    </div>`).join('')
+    +(im?`<div class="item" style="border-left-color:var(--accent)"><div class="cab">Ficha do imóvel, a partir dos documentos</div><table style="font-size:12px">
+      ${linha('Conservatória',im.conservatoria)}${linha('Descrição',im.descricao+(im.fracao?' – fração '+im.fracao:''))}${linha('Freguesia',im.freguesia)}${linha('Concelho',im.concelho)}
+      ${linha('Artigo matricial',im.artigo)}${linha('VPT',im.vpt?im.vpt+' €':'')}${linha('Áreas (registo)',im.ac||im.ad?`coberta ${im.ac||'—'} m², descoberta ${im.ad||'—'} m²`:'')}
+      ${linha('Composição',im.composicao)}${linha('Propriedade horizontal',im.apPH)}${linha('Titular inscrito',im.titulares.map(t=>t.nome+(t.nif?' ('+t.nif+')':'')).join('; ')+(im.apAquisicao?' — '+im.apAquisicao:''))}
+      ${linha('Ónus em vigor',im.onus.map(o=>`${o.tipo} ${o.ap}${o.pessoas.length?' — '+o.pessoas.map(x=>x.nome).join(', '):''}`).join('; ')||'nenhum')}
+      ${linha('Certidão',im.codigo+(im.validade?' — válida até '+isoPT(im.validade):''))}${linha('Caderneta emitida em',isoPT(im.cad?.emitida))}
+      </table></div>`:'');
+}
+$('fich-apoio').addEventListener('change',e=>juntarApoio([...e.target.files]));
+(()=>{const d=$('drop-apoio');['dragenter','dragover'].forEach(ev=>d.addEventListener(ev,e=>{e.preventDefault();d.classList.add('over');}));
+  ['dragleave','drop'].forEach(ev=>d.addEventListener(ev,e=>{e.preventDefault();d.classList.remove('over');}));
+  d.addEventListener('drop',e=>juntarApoio([...e.dataTransfer.files]));})();
 
 /* ── Login ── */
 (function(){
