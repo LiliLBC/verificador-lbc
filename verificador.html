@@ -42,7 +42,7 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
 </head>
 <body>
 <div class="topbar">
-  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-16.1</span></div>
+  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-16.2</span></div>
   <div style="display:flex;gap:.6rem;align-items:center"><span id="login-info" style="font-size:11px;color:var(--text-faint)"></span>
     <button class="btn" id="btn-entrar" onclick="entrar()">Entrar</button>
     <button class="btn btn-p" id="btn-desc" onclick="descarregar()" disabled>Descarregar Word revisto</button></div>
@@ -388,7 +388,7 @@ async function carregarProcs(){
       /* Nome da lista: proc_bancos (escolha da Liliana, 16/10/2026); aceita também «Procurações». */
       const ok=n=>/^(proc[ _-]?bancos|procuracoes)$/.test(norm(n));
       const l=(ls.value||[]).find(x=>ok(x.name)||ok(x.displayName));
-      if(!l){av.innerHTML='<div class="nota" style="color:var(--amber)">Falta criar no SharePoint (site lbcsolicitadora2) a lista <b>proc_bancos</b>, com a coluna <b>Dados</b> (várias linhas de texto, texto simples).</div>';return;}
+      if(!l){av.innerHTML=`<div class="nota" style="color:var(--amber)">Falta criar no SharePoint (site lbcsolicitadora2) a lista <b>proc_bancos</b>, com a coluna <b>Dados</b> (várias linhas de texto, texto simples).<br><span style="color:var(--text-faint)">Listas que encontrei neste site: ${esc((ls.value||[]).map(x=>x.displayName).join(', '))}</span></div>`;pintarProcs();return;}
       LID=l.id;
       const cs=await gq(`${GRAPH}/sites/${SITE}/lists/${LID}/columns?$select=name,displayName`);
       const c=(cs.value||[]).find(x=>norm(x.name)==='dados'||norm(x.displayName)==='dados');if(c)COLD=c.name;
@@ -434,6 +434,7 @@ window.procEditar=id=>{
       <button class="btn btn-p" onclick="procGravar()">Gravar</button></div></div>`;
 };
 window.procGravar=async()=>{
+  if(!LID){alert('Ainda não encontrei a lista proc_bancos no SharePoint. Crie-a e faça Ctrl+F5 antes de gravar.');return;}
   const linhas=id=>$(id).value.split('\n').map(x=>x.trim()).filter(Boolean);
   const ent=$('pe-ent').value.trim();if(!ent){alert('Falta a entidade.');return;}
   const d={aliases:$('pe-ali').value.split(',').map(x=>x.trim()).filter(Boolean),codigos:linhas('pe-cod').map(x=>x.toUpperCase()),
