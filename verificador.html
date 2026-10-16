@@ -42,7 +42,7 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
 </head>
 <body>
 <div class="topbar">
-  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-16.8</span></div>
+  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-17.1</span></div>
   <div style="display:flex;gap:.6rem;align-items:center"><span id="login-info" style="font-size:11px;color:var(--text-faint)"></span>
     <button class="btn" id="btn-entrar" onclick="entrar()">Entrar</button>
     <button class="btn btn-p" id="btn-desc" onclick="descarregar()" disabled>Descarregar Word revisto</button></div>
@@ -53,7 +53,7 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
     <div class="card-h"><div class="num">1</div><div><div class="card-t">Documento</div><div class="card-d">O Word fica só neste computador: nada é enviado para fora.</div></div></div>
     <div class="grid">
       <div>
-        <label class="l">Word da escritura (.docx)</label>
+        <label class="l">Word do DPA (.docx)</label>
         <div class="drop" id="drop" onclick="document.getElementById('fich').click()">Arraste o Word para aqui ou clique para escolher</div>
         <input type="file" id="fich" accept=".docx" style="display:none">
       </div>
@@ -65,7 +65,7 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
   </div>
 
   <div class="card">
-    <div class="card-h"><div class="num">3</div><div><div class="card-t">Documentos de apoio <span class="tag">piloto</span></div><div class="card-d">Caderneta, certidão permanente predial, fichas do cartão de cidadão e, nas da CGD, o boletim de contrato (PDF) e o documento complementar (Word). O nome dos ficheiros não importa: reconheço-os pelo conteúdo e cruzo-os com a escritura. Os cartões de cidadão digitalizados (imagem) também se leem — tudo no seu computador, nada é enviado.</div></div></div>
+    <div class="card-h"><div class="num">3</div><div><div class="card-t">Documentos de apoio <span class="tag">piloto</span></div><div class="card-d">Caderneta, certidão permanente predial, fichas do cartão de cidadão e, nas da CGD, o boletim de contrato (PDF) e o documento complementar (Word). O nome dos ficheiros não importa: reconheço-os pelo conteúdo e cruzo-os com o DPA. Os cartões de cidadão digitalizados (imagem) também se leem — tudo no seu computador, nada é enviado.</div></div></div>
     <div class="drop" id="drop-apoio" onclick="document.getElementById('fich-apoio').click()">Arraste para aqui os PDFs de apoio (ou fotografias JPG/PNG) — vários ficheiros, ou um só com tudo junto</div>
     <input type="file" id="fich-apoio" accept=".pdf,.docx,.jpg,.jpeg,.png" multiple style="display:none">
     <div id="apoio-lista" style="margin-top:.7rem"></div>
@@ -85,7 +85,7 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
   </div>
 
   <div class="card">
-    <div class="card-h"><div class="num">?</div><div><div class="card-t">O que verifica nesta versão</div><div class="card-d">Regras fixas. As de negritos e redação entram depois das primeiras escrituras revistas.</div></div></div>
+    <div class="card-h"><div class="num">?</div><div><div class="card-t">O que verifica nesta versão</div><div class="card-d">Regras fixas. As de negritos e redação entram depois dos primeiros DPA revistos.</div></div></div>
     <div class="nota">
       <b>Espaços</b> — espaços duplos, espaço antes de vírgula, ponto, ponto e vírgula, dois pontos ou parêntese; corrigidos como alteração marcada.<br>
       <b>Por preencher</b> — «…», reticências, [ ], { }, ⚠, XXX e linhas a preencher no meio do texto.<br>
@@ -97,7 +97,14 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
       <b>Concordância</b> — «o Primeira», «a Segundo», «os Segundos Outorgante»; «portador» com estado civil no feminino e vice-versa.<br>
       <b>Procurações</b> — com a sessão iniciada, confere os códigos (PR-…) das entidades registadas e, se houver lista, os procuradores.<br>
       <b>Documentos de apoio (piloto)</b> — com a caderneta, as certidões prediais (do prédio e da fração, ligadas pelo n.º da descrição) e as fichas dos cartões: descrição, conservatória, freguesia da descrição e da matriz, autorização de utilização, artigo, fração, freguesia, câmara do concelho certo, VPT, áreas, titular inscrito, ónus por cancelar, validade da certidão e dados de cada cartão de cidadão. Cartões digitalizados em imagem: leio as linhas «&lt;&lt;&lt;» do verso (com os dígitos de controlo) e a frente — o que vem de imagem fica sempre como aviso a confirmar.<br>
-      <b>Condomínio</b> — havendo fração autónoma, o termo tem de mencionar a declaração do condomínio (art. 1424.º-A do Código Civil).
+      <b>Correções marcadas</b> — «notaria», «á ordem», «reprsent…», «Propria», «CREDITO AGRICOLA», «Conservatória de…» sem o tipo de registo, «os Primeiros… que vende», cabeçalho PRIMEIRO/PRIMEIROS.<br>
+      <b>Termo e contrato</b> — no contrato (das partes) não pode haver «arquivo», «verifiquei», «adverti»…<br>
+      <b>Preço e pagamentos</b> — soma igual ao preço; cheques com banco, à ordem de, valor e número; transferências com IBAN; quitação. Com os comprovativos: IBAN e valor de cada transferência (sem nomes de titulares); cheque visado descrito como bancário; nome «à ordem de» diferente do cheque.<br>
+      <b>IMT e Selo</b> — guias referidas no termo (número e valor), pagas, do artigo certo; Selo 1.1 a 0,8 %; habitação própria e permanente ↔ cláusula de destino; vendedor = herança do primeiro a falecer.<br>
+      <b>Participação de Imposto do Selo</b> — o artigo vendido tem de constar da relação de bens; trato sucessivo entre heranças.<br>
+      <b>Procurações e habilitações</b> — procuração notarial ≠ autenticada; data, entidade e poderes (vender, receber o preço, artigo); habilitações referidas com número/código e data.<br>
+      <b>Toponímia</b> — morada atual no contrato; a anterior e a certidão no termo.<br>
+            <b>Condomínio</b> — havendo fração autónoma, o termo tem de mencionar a declaração do condomínio (art. 1424.º-A do Código Civil).
     </div>
   </div>
 </div>
@@ -111,7 +118,7 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
      revisora como autora — aceitam-se ou rejeitam-se no Word;
    · os outros achados como comentários na margem, presos ao parágrafo.
    Nada sai do computador. As regras de negrito e de redação ficam para depois
-   de rever as primeiras escrituras (ver «Verificação das escrituras — síntese»). */
+   de rever as primeiras escrituras (ver «Verificação dos DPA — síntese»). */
 let DOC=null,NOME='',ACHADOS=[],filtro='todos';
 const $=id=>document.getElementById(id);
 const esc=t=>String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -159,7 +166,7 @@ function paragrafos(xml){
 }
 
 /* ── Regras ── */
-const R={cgd:'CGD (boletim/complementar)',cruzamento:'Documentos de apoio',procuracao:'Procuração',condominio:'Condomínio',grafia:'Grafia',espaco:'Espaços',preencher:'Por preencher',repetida:'Palavra repetida',nif:'NIF/NIPC',validade:'Validade',valor:'Valor e extenso',concord:'Concordância'};
+const R={pagamento:'Preço e pagamentos',fiscal:'IMT e Selo',legitimidade:'Procurações e habilitações',termo:'Termo e contrato',cgd:'CGD (boletim/complementar)',cruzamento:'Documentos de apoio',procuracao:'Procuração',condominio:'Condomínio',grafia:'Grafia',espaco:'Espaços',preencher:'Por preencher',repetida:'Palavra repetida',nif:'NIF/NIPC',validade:'Validade',valor:'Valor e extenso',concord:'Concordância'};
 function regras(P,dataAto){
   const A=[];const add=(p,tipo,grav,msg,ini,len,corr)=>{const o={p:p.i,tipo,grav,msg,ini,len,txt:p.txt,corr:!!corr};A.push(o);return o;};
   const nifs={};
@@ -178,12 +185,35 @@ function regras(P,dataAto){
     /* Palavras repetidas */
     for(const m of t.matchAll(/(?<!\p{L})(\p{L}+)\s+\1(?!\p{L})/giu)){add(p,'repetida','erro',`«${m[1]}» repetido`,m.index,m[0].length);}
     /* Grafia: «nº» sem ponto */
-    for(const m of t.matchAll(/(?<!\p{L})(n|N)º/gu))add(p,'grafia','aviso','Escreve-se «n.º»',m.index,m[0].length);
+    /* Correções que saem no Word como alteração marcada (apagado + inserido). */
+    const sub=(tipo,ini,len,novo,msg)=>{const o=add(p,tipo,'aviso',msg,ini,len,true);o.novo=novo;return o;};
+    for(const m of t.matchAll(/(?<!\p{L})(n|N)º/gu))sub('grafia',m.index,m[0].length,m[1]+'.º','«nº» → «n.º»');
+    for(const m of t.matchAll(/(?<!\p{L})([Nn])otaria(?!\p{L})/gu))sub('grafia',m.index,m[0].length,m[1]+'otária','«notaria» → «notária»');
+    for(const m of t.matchAll(/(?<!\p{L})([áÁ])(?!\p{L})/gu))sub('grafia',m.index,1,m[1]==='á'?'à':'À','«á» → «à» (contração)');
+    for(const m of t.matchAll(/([Rr])eprsent/g))sub('grafia',m.index,m[0].length,m[1]+'epresent','Gralha: «reprsent…» → «represent…»');
+    for(const m of t.matchAll(/(?<!\p{L})([Pp])ropri([ao]s?)(?!\p{L})/gu))sub('grafia',m.index,m[0].length,(m[1]==='P'?'P':'p')+'rópri'+m[2],`Falta o acento: «${m[1]==='P'?'P':'p'}rópri${m[2]}»`);
+    for(const m of t.matchAll(/(?<!\p{L})PROPRI([AO]S?)(?!\p{L})/gu))sub('grafia',m.index,m[0].length,'PRÓPRI'+m[1],`Falta o acento: «PRÓPRI${m[1]}»`);
+    for(const m of t.matchAll(/CREDITO AGRICOLA/g)){sub('grafia',m.index+2,1,'É','Faltam os acentos: «CRÉDITO AGRÍCOLA»');sub('grafia',m.index+11,1,'Í','Faltam os acentos: «CRÉDITO AGRÍCOLA»');}
+    for(const m of t.matchAll(/Cr[eé]dito Agricola|Credito Agr[ií]cola/g))sub('grafia',m.index,m[0].length,'Crédito Agrícola','Faltam os acentos: «Crédito Agrícola»');
+    /* «Conservatória de X» sem dizer de que registo: acrescenta-se pelo contexto. */
+    for(const m of t.matchAll(/Conservat[óo]ria de (?=[A-ZÀ-Ý])/g)){
+      const ctx=t.slice(Math.max(0,m.index-250),m.index+60);
+      const tipo=/habilita|herdeir|[óo]bito|assento|nascimento|casamento|registo civil/i.test(ctx)?'Civil'
+        :/descrit|descri[çc][ãa]o|inscri[çc]|predial|AP\.\s*\d/i.test(ctx)?'Predial'
+        :/matr[íi]cula|sociedade|comercial|NIPC/i.test(ctx)?'Comercial':'';
+      if(tipo)sub('grafia',m.index,m[0].length-1,m[0].slice(0,-4)+` do Registo ${tipo} de`,`Falta o tipo de registo: «Conservatória do Registo ${tipo} de…»`);
+      else add(p,'grafia','aviso','«Conservatória de…» sem dizer o registo (Civil, Predial ou Comercial)',m.index,m[0].length-1);
+    }
+    /* Concordância: «Os Primeiros outorgantes … que vende» → «vendem». */
+    const PLURAL={vende:'vendem',declara:'declaram',aceita:'aceitam','dá':'dão',confere:'conferem',recebe:'recebem',compra:'compram',outorga:'outorgam',doa:'doam',constitui:'constituem'};
+    for(const m of t.matchAll(/\b[Oo]s\s+(?:Primeiros|Segundos|Terceiros|PRIMEIROS|SEGUNDOS|TERCEIROS)\s+(?:[Oo]utorgantes|[Cc]ontratantes|OUTORGANTES|CONTRATANTES)\b[^.;]{0,400}?\bque\s+(vende|declara|aceita|dá|confere|recebe|compra|outorga|doa|constitui)(?!\p{L})/gu)){
+      const v=m[1],pos=m.index+m[0].length-v.length;
+      sub('concord',pos,v.length,PLURAL[v],`Concordância: o sujeito («${m[0].match(/^\S+\s+\S+\s+\S+/)[0]}») está no plural — «${PLURAL[v]}»`);}
     /* NIF / NIPC */
     for(const m of t.matchAll(/(?:fiscal|NIF|NIPC|contribuinte|coletiva|matrícula)[^0-9]{0,40}?((?:\d[\s.]?){8}\d)\b/gi)){
       const n=m[1].replace(/\D/g,'');const pos=m.index+m[0].lastIndexOf(m[1]);
       if(!nifValido(n))add(p,'nif','erro',`O número ${m[1]} não é um NIF/NIPC válido (dígito de controlo)`,pos,m[1].length);
-      const antes=t.slice(0,pos);const nm=[...antes.matchAll(/\b([A-ZÀ-Ý][A-ZÀ-Ý'’.-]+(?:,?\s+(?:DA|DE|DO|DAS|DOS|E|&|[A-ZÀ-Ý][A-ZÀ-Ý'’.-]+)){1,8})/g)].pop();
+      const antes=t.slice(0,pos);const nm=[...antes.matchAll(/\b([A-ZÀ-Ý][A-ZÀ-Ý'’.-]+(?:,?\s+(?:(?:DAS|DOS|DA|DE|DO|E)(?![A-ZÀ-Ý])|&|[A-ZÀ-Ý][A-ZÀ-Ý'’.-]+)){1,8})/g)].pop();
       if(nm){(nifs[n]=nifs[n]||[]).push({nome:nm[1].replace(/,$/,'').trim(),p,pos,len:m[1].length});}
     }
     /* Validades */
@@ -197,7 +227,10 @@ function regras(P,dataAto){
       const v=numPT(m[1]);if(v===null)continue;
       const certo=valorExtenso(v);
       const lim=s=>norm(s).replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();
-      if(lim(m[2])!==lim(certo))add(p,'valor','erro',`O extenso não corresponde a ${m[1]}: deve ser «${certo}»`,m.index,m[0].length);
+      if(lim(m[2])!==lim(certo)){const i2=m.index+m[0].lastIndexOf('('+m[2])+1;
+        /* Mantém maiúsculas/minúsculas do original e corrige só as palavras. */
+        const novo=m[2]===m[2].toUpperCase()?certo.toUpperCase():certo;
+        const o=add(p,'valor','erro',`O extenso não corresponde a ${m[1]}: «${certo}»`,i2,m[2].length,true);o.novo=novo;}
     }
     /* Concordância de ordinais e do cartão */
     for(const m of t.matchAll(/\b(o|do|ao|pelo|O|Do|Ao|Pelo)\s+(Primeira|Segunda|Terceira|Quarta|Quinta|PRIMEIRA|SEGUNDA|TERCEIRA|QUARTA)\b/g))add(p,'concord','erro','Artigo masculino com ordinal feminino',m.index,m[0].length);
@@ -208,10 +241,22 @@ function regras(P,dataAto){
     t.split(/;\s|\n/).reduce((off,seg)=>{
       const fem=/\b(casada|solteira|viúva|divorciada|separada)\b/.test(seg),masc=/\b(casado|solteiro|viúvo|divorciado|separado)\b/.test(seg);
       const pm=seg.match(/\bportador\b/),pf=seg.match(/\bportadora\b/);
-      if(fem&&!masc&&pm)add(p,'concord','aviso','«portador» com estado civil no feminino',off+pm.index,8);
-      if(masc&&!fem&&pf)add(p,'concord','aviso','«portadora» com estado civil no masculino',off+pf.index,9);
+      if(fem&&!masc&&pm){const o=add(p,'concord','aviso','«portador» com estado civil no feminino → «portadora»',off+pm.index,8,true);o.novo='portadora';}
+      if(masc&&!fem&&pf){const o=add(p,'concord','aviso','«portadora» com estado civil no masculino → «portador»',off+pf.index,9,true);o.novo='portador';}
       return off+seg.length+(t.slice(off+seg.length,off+seg.length+2).startsWith('; ')?2:1);
     },0);
+  });
+  /* Cabeçalho das partes no singular com várias pessoas (ou ao contrário). */
+  const CAB=/^\s*(PRIMEIR|SEGUND|TERCEIR|QUART)(O|A)(S?)\s*:?\s*$/;
+  P.forEach((p,i)=>{const m=p.txt.match(CAB);if(!m)return;
+    let j=i+1,bloco='';
+    while(j<P.length&&!CAB.test(P[j].txt)&&!/^\s*(Entre os|Os Outorgantes|Verifiquei|Cl[áa]usula|Primeira\b)/i.test(P[j].txt)&&bloco.length<4000){bloco+=P[j].txt+'\n';j++;}
+    const nifs=new Set([...bloco.matchAll(/fiscal[^0-9]{0,40}((?:\d[\s.]?){8}\d)/gi)].map(x=>x[1].replace(/\D/g,'')));
+    const naturais=(bloco.match(/\bnatural de\b/gi)||[]).length,coletiva=/NIPC|pessoa coletiva|sociedade/i.test(bloco);
+    const ini=p.txt.indexOf(m[1]),len=m[1].length+m[2].length+m[3].length,plural=m[3]==='S';
+    if(!plural&&!coletiva&&(naturais>=2||nifs.size>=3)){const o=add(p,'concord','aviso',`Cabeçalho no singular, mas esta parte tem ${Math.max(naturais,nifs.size)} pessoas — «${m[1]}${m[2]}S»`,ini,len,true);o.novo=m[1]+m[2]+'S';}
+    else if(!plural&&!coletiva&&nifs.size===2)add(p,'concord','aviso','Cabeçalho no singular com dois NIF nesta parte — se forem duas pessoas, deve ser no plural',ini,len);
+    else if(plural&&nifs.size===1&&naturais<=1){const o=add(p,'concord','aviso','Cabeçalho no plural, mas esta parte tem uma só pessoa',ini,len,true);o.novo=m[1]+m[2];}
   });
   regrasDocumento(P,add);
   /* O mesmo NIF com nomes diferentes */
@@ -274,21 +319,55 @@ function corrigirEspacosRun(rPr,texto,autor,data){
     ?`<w:r>${rPr}<w:t xml:space="preserve">${x.v}</w:t></w:r>`
     :`<w:del w:id="${idRev++}" w:author="${xesc(autor)}" w:date="${data}"><w:r>${rPr}<w:delText xml:space="preserve">${x.v}</w:delText></w:r></w:del>`).join('');
 }
-function corrigirParagrafo(pxml,autor,data){
+/* Corrige um parágrafo: espaços (apagados) e substituições (apagado + inserido),
+   sempre como alterações marcadas e com a formatação do próprio run.
+   «subs» traz as substituições pelas posições no texto do parágrafo; as que
+   atravessam dois runs não se aplicam (ficam como comentário). */
+function corrigirParagrafo(pxml,autor,data,subs=[]){
   const so=desx(pxml.replace(/<[^>]+>/g,''));
-  if(/^[\s\-_—–.]*$/.test(so))return pxml;
-  return pxml.replace(/<w:r\b[^>]*>((?:(?!<\/w:r>)[\s\S])*?)<\/w:r>/g,(run,dentro)=>{
-    if(!/<w:t[\s>]/.test(dentro))return run;
+  if(/^[\s\-_—–.]*$/.test(so)&&!subs.length)return pxml;
+  const RUN=/<w:r\b[^>]*>((?:(?!<\/w:r>)[\s\S])*?)<\/w:r>/g,EL=/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>|<w:br\/>|<w:tab\/>/g;
+  const del=(rPr,v)=>v?`<w:del w:id="${idRev++}" w:author="${xesc(autor)}" w:date="${data}"><w:r>${rPr}<w:delText xml:space="preserve">${xesc(v)}</w:delText></w:r></w:del>`:'';
+  const ins=(rPr,v)=>v?`<w:ins w:id="${idRev++}" w:author="${xesc(autor)}" w:date="${data}"><w:r>${rPr}<w:t xml:space="preserve">${xesc(v)}</w:t></w:r></w:ins>`:'';
+  const txt=(rPr,v)=>v?`<w:r>${rPr}<w:t xml:space="preserve">${xesc(v)}</w:t></w:r>`:'';
+  /* 1.ª passagem: texto do parágrafo e runs que não se podem partir (campos, imagens…) */
+  let off=0,plain='';const duros=[];
+  for(const m of pxml.matchAll(RUN)){const dentro=m[1],rPr=(dentro.match(/^\s*<w:rPr>[\s\S]*?<\/w:rPr>/)||[''])[0],resto=dentro.slice(rPr.length);
+    const simples=/<w:t[\s>]/.test(dentro)&&!/<(?!\/?w:t\b|w:br\b|w:tab\b)w:[a-zA-Z]/.test(resto);const a0=off;
+    for(const e of resto.matchAll(EL)){const t=e[1]===undefined?(e[0]==='<w:tab/>'?'\t':'\n'):desx(e[1]);plain+=t;off+=t.length;}
+    if(!simples&&off>a0)duros.push([a0,off]);}
+  /* Só se marca a parte que muda («PRIMEIRO» → só o «S» inserido). */
+  const ok=subs.filter(x=>{if(x.feito)return false;const velho=plain.slice(x.ini,x.ini+x.len);let nv=x.novo,pf=0,sf=0;
+    while(pf<velho.length&&pf<nv.length&&velho[pf]===nv[pf])pf++;
+    while(sf<velho.length-pf&&sf<nv.length-pf&&velho[velho.length-1-sf]===nv[nv.length-1-sf])sf++;
+    x.i0=x.ini+pf;x.i1=x.ini+x.len-sf;x.nv=nv.slice(pf,nv.length-sf);
+    if(x.i0===x.i1&&!x.nv){x.feito=true;return false;}
+    return!duros.some(([a,b])=>x.i0<b&&x.i1>a||(x.i0===x.i1&&x.i0>a&&x.i0<b));}).sort((a,b)=>a.i0-b.i0);
+  /* sem sobreposições: fica a primeira (as maiores começam antes) */
+  const usar=[];ok.forEach(x=>{const u=usar[usar.length-1];if(u&&x.i0<u.i1){if(x.i0>=u.i0&&x.i1<=u.i1)x.feito=true;return;}usar.push(x);});
+  /* 2.ª passagem */
+  off=0;const tot=plain.length;
+  return pxml.replace(RUN,(run,dentro)=>{
     const rPr=(dentro.match(/^\s*<w:rPr>[\s\S]*?<\/w:rPr>/)||[''])[0];
     const resto=dentro.slice(rPr.length);
-    /* Só se mexe em runs feitos de texto, quebras e tabulações. */
-    if(/<(?!\/?w:t\b|w:br\b|w:tab\b)w:[a-zA-Z]/.test(resto))return run;
+    const simples=/<w:t[\s>]/.test(dentro)&&!/<(?!\/?w:t\b|w:br\b|w:tab\b)w:[a-zA-Z]/.test(resto);
+    if(!simples){for(const e of resto.matchAll(EL))off+=e[1]===undefined?1:desx(e[1]).length;return run;}
     let mudou=false;
-    const novo=resto.replace(/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>|<w:br\/>|<w:tab\/>/g,(el,txt)=>{
-      if(txt===undefined)return`<w:r>${rPr}${el}</w:r>`;
-      const c=corrigirEspacosRun(rPr,txt,autor,data);
+    const novo=resto.replace(EL,(el,raw)=>{
+      if(raw===undefined){off+=1;return`<w:r>${rPr}${el}</w:r>`;}
+      const t=desx(raw),a0=off,a1=off+t.length;off=a1;
+      const aqui=usar.filter(x=>(x.i0<a1&&x.i1>a0)||(x.i0===x.i1?(x.i0>=a0&&(x.i0<a1||(x.i0===a1&&a1===tot))):x.i0>=a0&&x.i0<a1));
+      if(aqui.length){mudou=true;let out='',u=a0;
+        aqui.forEach(x=>{const d0=Math.max(x.i0,a0),d1=Math.min(x.i1,a1);
+          out+=txt(rPr,t.slice(u-a0,d0-a0));
+          if(x.i0>=a0&&(x.i0<a1||x.i0===a1))out+=ins(rPr,x.nv);   /* o texto novo entra onde a correção começa */
+          out+=del(rPr,t.slice(d0-a0,d1-a0));u=Math.max(u,d1);
+          if(x.i1<=a1)x.feito=true;});
+        return out+txt(rPr,t.slice(u-a0));}
+      if(/^[\s\-_—–.]*$/.test(so))return`<w:r>${rPr}<w:t xml:space="preserve">${raw}</w:t></w:r>`;
+      const c=corrigirEspacosRun(rPr,raw,autor,data);
       if(c){mudou=true;return c;}
-      return`<w:r>${rPr}<w:t xml:space="preserve">${txt}</w:t></w:r>`;
+      return`<w:r>${rPr}<w:t xml:space="preserve">${raw}</w:t></w:r>`;
     });
     return mudou?novo:run;
   });
@@ -307,10 +386,15 @@ async function descarregar(){
     const P=paragrafos(DOC.xml);
     /* Comentários por parágrafo (os não corrigidos automaticamente). */
     const porP={};ACHADOS.filter(a=>!a.corr).forEach(a=>(porP[a.p]=porP[a.p]||[]).push(a));
+    const subsP={};ACHADOS.filter(a=>a.corr&&a.novo!==undefined).forEach(a=>(subsP[a.p]=subsP[a.p]||[]).push({ini:a.ini,len:a.len,novo:a.novo,a}));
     let cid=0;const coms=[];
-    let xml='';let ult=0;
+    let xml='';let ult=0;let xmlIns='';
     P.forEach(p=>{
-      let px=corrigirParagrafo(p.xml,autor,data);
+      ACHADOS.filter(a=>a.insAntes===p.i&&a.insTexto).forEach(a=>{xmlIns+=paragrafoInserido(p.xml,a.insTexto,autor,data);});
+      const sp=subsP[p.i]||[];
+      let px=corrigirParagrafo(p.xml,autor,data,sp);
+      /* Substituições que não deu para marcar (texto partido em vários runs): vão como comentário. */
+      sp.filter(x=>!x.feito).forEach(x=>(porP[p.i]=porP[p.i]||[]).push({...x.a,msg:x.a.msg+' — corrigir para «'+x.novo+'»'}));
       /* Redações escolhidas que entram antes deste parágrafo */
       ACHADOS.filter(a=>a.sug&&a.antes===p.i&&ESCOLHAS[chaveA(a)]?.op).forEach(a=>{
         const e=ESCOLHAS[chaveA(a)];px=paragrafoInserido(p.xml,SUG[a.sug].opcoes[e.op].txt(e.campos),autor,data)+px;
@@ -325,7 +409,7 @@ async function descarregar(){
         const abre=`<w:commentRangeStart w:id="${id}"/>`,fecha=`<w:commentRangeEnd w:id="${id}"/><w:r><w:rPr><w:rStyle w:val="CommentReference"/></w:rPr><w:commentReference w:id="${id}"/></w:r>`;
         px=px.replace(/^(<w:p\b[^>]*>(?:\s*<w:pPr>[\s\S]*?<\/w:pPr>)?)/,`$1${abre}`).replace(/<\/w:p>$/,`${fecha}</w:p>`);
       }
-      xml+=DOC.xml.slice(ult,p.ini)+px;ult=p.fim;
+      xml+=DOC.xml.slice(ult,p.ini)+xmlIns+px;ult=p.fim;xmlIns='';
     });
     xml+=DOC.xml.slice(ult);
     const zip=DOC.zip;
@@ -423,7 +507,7 @@ function pintarProcs(){
 /* Sugestões para começar — confirmar antes de gravar. */
 const SUGESTOES=[
   {entidade:'CAIXA GERAL DE DEPÓSITOS, S.A.',aliases:['CAIXA GERAL DE DEPOSITOS','CGD'],codigos:['PR-82574-78071-23851'],procuradores:[],notas:'Procuração dos procuradores internos da CGD.'},
-  {entidade:'CAIXA DE CRÉDITO AGRÍCOLA MÚTUO DO ALENTEJO CENTRAL, CRL',aliases:['CAIXA AGRÍCOLA','CCAM'],codigos:['PR-13518-08823-20577'],procuradores:[],notas:'⚠ Código tirado da escritura da Nutrimagri (28/09/2026) — confirmar.'}
+  {entidade:'CAIXA DE CRÉDITO AGRÍCOLA MÚTUO DO ALENTEJO CENTRAL, CRL',aliases:['CAIXA AGRÍCOLA','CCAM'],codigos:['PR-13518-08823-20577'],procuradores:[],notas:'⚠ Código tirado do DPA da Nutrimagri (28/09/2026) — confirmar.'}
 ];
 window.procEditar=id=>{
   const p=id==='novo'?{entidade:'',aliases:[],codigos:[],procuradores:[],notas:''}:(id.startsWith('sug')?SUGESTOES[+id.slice(3)]:PROCS.find(x=>x.id===id));
@@ -483,6 +567,14 @@ const RE_PR=/PR-\d{5}-\d{5}-\d{5}/gi;
 function regrasDocumento(P,add){
   try{apoioCruzar(P,add,APOIO,$('data-ato').value);}catch(e){console.error('cruzamento',e);}
   try{cgdCruzar(P,add,APOIO);}catch(e){console.error('cgd',e);}
+  /* Espaços inseparáveis (Word) passam a espaços normais — mesmo comprimento, as posições não mudam. */
+  try{apoioCruzarNovos(P.map(p=>({...p,txt:p.txt.replace(/[\u00a0\u202f\u2009]/g,' ')})),add,APOIO);}catch(e){console.error('novos',e);}
+  /* O contrato é das partes: a solicitadora só fala na primeira pessoa no termo
+     («verifiquei», «adverti», «que arquivo»). */
+  {const i0=P.findIndex(p=>/TERMO\s+DE\s+AUTENTICA/i.test(p.txt)),i1=P.findIndex((p,i)=>i>i0&&/ENTIDADE\s+AUTENTICADORA/i.test(p.txt));
+   if(i0>=0)P.forEach((p,i)=>{if(i>=i0&&i<=(i1>i0?i1:P.length))return;
+     for(const m of p.txt.matchAll(/(?<!\p{L})(?:que\s+)?(arquivo|verifiquei|adverti|informei|exibi|perante mim)(?!\p{L})/giu))
+       add(p,'termo','erro',`«${m[0]}» está no contrato, que é das partes — a solicitadora só fala na primeira pessoa no termo de autenticação`,m.index,m[0].length);});}
   const tudo=P.map(p=>p.txt).join('\n');
   /* Procurações registadas */
   PROCS.forEach(pr=>{
@@ -528,7 +620,7 @@ function regrasDocumento(P,add){
 /* ═══════════ DOCUMENTOS DE APOIO · piloto (16/10/2026) ═══════════
    Lê os PDFs de apoio (caderneta, certidão permanente predial, ficha do
    cartão de cidadão), reconhece cada um pelo CONTEÚDO — o nome do ficheiro
-   não importa — e cruza os dados com a escritura. As digitalizações (imagens)
+   não importa — e cruza os dados com o DPA. As digitalizações (imagens)
    ainda não se leem: ficam assinaladas. */
 const AP_N=t=>String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]+/g,' ').trim();
 const AP_D=t=>String(t||'').replace(/\D/g,'');
@@ -649,7 +741,7 @@ function apoioImovel(docs){
   else im.artigo=im.matriz;
   return im;
 }
-/* ── Cruzamento com a escritura ── */
+/* ── Cruzamento com o DPA ── */
 function apoioCruzar(P,add,docs,dataAto){
   if(!docs||!docs.length)return;
   const tudo=P.map(p=>p.txt).join('\n'),N=AP_N(tudo),C=tudo.replace(/\s+/g,'').toUpperCase();
@@ -658,25 +750,25 @@ function apoioCruzar(P,add,docs,dataAto){
   if(im){
     const alvo=onde(/descrit[oa]\s+na\s+Conservat/i);
     if(im.descricao&&!new RegExp(`(n[úu]mero|n\\.\\s*[º°o])\\s*${im.descricao}\\b`,'i').test(tudo))
-      add(alvo,'cruzamento','erro',`Certidão predial: o prédio está descrito sob o n.º ${im.descricao} — não encontrei esse número na escritura`,0,0);
+      add(alvo,'cruzamento','erro',`Certidão predial: o prédio está descrito sob o n.º ${im.descricao} — não encontrei esse número no DPA`,0,0);
     if(im.conservatoria){const cons=AP_N(im.conservatoria);
       P.forEach(p=>{for(const m of p.txt.matchAll(/Conservat[óo]ria do Registo Predial de ([A-ZÀ-Ýa-zà-ÿ\- ]+?)(?=[,.;\s]+(?:sob|com|n\.|da|do|e\b|$))/g))
         if(AP_N(m[1])!==cons)add(p,'cruzamento','erro',`Conservatória: a certidão é da de ${im.conservatoria}, não da de ${m[1]}`,m.index,m[0].length);});}
     if(im.artigo){
       if(!new RegExp(`artigo(?:\\s+matricial)?\\s+(?:n\\.\\s*[º°o]\\s*)?${im.artigo}\\b`,'i').test(tudo))
-        add(onde(/matriz/i),'cruzamento','erro',`Caderneta: o artigo matricial é o ${im.artigo} — não o encontrei na escritura`,0,0);
+        add(onde(/matriz/i),'cruzamento','erro',`Caderneta: o artigo matricial é o ${im.artigo} — não o encontrei no DPA`,0,0);
       for(const m of tudo.matchAll(/matriz predial[^.;]{0,60}?sob o artigo(?:\s+matricial)?\s+(\d+)/gi))
-        if(m[1]!==im.artigo){const p=onde(new RegExp(`sob o artigo(?:\\s+matricial)?\\s+${m[1]}`));add(p,'cruzamento','erro',`Artigo ${m[1]} na escritura, mas o da caderneta/certidão é o ${im.artigo}`,Math.max(0,p.txt.indexOf(m[1])),m[1].length);}
+        if(m[1]!==im.artigo){const p=onde(new RegExp(`sob o artigo(?:\\s+matricial)?\\s+${m[1]}`));add(p,'cruzamento','erro',`Artigo ${m[1]} no DPA, mas o da caderneta/certidão é o ${im.artigo}`,Math.max(0,p.txt.indexOf(m[1])),m[1].length);}
     }
     if(im.fracao&&!new RegExp(`letra\\s*[«"“'‘]?\\s*${im.fracao}\\s*[»"”'’]?`,'i').test(tudo))
-      add(onde(/fra[çc][ãa]o/i),'cruzamento','erro',`Certidão: a fração é a «${im.fracao}» — não a encontrei designada assim na escritura`,0,0);
+      add(onde(/fra[çc][ãa]o/i),'cruzamento','erro',`Certidão: a fração é a «${im.fracao}» — não a encontrei designada assim no DPA`,0,0);
     /* Duas freguesias: a da descrição (registo, por vezes a antiga) e a da matriz (atual). */
     const fregs=[];[[im.fregDesc,'da descrição predial'],[im.fregMatriz,'da matriz']].forEach(([f,o])=>{if(f&&!fregs.some(x=>AP_N(x.f)===AP_N(f)))fregs.push({f,o});});
     fregs.forEach(({f:fg,o})=>{const f=AP_N(fg);
       if(N.includes(f)&&/NOSSA SENHORA/.test(f)&&/\bN(OSSA)? ?S(RA)? DA\b|\bN S DA\b/.test(N.replace(/NOSSA SENHORA/g,'')))
         add(onde(/\bN(ossa)?\.?\s*Sra\.|\bN\.\s*S\.\s/),'cruzamento','aviso',`Freguesia abreviada em algum sítio: escrever sempre «${fg}» por extenso`,0,0);
       if(!N.includes(f)){const ab=f.replace(/NOSSA SENHORA/,'N(OSSA)? ?S(RA|ENHORA)?');
-        add(onde(/freguesia/i),'cruzamento',new RegExp(ab).test(N)?'aviso':'erro',new RegExp(ab).test(N)?`Freguesia abreviada: escrever por extenso «${fg}»`:`Freguesia ${o}: é «${fg}» — não a encontrei na escritura`,0,0);}});
+        add(onde(/freguesia/i),'cruzamento',new RegExp(ab).test(N)?'aviso':'erro',new RegExp(ab).test(N)?`Freguesia abreviada: escrever por extenso «${fg}»`:`Freguesia ${o}: é «${fg}» — não a encontrei no DPA`,0,0);}});
     if(im.fregDesc&&im.descricao){const m=tudo.match(new RegExp(`sob o (?:n[úu]mero|n\\.\\s*[º°o])\\s*${im.descricao}\\b[^,;]{0,20}?da freguesia de ([^,;]+)`,'i'));
       if(m&&AP_N(m[1])!==AP_N(im.fregDesc)&&!AP_N(m[1]).endsWith(AP_N(im.fregDesc)))
         add(onde(/descrit[oa]\s+na\s+Conservat/i),'cruzamento','erro',`A descrição ${im.descricao} é da freguesia de ${im.fregDesc} (cabeçalho da certidão), não de ${m[1].trim()}`,0,0);}
@@ -688,7 +780,7 @@ function apoioCruzar(P,add,docs,dataAto){
       P.forEach(p=>{for(const m of p.txt.matchAll(/C[âa]mara Municipal de ([A-ZÀ-Ýa-zà-ÿ\- ]+?)(?=[,.;)\s]+(?:a\b|que|e\b|o\b|n|em|manifest|$)|[,.;)]|$)/g))
         if(AP_N(m[1])!==conc)add(p,'cruzamento','erro',`Câmara Municipal de ${m[1]}: o prédio é do concelho de ${concB} — confirme a câmara que emitiu o documento`,m.index,m[0].length);});}
     if(im.vpt){const v=im.vpt.replace(/\./g,' '),re=new RegExp(v.replace(/ /g,'[\\s.\\u00a0]?'));
-      if(!re.test(tudo))add(onde(/valor patrimonial/i),'cruzamento',/valor patrimonial/i.test(tudo)?'erro':'aviso',`Caderneta: o VPT é ${v} € — não coincide com o da escritura (ou não está indicado)`,0,0);}
+      if(!re.test(tudo))add(onde(/valor patrimonial/i),'cruzamento',/valor patrimonial/i.test(tudo)?'erro':'aviso',`Caderneta: o VPT é ${v} € — não coincide com o do DPA (ou não está indicado)`,0,0);}
     if(im.ac&&/(?:[áa]rea|superf[íi]cie) coberta/i.test(tudo)&&!new RegExp(`(?:[áa]rea|superf[íi]cie) coberta de ${im.ac}\\s*m`,'i').test(tudo))
       add(onde(/(?:[áa]rea|superf[íi]cie) coberta/i),'cruzamento','erro',`Certidão: a área coberta é de ${im.ac} m²`,0,0);
     if(im.ad&&/(?:[áa]rea|superf[íi]cie) descoberta/i.test(tudo)&&!new RegExp(`(?:[áa]rea|superf[íi]cie) descoberta de ${im.ad}\\s*m`,'i').test(tudo))
@@ -697,37 +789,39 @@ function apoioCruzar(P,add,docs,dataAto){
       add(onde(/[áa]rea descoberta|logradouro/i),'cruzamento','aviso',`Registo e matriz não coincidem: área descoberta ${im.ad} m² na certidão, terreno integrante ${Math.round(parseFloat(im.cad.ati.replace(',','.')))} m² na caderneta (informativo)`,0,0);
     [['apPH','constituição da propriedade horizontal'],['apAquisicao','aquisição a favor de quem vende']].forEach(([k,r])=>{
       if(im[k]&&!new RegExp(im[k].replace(/[.*+?^${}()|[\]\\/]/g,'\\$&').replace(/\s+/g,'\\s*'),'i').test(tudo))
-        add(onde(/AP\.|inscri/i),'cruzamento','aviso',`Certidão: a ${r} é a ${im[k]} — não a encontrei na escritura`,0,0);});
+        add(onde(/AP\.|inscri/i),'cruzamento','aviso',`Certidão: a ${r} é a ${im[k]} — não a encontrei no DPA`,0,0);});
     im.titulares.forEach(t=>{
       const ok=(t.nif&&C.includes(AP_D(t.nif).replace(/(\d{3})(\d{3})(\d{3})/,'$1.$2.$3').toUpperCase()))||(t.nif&&AP_D(tudo).includes(t.nif))||N.includes(AP_N(t.nome));
-      if(!ok)add(P[0],'cruzamento','erro',`Certidão: o prédio está inscrito a favor de ${t.nome}${t.nif?' (NIF '+t.nif+')':''}, que não aparece na escritura — confirme o trato sucessivo`,0,0);});
+      if(!ok)add(P[0],'cruzamento','erro',`Certidão: o prédio está inscrito a favor de ${t.nome}${t.nif?' (NIF '+t.nif+')':''}, que não aparece no DPA — confirme o trato sucessivo`,0,0);});
     if(im.cad&&im.cad.titulares.length&&im.titulares.length&&!im.cad.titulares.some(c=>im.titulares.some(t=>t.nif?t.nif===c.nif:AP_N(t.nome)===AP_N(c.nome))))
       add(P[0],'cruzamento','aviso',`O titular na caderneta (${im.cad.titulares.map(x=>x.nome).join(', ')}) não é o do registo (${im.titulares.map(x=>x.nome).join(', ')})`,0,0);
     im.onus.forEach(o=>{
       if(!new RegExp(`AP\\.\\s*${o.num}\\s+de\\s+${o.data.replace(/\//g,'\\/')}`,'i').test(tudo))
-        add(onde(/hipoteca|cancelamento|ren[úu]ncia|distrate/i),'cruzamento','erro',`Está em vigor ${o.tipo.toLowerCase()} pela ${o.ap}${o.pessoas.length?' a favor de '+o.pessoas.map(x=>x.nome).join(', '):''}${o.capital?' (capital '+o.capital+' €)':''} — a escritura não trata do cancelamento`,0,0);});
+        add(onde(/hipoteca|cancelamento|ren[úu]ncia|distrate/i),'cruzamento','erro',`Está em vigor ${o.tipo.toLowerCase()} pela ${o.ap}${o.pessoas.length?' a favor de '+o.pessoas.map(x=>x.nome).join(', '):''}${o.capital?' (capital '+o.capital+' €)':''} — o DPA não trata do cancelamento`,0,0);});
     if(im.validade&&dataAto&&im.validade<dataAto)add(onde(/PP-/i),'cruzamento','erro',`A certidão permanente caducou em ${isoPT(im.validade)}`,0,0);
-    if(im.codigo&&!C.includes(im.codigo.toUpperCase()))add(onde(/certid[ãa]o permanente/i),'cruzamento','aviso',`O código da certidão (${im.codigo}) não aparece na escritura`,0,0);
+    if(im.codigo&&!C.includes(im.codigo.toUpperCase()))add(onde(/certid[ãa]o permanente/i),'cruzamento','aviso',`O código da certidão (${im.codigo}) não aparece no DPA`,0,0);
   }
   docs.filter(d=>d.dados&&d.dados.tipo==='CC').forEach(d=>{const c=d.dados;
     /* O que vem de imagem é sempre «confirmar»: aviso, nunca erro. */
     const A=(p,cat,sev,msg,i,n)=>add(p,cat,c.ocr?'aviso':sev,c.ocr?msg+' (lido de imagem — confirme com o cartão)':msg,i,n);
     const nomeP=onde(new RegExp(AP_N(c.nome).split(' ')[0],'i'));
     const pp=P.find(p=>AP_N(p.txt).includes(AP_N(c.nome)))||nomeP;
-    if(!N.includes(AP_N(c.nome)))A(nomeP,'cruzamento','erro',`Cartão de cidadão: o nome é «${c.nome}» — não aparece assim na escritura`,0,0);
-    if(c.nif&&!AP_D(tudo).includes(c.nif))A(pp,'cruzamento','erro',`${c.nome}: o NIF do cartão é ${c.nif} e não aparece na escritura`,0,0);
-    if(c.numero&&!C.includes(c.numero.toUpperCase()))A(pp,'cruzamento','erro',`${c.nome}: o n.º do cartão é ${c.numero.replace(/^(\d{8})(\d)/,'$1 $2')} — o da escritura é diferente`,0,0);
+    /* Nome cortado no verso (sem a frente): basta que cada bocado apareça no DPA. */
+    const nomeOk=c.partes?c.partes.every(x=>!x||N.includes(AP_N(x))):N.includes(AP_N(c.nome));
+    if(!nomeOk)A(nomeP,'cruzamento','erro',`Cartão de cidadão: o nome é «${c.nome}» — não aparece assim no DPA`,0,0);
+    if(c.nif&&!AP_D(tudo).includes(c.nif))A(pp,'cruzamento','erro',`${c.nome}: o NIF do cartão é ${c.nif} e não aparece no DPA`,0,0);
+    if(c.numero&&!C.includes(c.numero.toUpperCase()))A(pp,'cruzamento','erro',`${c.nome}: o n.º do cartão é ${c.numero.replace(/^(\d{8})(\d)/,'$1 $2')} — o do DPA é diferente`,0,0);
     if(c.validade){
-      if(!tudo.includes(isoPT(c.validade)))A(pp,'cruzamento','erro',`${c.nome}: o cartão é válido até ${isoPT(c.validade)} — a escritura tem outra data`,0,0);
+      if(!tudo.includes(isoPT(c.validade)))A(pp,'cruzamento','erro',`${c.nome}: o cartão é válido até ${isoPT(c.validade)} — o DPA tem outra data`,0,0);
       if(dataAto&&c.validade<dataAto)A(pp,'cruzamento','erro',`${c.nome}: o cartão de cidadão caducou em ${isoPT(c.validade)}`,0,0);}
-    const loc=AP_N(c.localidade);if(loc&&!N.includes(loc))A(pp,'cruzamento','aviso',`${c.nome}: a morada do cartão é em ${c.localidade} — confirme a residência na escritura`,0,0);
+    const loc=AP_N(c.localidade);if(loc&&!N.includes(loc))A(pp,'cruzamento','aviso',`${c.nome}: a morada do cartão é em ${c.localidade} — confirme a residência no DPA`,0,0);
   });
 }
 
 /* ═══════════ CGD · boletim de contrato e documento complementar (16/10/2026) ═══════════
    A CGD manda o Boletim de Contrato (PDF) e o Documento Complementar (Word)
    e às vezes atualiza-os à última hora. O verificador lê a versão que se lhe
-   der e confere a escritura por ela: montante, prazo, juros, despesas,
+   der e confere o DPA por ela: montante, prazo, juros, despesas,
    montante máximo, mutuários, imóvel e a hipoteca a cancelar. */
 const numBC=t=>{const s=String(t||'').replace(/[^\d,.]/g,'');if(!s)return null;
   const n=s.includes(',')?s.replace(/\./g,'').replace(',','.'):s.replace(/\.(?=\d{3}\b)/g,'');return parseFloat(n);};
@@ -778,8 +872,8 @@ function cgdCruzar(P,add,docs){
   const valoresEm=re=>[...tudo.matchAll(re)].map(m=>numBC(m[1]));
   const confere=(rot,esperado,lidos,re,orig)=>{
     if(esperado==null||isNaN(esperado))return;
-    if(!lidos.length){add(onde(re),'cgd','aviso',`${orig}: ${rot} — ${fmtEUR(esperado)} € — não encontrei este valor na escritura`,0,0);return;}
-    lidos.filter(v=>Math.abs(v-esperado)>0.004).forEach(v=>add(onde(re),'cgd','erro',`${orig}: ${rot} — ${fmtEUR(esperado)} € no ${orig==='Boletim da CGD'?'boletim':'documento'}, ${fmtEUR(v)} € na escritura`,0,0));
+    if(!lidos.length){add(onde(re),'cgd','aviso',`${orig}: ${rot} — ${fmtEUR(esperado)} € — não encontrei este valor no DPA`,0,0);return;}
+    lidos.filter(v=>Math.abs(v-esperado)>0.004).forEach(v=>add(onde(re),'cgd','erro',`${orig}: ${rot} — ${fmtEUR(esperado)} € no ${orig==='Boletim da CGD'?'boletim':'documento'}, ${fmtEUR(v)} € no DPA`,0,0));
   };
   if(bc){
     const O='Boletim da CGD';
@@ -789,28 +883,28 @@ function cgdCruzar(P,add,docs){
     confere('Despesas garantidas pela hipoteca',bc.despesas,valoresEm(/encargos contratuais[^.;]*?montante de\s*([\d\s. ]+,\d{2})/gi),/encargos contratuais/i,O);
     confere('Montante máximo da hipoteca',bc.maximo,valoresEm(/montante m[áa]ximo[^.;]*?fixado em\s*([\d\s. ]+,\d{2})/gi),/montante m[áa]ximo/i,O);
     if(bc.avaliacao){const v=valoresEm(/atribuem o valor de\s*([\d\s. ]+,\d{2})/gi);
-      v.filter(x=>Math.abs(x-bc.avaliacao)>0.004).forEach(x=>add(onde(/atribuem o valor/i),'cgd','aviso',`${O}: o valor da garantia é ${fmtEUR(bc.avaliacao)} €; a escritura atribui ${fmtEUR(x)} € — confirme`,0,0));}
+      v.filter(x=>Math.abs(x-bc.avaliacao)>0.004).forEach(x=>add(onde(/atribuem o valor/i),'cgd','aviso',`${O}: o valor da garantia é ${fmtEUR(bc.avaliacao)} €; o DPA atribui ${fmtEUR(x)} € — confirme`,0,0));}
     if(bc.prazo){const m=[...tudo.matchAll(/pelo prazo de\s*(\d+)/gi)].map(x=>x[1]);
       if(!m.length)add(onde(/prazo/i),'cgd','aviso',`${O}: prazo de ${bc.prazo} meses — não o encontrei`,0,0);
-      m.filter(x=>x!==bc.prazo).forEach(x=>add(onde(/pelo prazo de/i),'cgd','erro',`${O}: o prazo é de ${bc.prazo} meses, mas a escritura diz ${x}`,0,0));}
+      m.filter(x=>x!==bc.prazo).forEach(x=>add(onde(/pelo prazo de/i),'cgd','erro',`${O}: o prazo é de ${bc.prazo} meses, mas o DPA diz ${x}`,0,0));}
     const pct=s=>parseFloat(String(s).replace(',','.'));
     if(bc.juroAte){const m=[...tudo.matchAll(/juros remunerat[óo]rios,? fixados em at[ée]\s*([\d,]+)\s*%/gi)].map(x=>x[1]);
-      m.filter(x=>pct(x)!==pct(bc.juroAte)).forEach(x=>add(onde(/juros remunerat/i),'cgd','erro',`${O}: juros até ${bc.juroAte}%, mas a escritura diz ${x}%`,0,0));}
+      m.filter(x=>pct(x)!==pct(bc.juroAte)).forEach(x=>add(onde(/juros remunerat/i),'cgd','erro',`${O}: juros até ${bc.juroAte}%, mas o DPA diz ${x}%`,0,0));}
     if(bc.sobretaxa){const m=[...tudo.matchAll(/sobretaxa at[ée]\s*([\d,]+)\s*%/gi)].map(x=>x[1]);
-      m.filter(x=>pct(x)!==pct(bc.sobretaxa)).forEach(x=>add(onde(/sobretaxa/i),'cgd','erro',`${O}: sobretaxa até ${bc.sobretaxa}%, mas a escritura diz ${x}%`,0,0));}
+      m.filter(x=>pct(x)!==pct(bc.sobretaxa)).forEach(x=>add(onde(/sobretaxa/i),'cgd','erro',`${O}: sobretaxa até ${bc.sobretaxa}%, mas o DPA diz ${x}%`,0,0));}
     bc.mutuarios.forEach(m=>{
-      if(!AP_D(tudo).includes(m.nif))add(P[0],'cgd','erro',`${O}: o mutuário ${m.nome} (NIF ${m.nif}) não aparece na escritura`,0,0);
+      if(!AP_D(tudo).includes(m.nif))add(P[0],'cgd','erro',`${O}: o mutuário ${m.nome} (NIF ${m.nif}) não aparece no DPA`,0,0);
       else{const falta=AP_N(m.nome).split(' ').filter(w=>w.length>2&&!N.includes(w));
-        if(falta.length)add(P[0],'cgd','aviso',`${O}: o nome do mutuário é «${m.nome}» — confirme na escritura (${falta.join(', ')})`,0,0);}});
+        if(falta.length)add(P[0],'cgd','aviso',`${O}: o nome do mutuário é «${m.nome}» — confirme no DPA (${falta.join(', ')})`,0,0);}});
     if(bc.descricao&&!new RegExp(`(n[úu]mero|n\\.\\s*[º°o])\\s*${bc.descricao}\\b`,'i').test(tudo))
-      add(onde(/Conservat/i),'cgd','erro',`${O}: o imóvel hipotecado está descrito sob o n.º ${bc.descricao} — não coincide com a escritura`,0,0);
+      add(onde(/Conservat/i),'cgd','erro',`${O}: o imóvel hipotecado está descrito sob o n.º ${bc.descricao} — não coincide com o DPA`,0,0);
     if(bc.artigo&&!new RegExp(`artigo(?:\\s+matricial)?\\s+${bc.artigo}\\b`,'i').test(tudo))
-      add(onde(/matriz/i),'cgd','erro',`${O}: o artigo matricial do imóvel hipotecado é o ${bc.artigo} — não coincide com a escritura`,0,0);
+      add(onde(/matriz/i),'cgd','erro',`${O}: o artigo matricial do imóvel hipotecado é o ${bc.artigo} — não coincide com o DPA`,0,0);
     if(bc.fracao&&!new RegExp(`letra\\s*[«"“'‘]?\\s*${bc.fracao}\\b`,'i').test(tudo))
       add(onde(/fra[çc][ãa]o/i),'cgd','erro',`${O}: a fração hipotecada é a «${bc.fracao}»`,0,0);
     bc.encargos.filter(e=>e.cancelar).forEach(e=>{
       if(!new RegExp(e.ap.replace(/[.*+?^${}()|[\]\\/]/g,'\\$&').replace(/\s+/g,'\\s*'),'i').test(tudo))
-        add(onde(/hipoteca|ren[úu]ncia|cancelamento/i),'cgd','erro',`${O}: a hipoteca ${e.ap} tem de ser cancelada (renúncia) — a escritura não a refere`,0,0);});
+        add(onde(/hipoteca|ren[úu]ncia|cancelamento/i),'cgd','erro',`${O}: a hipoteca ${e.ap} tem de ser cancelada (renúncia) — o DPA não a refere`,0,0);});
   }
   if(dc){
     const O='Documento complementar';
@@ -820,16 +914,346 @@ function cgdCruzar(P,add,docs){
       add(P[0],'cgd','erro',`${O} e boletim não batem certo no prazo: «${dc.prazoExt}» meses vs ${bc.prazo}`,0,0);
     if(bc&&bc.prestacao&&dc.prestacaoExt&&!extIgual(dc.prestacaoExt,valorExtenso(bc.prestacao)))
       add(P[0],'cgd','aviso',`${O} e boletim: a prestação no complementar é «${dc.prestacaoExt}», no boletim ${fmtEUR(bc.prestacao)} €`,0,0);
-    /* O complementar contra a escritura: montante e prazo por extenso. */
+    /* O complementar contra o DPA: montante e prazo por extenso. */
     const emp=valoresEm(/empr[ée]stimo no montante de\s*([\d\s. ]+,\d{2})/gi)[0];
     if(emp!=null&&dc.capitalExt&&!extIgual(dc.capitalExt,valorExtenso(emp)))
-      add(onde(/empr[ée]stimo no montante/i),'cgd','erro',`${O}: o montante do crédito é «${dc.capitalExt}» — a escritura diz ${fmtEUR(emp)} €`,0,0);
+      add(onde(/empr[ée]stimo no montante/i),'cgd','erro',`${O}: o montante do crédito é «${dc.capitalExt}» — o DPA diz ${fmtEUR(emp)} €`,0,0);
     const pz=(tudo.match(/pelo prazo de\s*(\d+)/i)||[])[1];
     if(pz&&dc.prazoExt&&!extIgual(dc.prazoExt,porExtenso(+pz)))
-      add(onde(/pelo prazo de/i),'cgd','erro',`${O}: o prazo é de «${dc.prazoExt}» meses — a escritura diz ${pz}`,0,0);
+      add(onde(/pelo prazo de/i),'cgd','erro',`${O}: o prazo é de «${dc.prazoExt}» meses — o DPA diz ${pz}`,0,0);
     dc.devedores.forEach(n=>{const falta=AP_N(n).split(' ').filter(w=>w.length>2&&!N.includes(w));
-      if(falta.length)add(P[0],'cgd','aviso',`${O}: a parte devedora «${n}» não aparece igual na escritura (${falta.join(', ')})`,0,0);});
+      if(falta.length)add(P[0],'cgd','aviso',`${O}: a parte devedora «${n}» não aparece igual no DPA (${falta.join(', ')})`,0,0);});
   }
+}
+
+/* ═══════════ MAIS DOCUMENTOS DE APOIO · piloto (16/10/2026) ═══════════
+   Guias de IMT e de Imposto do Selo, participação de Imposto do Selo
+   (Modelo 1), procurações, habilitações, certidão de toponímia e
+   comprovativos de pagamento (transferências e cheques). Leem-se do texto
+   do PDF ou da imagem (OCR), por isso as regras toleram as gralhas do OCR
+   (ç lido como g, acentos perdidos). */
+const MESES=['janeiro','fevereiro','marco','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const PAL_NUM={um:1,uma:1,dois:2,duas:2,tres:3,quatro:4,cinco:5,seis:6,sete:7,oito:8,nove:9,dez:10,onze:11,doze:12,treze:13,catorze:14,quatorze:14,quinze:15,
+  dezasseis:16,dezesseis:16,dezassete:17,dezessete:17,dezoito:18,dezanove:19,dezenove:19,vinte:20,trinta:30,quarenta:40,cinquenta:50,sessenta:60,setenta:70,
+  oitenta:80,noventa:90,cem:100,cento:100,duzentos:200,trezentos:300,quatrocentos:400,quinhentos:500,seiscentos:600,setecentos:700,oitocentos:800,novecentos:900};
+/* «dois mil e vinte e seis» → 2026 */
+function palavrasNum(t){
+  const w=norm(t).replace(/[^a-z ]/g,' ').split(/\s+/).filter(x=>x&&x!=='e');if(!w.length)return null;
+  let tot=0,cur=0,ok=false;
+  for(const x of w){if(x==='mil'){tot+=(cur||1)*1000;cur=0;ok=true;continue;}
+    if(PAL_NUM[x]===undefined)return null;cur+=PAL_NUM[x];ok=true;}
+  return ok?tot+cur:null;
+}
+/* Datas por extenso ou com números → «AAAA-MM-DD» (primeira que encontrar). */
+function lerData(texto){
+  const t=norm(texto);let m;
+  if((m=t.match(/\b(\d{1,2})\s+de\s+([a-z]+)\s+de\s+(\d{4})\b/))){const mi=MESES.indexOf(m[2]);if(mi>=0)return`${m[3]}-${String(mi+1).padStart(2,'0')}-${m[1].padStart(2,'0')}`;}
+  const re=/(?:no dia|aos)\s+([a-z ]+?)\s+(?:dias\s+do\s+mes\s+)?de\s+([a-z]+)\s+(?:do\s+ano\s+)?de\s+([a-z ]+?)(?=[,.;:]|\s+(?:perante|no|na|em|compareceu)\b|$)/;
+  if((m=t.match(re))||(m=t.match(/aos\s+(\d{1,2})\s+dias\s+do\s+mes\s+de\s+([a-z]+)\s+do\s+ano\s+([a-z ]+?)(?=[,.;]|$)/))){
+    const d=/^\d+$/.test(m[1])?+m[1]:palavrasNum(m[1]),mi=MESES.indexOf(m[2]),a=palavrasNum(m[3]);
+    if(d&&mi>=0&&a>1900)return`${a}-${String(mi+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;}
+  return'';
+}
+const dataPT=iso=>isoPT(iso);
+const ibanD=t=>String(t||'').replace(/\D/g,'').replace(/^50/,'');   /* sem «PT50» */
+const eurN=t=>{const s=String(t||'').replace(/[€\s]/g,'');if(!/\d/.test(s))return null;
+  const n=/,\d{1,2}$/.test(s)?s.replace(/\./g,'').replace(',','.'):s.replace(/[.,](?=\d{3}\b)/g,'');const v=parseFloat(n);return isNaN(v)?null:v;};
+const euroPT=v=>v==null?'':v.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+/* Distância de edição (para «CHACHOLA» vs «CACHOLA»). */
+function lev(a,b){const d=Array.from({length:a.length+1},(_,i)=>[i]);for(let j=1;j<=b.length;j++)d[0][j]=j;
+  for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return d[a.length][b.length];}
+/* O nome de um titular de conta (sem acentos, às vezes sem «DA/DE») corresponde a alguém? */
+const tokNome=t=>AP_N(t).split(' ').filter(x=>x.length>2&&!/^(DOS|DAS|LDA|SA)$/.test(x));
+const mesmoNome=(a,b)=>{const A=tokNome(a),B=tokNome(b);if(!A.length||!B.length||A[0]!==B[0])return false;const [m,M]=A.length<=B.length?[A,B]:[B,A];return m.every(x=>M.includes(x));};
+
+/* ── Tipo de cada página ── */
+function tipoPagina(t){
+  if(/IMPOSTO MUNICIPAL SOBRE AS TRANSMISS/i.test(t))return'IMT';
+  if(/IMPOSTO\s+(DO\s+)?SELO\s*[-–]\s*Verba/i.test(t))return'ISV';
+  if(/TRANSMISS[OÕ]ES\s+GRATUITAS/i.test(t))return'ISM1';
+  if(/Registo Central de Contribuinte/i.test(t))return'RCC';
+  if(/TERMO\s+DE\s+AUTENTICA/i.test(t)&&/PROCURA/i.test(t))return'PROCT';
+  if(/^\s*PROCURA[CÇG][AÃ]O\s*$/im.test(t)||/constitu\w*\s+(seu|sua|seus)\s+bastante/i.test(t))return'PROC';
+  if(/HABILITA\S{1,3}\s+DE\s+HERDEIROS|Procedimento\s+Simplificado|HABILITA[CÇG][AÃ]O/i.test(t))return'HAB';
+  if(/Topon[íi]mia/i.test(t))return'TOP';
+  if(/PT\s?50[\d ]{12}/.test(t)&&/TRANSFER|Benefici|IBAN\s+Destino/i.test(t))return'TRF';
+  if(/\d{8,12}\s*>/.test(t)||/Pague por este cheque/i.test(t))return'CHQ';
+  if(/CHEQUE\s+VISADO|ENDOSS/i.test(t))return'CHQV';
+  return'';
+}
+const numDoc=t=>((t.match(/IDENTIFICA\S*\s+DO\s+DOCUMENTO[^\n]*\n\s*(\d{15})/i)||t.match(/Documento:\s*(\d{15})/)||[])[1]||'');
+const numPart=t=>((t.match(/Registo\s+da\s+Participa\S*:?\s*(\d{5,8})/i)||[])[1]||'');
+/* Junta as páginas em documentos: cada guia pelo seu número, a participação pelo
+   n.º de registo, o termo de autenticação com a procuração que se lhe segue,
+   o verso do cheque com o cheque. Páginas sem marca juntam-se à anterior. */
+function agruparPaginas(pags){
+  const docs=[];let cur=null;
+  pags.forEach(p=>{const t=p.texto,tp=tipoPagina(t);
+    const cont=cur&&(
+      (tp===''&&cur.tipo!=='')||
+      (tp==='CHQV'&&cur.tipo==='CHQ')||
+      (tp==='RCC'&&cur.tipo==='RCC')||
+      ((tp==='IMT'||tp==='ISV')&&tp===cur.tipo&&(!numDoc(t)||numDoc(t)===cur.num))||
+      (tp==='ISM1'&&cur.tipo==='ISM1'&&(!numPart(t)||!cur.num||numPart(t)===cur.num))||
+      (tp==='PROC'&&(cur.tipo==='PROCT'||cur.tipo==='PROC'))||
+      (tp==='HAB'&&cur.tipo==='HAB'));
+    if(cont){cur.pags.push(p.pag);cur.texto+='\n'+t;if(!cur.num)cur.num=tp==='ISM1'?numPart(t):numDoc(t);if(tp==='CHQV')cur.visado=true;return;}
+    cur={tipo:tp==='CHQV'?'CHQ':tp,pags:[p.pag],texto:t,num:tp==='ISM1'?numPart(t):numDoc(t),visado:tp==='CHQV'};docs.push(cur);
+  });
+  docs.forEach(d=>{if(d.tipo==='PROCT')d.tipo='PROC';if(d.tipo==='CHQ'&&/CHEQUE\s+VISADO/i.test(d.texto))d.visado=true;});
+  return docs;
+}
+const ROT_NOVOS={IMT:'Guia de IMT',ISV:'Guia de Imposto do Selo',ISM1:'Participação de Imposto do Selo',RCC:'Inscrição da herança (NIF)',PROC:'Procuração',HAB:'Habilitação de herdeiros',TOP:'Certidão de toponímia',TRF:'Comprovativo de transferência',CHQ:'Cheque'};
+const g1=(t,re,i=1)=>((t.match(re)||[])[i]||'').trim();
+function lerDocumento(d){
+  const t=d.texto,T=AP_N(t);
+  switch(d.tipo){
+  case'IMT':case'ISV':{
+    const valor=d.tipo==='IMT'?eurN(g1(t,/TOTAL\s*€?\s*([\d.,]+)/i)||g1(t,/IMPORT\S*\s+DO\s+IMT\s*€?\s*([\d.,]+)/i)):eurN(g1(t,/Valor a Pagar\s*€?\s*([\d.,]+)/i)||g1(t,/Colecta[^\n€]*€\s*([\d.,]+)/i));
+    const vd=[...t.matchAll(/Valor Declarado:?\s*€\s*([\d.,]+)/gi)].map(m=>eurN(m[1]));
+    return{tipo:d.tipo,numero:d.num||numDoc(t),nif:g1(t,/Sujeito Passivo\s*[-–]\s*(\d{9})/i),nome:g1(t,/Sujeito Passivo\s*[-–]\s*\d{9}\s*\|?\s*\n\s*([A-ZÀ-Ý][A-ZÀ-Ý ]+)/),
+      data:g1(t,/Liquida\S*:?\s*(\d{4}-\d{2}-\d{2})/i),valor,artigo:g1(t,/Pr[ée]dio:?\s*U-?(\d+)/i),
+      alienante:g1(t,/Nome:\s*([^\n]+?)(?:\s+DE)?\s*(?:\n|Parte:)/),alienanteNif:g1(t,/Identifica\S*\s+Fiscal:\s*(\d{9})\s+Nome/i),parte:g1(t,/Parte:\s*(\d+\/\d+)/),
+      valorDecl:vd[0]??null,taxa:g1(t,/Taxa:\s*([\d,]+)\s*%/),
+      hpp:/pr\S{1,3}pria\s+e\s+permanente/i.test(t),
+      pago:/Ref\.?\s*Pagamento|No valor de|MB\s+(DEBITO|SPOT)|Comprovativo de pagamento/i.test(t)};}
+  case'ISM1':{
+    const verbas=[...t.matchAll(/Verba\s*n\S{0,2}\s*(\d+)[\s\S]{0,40}?Quota Parte Transmitida:?\s*([\d\/]+)([\s\S]*?)(?=Verba\s*n|N\S{0,3}\s*de\s+Registo|$)/gi)].map(m=>({n:m[1],quota:m[2],artigo:g1(m[3],/Artigo:?\s*(\d+)/i),freguesia:g1(m[3],/Freguesia:?\s*([A-ZÀ-Ý .]+?)\s+Munic/i),desc:g1(m[3],/Descri\S*[:;]\s*([^\n]+)/i)}));
+    return{tipo:'ISM1',numero:d.num||numPart(t),sf:g1(t,/(\d{4}\s*-\s*[A-Z][A-Z\- ]+?)-?\d?\.?\s*$/m)||g1(t,/SERVI\S+\s+DE\s+FINAN\S+\s+(\d{4}\s*-\s*[A-Z\-0-9 .]+)/i),
+      autorNif:g1(t,/NIF\/NIPC:\s*(\d{9})/),autor:g1(t,/NIF\/NIPC:\s*\d{9}\s*Nome:\s*([^\n]+)/),
+      obito:g1(t,/Facto:?\s*\S+\s*\n?\s*Data:\s*(\d{4}-\d{2}-\d{2})/i),nifHeranca:g1(t,/NIF da Heran\S*:?\s*(\d{9})/i),
+      benef:[...(t.split(/BENEFICI\S+\(s\)\s+DA\s+TRANSMISS/i)[1]||'').matchAll(/NIF:\s*(\d{9})\s*Nome:\s*([^\n]+)/g)].map(m=>({nif:m[1],nome:m[2].trim()})),recepcao:g1(t,/Data Rece\S*:?\s*(\d{4}-\d{2}-\d{2})/i),verbas};}
+  case'RCC':return{tipo:'RCC',nifHeranca:g1(t,/\n\s*(\d{9})\s+[A-Z][A-Z ]+-\s*CABE/),autor:g1(t,/Autor da Heran\S*[\s\S]{0,40}?Nome:\s*([^\n]+)/i)};
+  case'PROC':{
+    const termo=/TERMO\s+DE\s+AUTENTICA/i.test(t),notarial=!termo&&/perante mim/i.test(t)&&/not[áa]ri[ao]/i.test(t.slice(0,1500));
+    const reconh=/reconhe\S*\s+a\s+assinatura/i.test(t);
+    let data=g1(t,/Executado a:?\s*(\d{4}-\d{2}-\d{2})/)||lerData(t.slice(0,3000));
+    const ent=notarial?g1(t,/perante mim,?\s*\n?\s*([A-ZÀ-Ý][A-ZÀ-Ý .\n]{8,}?),?\s*\n?\s*not[áa]ri/):g1(t,/\n\s*([A-ZÀ-Ý][A-ZÀ-Ý ]{5,}),\s*(?:Solicitador|Advogad)/);
+    const cab=(t.split(/PROCURA\S{2}O/i)[0].match(/NOTARIAL\s*\n\s*([A-ZÀ-Ý][A-ZÀ-Ý ]{4,}?)\s*\n/)||[])[1]||'';
+    const cartorio=notarial?(cab?'Cartório Notarial de '+cab.toLowerCase().replace(/(^|\s)(\S)/g,(m,a,b)=>a+(/^(d[aeo]s?|e)$/.test(m.trim())?b:b.toUpperCase())):(g1(t,/(Cart[óo]rio Notarial[^\n,]{0,40})/i)||'Cartório Notarial'))+(g1(t,/(?:primeiro|segundo|r\/c|\d)[^\n]{0,30}?,\s*em\s+([A-ZÀ-Ý][a-zà-ú]+)/)?', em '+g1(t,/(?:primeiro|segundo|r\/c|\d)[^\n]{0,30}?,\s*em\s+([A-ZÀ-Ý][a-zà-ú]+)/):''):'';
+    const nifs=[...new Set([...t.split('\n').filter(l=>!l.includes('|')).join('\n').matchAll(/(?:fiscal|NIF|contribuinte)[^0-9]{0,30}((?:\d[\s.]?){8}\d)/gi)].map(m=>m[1].replace(/\D/g,'')).filter(nifValido))];
+    return{tipo:'PROC',forma:notarial?'notarial':termo?'autenticada':reconh?'reconhecimento':'?',data,entidade:ent.replace(/\s+/g,' '),cedula:g1(t,/c[ée]dula profissional[^0-9]{0,40}(\d{3,6})/i),cartorio:cartorio.replace(/\s+/g,' '),
+      nifs,vender:/vend|alien/i.test(t),receber:/receb\S*[^.;]{0,40}pre[çcg]o|quita/i.test(t),artigos:[...new Set([...t.matchAll(/artigo(?:\s+matricial)?(?:\s+urbano|\s+r[úu]stico)?\s+(?:n\S{0,3}\s*)?(\d{1,6})\b(?!\s*\.?\s*[º°])/gi)].map(m=>m[1]))]};}
+  case'HAB':{
+    const pshh=/Procedimento\s+Simplificado/i.test(t);
+    return{tipo:'HAB',forma:pshh?'pshh':'notarial',nifHeranca:g1(t,/NIF da Heran\S*:?\s*(\d{9})/i),numero:g1(t,/Habilita\S*\s+de\s+Herdeiros\s+n\S{0,3}\s*(\d+\/\d{4})/i),codigo:g1(t,/(CN-[A-Z0-9]{4,}(?:-[A-Z0-9]{3,}){2,})/i).toUpperCase(),
+      data:g1(t,/Data do documento[\s\S]{0,40}?(\d{4}-\d{2}-\d{2})/i)||(pshh?lerData(g1(t,/(Data:\s*\d{1,2}\s+de\s+\w+\s+de\s+\d{4})/i)):lerData(g1(t,/(No dia [^\n]{10,120}(?:\n[^\n]{0,120})?)/i))),
+      entidade:pshh?g1(t,/(Conservat\S*\s+do\s+Registo\s+Civil\s+de\s+[A-ZÀ-Ý][a-zà-ú]+)/i):g1(t,/(Cart[óo]rio Notarial(?: de)? [A-ZÀ-Ý][^\n\-]{3,40})/i),
+      falecido:(pshh?g1(t,/Autora?\s+da\s+Heran\S*,\s*([^,\n]+)/i):g1(t,/faleceu\s+([A-ZÀ-Ý][A-ZÀ-Ý ]{6,}?)(?:,|\s*\n)/)).replace(/\s+/g,' ')};}
+  case'TOP':{
+    const tl=t.split('\n').filter(l=>!/^(HASH|Lu[ií]s .*\(\d|Presidente$|Data Assinatura)/i.test(l.trim())).join(' ').replace(/\s+/g,' ');
+    return{tipo:'TOP',artigo:g1(tl,/sob\s+\S{1,2}\s+artigo\s+(\d+)/i)||g1(tl,/artigo\s+(\d+)\b(?!\s*\.?\s*[º°])/i),anterior:g1(tl,/anteriormente\s+situado\s+(?:n[oa]s?\s+|em\s+)?([^,]+)/i),
+      ruas:[...tl.matchAll(/(?:situa\s+atualmente\s+na|entrada\s+pela)\s+((?:Rua|Avenida|Travessa|Largo|Praça|Beco|Estrada|Calçada)[^,]*?)\s+com\s+\S{1,2}\s+n[úu]mero\s+de\s+pol[íi]cia\s+([a-zà-úç ]+?)(?=,|\.|\s+tamb|\s+na\s)/gi)].map(m=>({rua:m[1].trim(),num:palavrasNum(m[2])})),
+      camara:g1(tl,/C[âa]mara Municipal de ([A-ZÀ-Ý][a-zà-ú]+(?: d[oa] [A-ZÀ-Ý][a-zà-ú]+)?)/),data:lerData(g1(tl,/(aos\s+\d{1,2}\s+dias\s+do\s+m\S+\s+de\s+\w+\s+do\s+ano\s+[a-zç ]+)/i))||g1(tl,/Data Assinatura:\s*(\d{2}\/\d{2}\/\d{4})/).split('/').reverse().join('-')};}
+  case'TRF':{
+    const ibans=[...t.replace(/[ \t]/g,'').matchAll(/PT50(\d{21})/g)].map(m=>m[1]);
+    const ord=g1(t,/IBAN\s*:?\s*\n?\s*PT50\s?([\d ]{21,30})/).replace(/\D/g,'').slice(0,21)||ibans[0]||'';
+    const dest=g1(t,/IBAN\s+(?:Conta\s+)?Destino\s*:?\s*PT50\s?([\d ]{21,30})/i).replace(/\D/g,'').slice(0,21)||ibans.find(x=>x!==ord)||'';
+    let benef=g1(t,/Nome\s+(?:do\s+)?[Bb]enefici\S*\s+([A-ZÀ-Ý][A-ZÀ-Ý ,.&-]{3,})/);
+    if(!benef){const nomes=t.split('\n').map(l=>l.trim()).filter(l=>/^[A-ZÀ-Ý][A-ZÀ-Ý ,.&-]{6,}$/.test(l)&&!/IBAN|EUR|TRANSFER|COMPROVATIVO|MILLENNIUM|BANCO|DADOS|CAIXA GERAL/.test(l));
+      const cli=g1(t,/Cliente\s+([A-ZÀ-Ý][A-ZÀ-Ý ]+)/);benef=nomes.filter(n=>!cli||!mesmoNome(n,cli)).pop()||'';}
+    return{tipo:'TRF',valor:eurN(g1(t,/Montante(?:\s+e\s+Moeda)?\s*:?\s*([\d.,]+)\s*EUR/i)||g1(t,/([\d.]+,\d{2})\s*EUR/)),ibanDest:dest,ibanOrd:ord,beneficiario:benef.replace(/\s+/g,' '),
+      ordenante:g1(t,/Cliente\s+([A-ZÀ-Ý][A-ZÀ-Ý ]+)/),data:g1(t,/(\d{2}-\d{2}-\d{4})/)};}
+  case'CHQ':{
+    const micr=t.match(/(\d{8,12})\s*>/);
+    return{tipo:'CHQ',numero:micr?micr[1]:'',visado:!!d.visado,texto:T,ordem:g1(t,/[àa4]\s+ordem\s+de\s+([A-ZÀ-Ý][A-ZÀ-Ý ]{6,})/),
+      valor:eurN(g1(t,/([\d.]{1,7},\d{2})/))};}
+  }
+  return null;
+}
+function resumoDoc(d){
+  const x=d.dados;if(!x)return'';
+  switch(x.tipo){
+  case'IMT':case'ISV':return`n.º ${x.numero} · ${x.nome||x.nif} · ${euroPT(x.valor)} € · artigo ${x.artigo||'—'} · vendedor: ${x.alienante||'—'}${x.parte?' ('+x.parte+')':''}${x.hpp?' · habitação própria e permanente':''}${x.pago?' · com comprovativo de pagamento':' · SEM comprovativo de pagamento'}`;
+  case'ISM1':return`n.º ${x.numero||'—'} · ${x.autor} · óbito ${isoPT(x.obito)} · entregue ${isoPT(x.recepcao)} · relação de bens: ${x.verbas.map(v=>v.artigo?`artigo ${v.artigo} (${v.quota})`:(v.desc||'verba '+v.n)).join('; ')||'—'}`;
+  case'RCC':return`NIF da herança ${x.nifHeranca} · ${x.autor}`;
+  case'PROC':return`${x.forma==='notarial'?'notarial (documento autêntico)':x.forma==='autenticada'?'autenticada':x.forma} · ${isoPT(x.data)||'data?'} · ${x.entidade||'—'}${x.cedula?' (CP '+x.cedula+')':''}${x.cartorio?' · '+x.cartorio:''} · poderes: ${x.vender?'vender':'—'}${x.receber?', receber o preço':''}${x.artigos.length?' · artigo '+x.artigos.join(', '):''}`;
+  case'HAB':return`${x.forma==='pshh'?'procedimento simplificado':'escritura notarial'} · ${x.numero||x.codigo||'—'} · ${isoPT(x.data)||'data?'} · ${x.entidade||''} · ${x.falecido}`;
+  case'TOP':return`artigo ${x.artigo} · antes: ${x.anterior} · agora: ${x.ruas.map(r=>r.rua+(r.num?', '+r.num:'')).join(' e ')} · ${x.camara?'Câmara de '+x.camara:''} ${isoPT(x.data)}`;
+  case'TRF':return`${euroPT(x.valor)} € · para ${x.beneficiario||'?'} (IBAN …${x.ibanDest.slice(-6)}) · de ${x.ordenante||'?'} · ${x.data}`;
+  case'CHQ':return`n.º ${x.numero||'?'}${x.ordem?' · à ordem de '+x.ordem:''}${x.visado?' · VISADO':''}`;
+  }
+  return'';
+}
+/* Classifica e lê os documentos de um ficheiro (páginas de texto ou de imagem). */
+function lerNovos(nomeFich,pags,varios){
+  const out=[];const pg=a=>a.length>1?`págs. ${a[0]}–${a[a.length-1]}`:`pág. ${a[0]}`;
+  agruparPaginas(pags).forEach(d=>{
+    const dados=d.tipo?lerDocumento(d):null;
+    out.push({ficheiro:nomeFich,nome:nomeFich+(varios?` (${pg(d.pags)})`:''),tipo:d.tipo?'N_'+d.tipo:'',dados,texto:d.texto,ocr:true,
+      nota:d.tipo?'':(d.texto.replace(/\s/g,'').length<20?'Digitalização sem texto legível.':`Lido (${d.texto.replace(/\s/g,'').length} caracteres), mas ainda não reconheço este tipo de documento.`)});
+  });
+  return out;
+}
+
+/* ── Escritura: o preço e os pagamentos ── */
+function lerPagamentos(P){
+  const i0=P.findIndex(p=>/pre[çc]o\s+(?:global\s+)?de\s+(?:€\s*)?[\d .]+,\d{2}/i.test(p.txt));if(i0<0)return null;
+  const preco=eurN(P[i0].txt.match(/pre[çc]o\s+(?:global\s+)?de\s+(?:€\s*)?([\d .]+,\d{2})/i)[1]);
+  const itens=[];let iq=-1;
+  for(let i=i0;i<P.length&&i<i0+30;i++){const t=P[i].txt;
+    if(i>i0&&/^\s*(Terceira|Quarta|Cl[áa]usula)\b/i.test(t))break;
+    if(/quita[çc][ãa]o/i.test(t)){iq=i;}
+    for(const m of t.matchAll(/(?:^|[\s;:])([a-h])\)\s+([\s\S]*?)(?=(?:[\s;:][a-h]\)\s)|$)/g)){
+      const seg=m[2],v=(seg.match(/([\d .]{1,12},\d{2})/)||[])[1];
+      const subs=[...seg.matchAll(/(?:^|[\s;:,])(i{1,3}|iv|v|vi{1,3})\)\s+([\s\S]*?)(?=(?:[\s;:,](?:i{1,3}|iv|v|vi{1,3})\)\s)|$)/g)].map(s=>({txt:s[2],valor:eurN((s[2].match(/([\d .]{1,12},\d{2})/)||[])[1]),p:P[i]}));
+      itens.push({letra:m[1],txt:seg,valor:eurN(v),subs,p:P[i]});}
+  }
+  return{preco,p:P[i0],itens,quitacao:iq>=0||P.some(p=>/quita[çc][ãa]o/i.test(p.txt))};
+}
+function regrasPagamentos(P,add,docs){
+  const R0=lerPagamentos(P);if(!R0||!R0.preco)return;
+  const {preco,itens}=R0;
+  if(itens.length){
+    const soma=itens.reduce((a,x)=>a+(x.valor||0),0);
+    if(Math.abs(soma-preco)>0.005)add(R0.p,'pagamento','erro',`Os pagamentos descritos somam ${euroPT(soma)} € e o preço é ${euroPT(preco)} €`,0,0);
+    itens.forEach(x=>{if(x.subs.length>1){const s=x.subs.reduce((a,y)=>a+(y.valor||0),0);
+      if(x.valor&&Math.abs(s-x.valor)>0.005)add(x.p,'pagamento','erro',`Alínea ${x.letra}): as parcelas somam ${euroPT(s)} € e a alínea diz ${euroPT(x.valor)} €`,0,0);}});
+  }
+  if(!R0.quitacao)add(R0.p,'pagamento','aviso','Não encontrei a quitação do preço pela parte vendedora',0,0);
+  /* Cada meio de pagamento tem de ser rastreável. */
+  const folhas=itens.flatMap(x=>x.subs.length?x.subs.map(s=>({...s,letra:x.letra})):[x]);
+  folhas.forEach(f=>{const t=f.txt,ini=Math.max(0,f.p.txt.indexOf(t.slice(0,30)));
+    if(/cheque/i.test(t)){const falta=[];
+      if(!/sacado\s+sobre|banco|caixa/i.test(t))falta.push('banco sacado');
+      if(!/ordem\s+de/i.test(t))falta.push('à ordem de');
+      if(!/[\d .]+,\d{2}/.test(t))falta.push('valor');
+      if(!/n(?:[úu]mero|\.\s*[º°o])\s*\d{5,}/i.test(t))falta.push('número do cheque');
+      if(falta.length)add(f.p,'pagamento','erro',`Cheque sem ${falta.join(', ')}`,ini,Math.min(60,t.length));}
+    if(/transfer[êe]ncia|dep[óo]sito/i.test(t)&&!/IBAN|PT50|conta\s+n/i.test(t))add(f.p,'pagamento','erro','Transferência sem IBAN ou número de conta e banco',ini,Math.min(60,t.length));
+  });
+  /* Comprovativos */
+  const tudo=P.map(p=>p.txt).join('\n');
+  const vend=(()=>{const i=P.findIndex(p=>/PARTE\s+VENDEDORA/.test(p.txt));if(i<0)return[];let j=i,txt='';while(j>=0&&!/^\s*PRIMEIR/i.test(P[j].txt)&&i-j<6){txt=P[j].txt+'\n'+txt;j--;}
+    return[...txt.matchAll(/([A-ZÀ-Ý][A-ZÀ-Ý'’.-]+(?:\s+(?:(?:DAS|DOS|DA|DE|DO|E)(?![A-ZÀ-Ý])|[A-ZÀ-Ý][A-ZÀ-Ý'’.-]+)){1,8})/g)].map(m=>m[1]).filter(n=>!/PARTE VENDEDORA|^E$/.test(n));})();
+  const med=g1(tudo,/media[çc][ãa]o\s+imobili[áa]ria\s+d[ao]\s+([^,]+(?:,\s*(?:LDA|L\.DA|S\.A\.|SA|UNIPESSOAL)[^,]*)?)(?:,|\s+com)\s*(?:licen|AMI)/i);
+  const ehMed=n=>med&&tokNome(n).filter(x=>!/LDA|MEDIACAO|SOCIEDADE|IMOBILIARIA/.test(x)).every(x=>AP_N(med).split(' ').includes(x));
+  docs.filter(d=>d.dados&&d.dados.tipo==='TRF').forEach(d=>{const c=d.dados;if(!c.ibanDest)return;
+    const pp=P.find(p=>AP_D(p.txt).includes(c.ibanDest))||null;
+    if(!pp){add(R0.p,'pagamento','aviso',`Comprovativo: transferência de ${euroPT(c.valor)} € para ${c.beneficiario||'?'} (IBAN …${c.ibanDest.slice(-8)}) não aparece no DPA`,0,0);return;}
+    const at=pp.txt.indexOf(c.ibanDest.slice(0,4)),seg=pp.txt;
+    /* Transferências: basta o IBAN (ou a conta e o banco). O nome do titular da conta
+       não se menciona — os nomes só se põem nos cheques («à ordem de»). */
+    if(c.valor&&!new RegExp(euroPT(c.valor).replace(/ /g,'[\\s.]?')).test(seg)&&!seg.includes(c.valor.toFixed(2).replace('.',',')))
+      add(pp,'pagamento','aviso',`Comprovativo: a transferência para o IBAN …${c.ibanDest.slice(-6)} é de ${euroPT(c.valor)} € — confirme o valor no DPA`,Math.max(0,at),0);
+  });
+  docs.filter(d=>d.dados&&d.dados.tipo==='CHQ').forEach(d=>{const c=d.dados;if(!c.numero)return;
+    const pp=P.find(p=>p.txt.replace(/\D/g,' ').split(/\s+/).includes(c.numero))||null;
+    if(!pp){add(R0.p,'pagamento','aviso',`Comprovativo: o cheque n.º ${c.numero} não aparece no DPA`,0,0);return;}
+    const at=pp.txt.indexOf(c.numero);
+    /* o troço do DPA que fala deste cheque */
+    const seg=pp.txt.slice(Math.max(0,pp.txt.lastIndexOf('cheque',at)),at+c.numero.length);
+    if(c.visado&&/cheque\s+banc[áa]rio/i.test(seg)){const i0=pp.txt.lastIndexOf('cheque',at),mb=pp.txt.slice(i0).match(/^cheque\s+(banc[áa]rio)/i);
+      const o=add(pp,'pagamento','erro',`O cheque n.º ${c.numero} é um cheque visado (carimbo no verso), não bancário`,i0+mb[0].length-mb[1].length,mb[1].length,true);o.novo='visado';}
+    if(!c.visado&&/cheque\s+visado/i.test(seg))add(pp,'pagamento','aviso',`O DPA diz «cheque visado», mas não vejo o carimbo de visado no cheque n.º ${c.numero} — confirme (junte o verso)`,Math.max(0,pp.txt.lastIndexOf('cheque',at)),13);
+    const om=seg.match(/ordem\s+de\s+([A-ZÀ-Ý][A-ZÀ-Ý'’ ]+?)(?=\s+com\b|,|;|$)/);
+    if(om&&c.texto){const tk=tokNome(om[1]),ch=c.texto.split(' ');
+      const falta=tk.filter(x=>!ch.includes(x));
+      const perto=falta.map(x=>({x,y:ch.filter(y=>y.length>3&&lev(x,y)<=2).sort((a,b)=>lev(x,a)-lev(x,b))[0]})).filter(o=>o.y);
+      if(falta.length&&falta.length<=2&&perto.length)perto.forEach(o=>{const ib=pp.txt.indexOf(om[1]),ix=pp.txt.indexOf(o.x,ib);
+        if(ix>=0){const a=add(pp,'pagamento','erro',`Cheque n.º ${c.numero}: «à ordem de» — no cheque lê-se «${o.y}», no DPA «${o.x}»`,ix,o.x.length,true);a.novo=o.y;}
+        else add(pp,'pagamento','erro',`Cheque n.º ${c.numero}: no DPA «${o.x}», no cheque lê-se «${o.y}» — confirme o nome «à ordem de»`,ib,om[1].length);});}
+  });
+}
+
+/* ── Cruzamento dos novos documentos com o DPA ── */
+function apoioCruzarNovos(P,add,docs){
+  const tudo=P.map(p=>p.txt).join('\n'),N=AP_N(tudo),D=AP_D(tudo);
+  const onde=re=>P.find(p=>re.test(p.txt))||P.find(p=>p.txt.trim())||P[0];
+  const artigo=g1(tudo,/sob\s+o\s+artigo(?:\s+matricial)?\s+(?:n\.\s*[º°o]\s*)?(\d+)/i);
+  const temData=iso=>iso&&tudo.includes(isoPT(iso));
+  const preco=(lerPagamentos(P)||{}).preco;
+  const X=t=>docs.filter(d=>d.dados&&d.dados.tipo===t).map(d=>d.dados);
+  /* Guias de IMT e Selo */
+  const guias=[...X('IMT'),...X('ISV')];
+  guias.forEach(g=>{const nm=g.tipo==='IMT'?'IMT':'Imposto do Selo',alvo=onde(g.tipo==='IMT'?/Transmiss[õo]es Onerosas|IMT/i:/Imposto do Selo/i);
+    if(g.numero&&!D.includes(g.numero))add(alvo,'fiscal','erro',`Guia de ${nm} n.º ${g.numero} (${g.nome||g.nif}) não está referida no DPA`,0,0);
+    if(g.valor!=null&&!new RegExp(euroPT(g.valor).replace(/ /g,'[\\s.]?')).test(tudo))add(alvo,'fiscal','erro',`Guia de ${nm} n.º ${g.numero}: o valor é ${euroPT(g.valor)} € e não o encontro no DPA`,0,0);
+    if(!g.pago)add(alvo,'fiscal','aviso',`Guia de ${nm} n.º ${g.numero}: não encontrei o comprovativo de pagamento junto da guia`,0,0);
+    if(artigo&&g.artigo&&g.artigo!==artigo)add(alvo,'fiscal','erro',`Guia de ${nm} n.º ${g.numero} é do artigo ${g.artigo} e o DPA é do artigo ${artigo}`,0,0);
+    if(g.nif&&!D.includes(g.nif))add(alvo,'fiscal','erro',`Guia de ${nm}: o sujeito passivo (NIF ${g.nif}) não aparece no DPA`,0,0);
+    if(g.tipo==='ISV'&&g.valorDecl&&g.valor!=null&&Math.abs(g.valorDecl*0.008-g.valor)>0.01)add(alvo,'fiscal','erro',`Imposto do Selo (verba 1.1): 0,8 % de ${euroPT(g.valorDecl)} € são ${euroPT(Math.round(g.valorDecl*0.8)/100)} €, e a guia tem ${euroPT(g.valor)} €`,0,0);
+  });
+  ['IMT','ISV'].forEach(tp=>{const l=X(tp).filter(g=>g.valorDecl);if(!l.length||!preco)return;
+    const s=l.reduce((a,g)=>a+g.valorDecl,0);
+    if(Math.abs(s-preco)>0.005)add(onde(/pre[çc]o/i),'fiscal','aviso',`As guias de ${tp==='IMT'?'IMT':'Imposto do Selo'} declaram ${euroPT(s)} € no total e o preço do DPA é ${euroPT(preco)} €${l.length<2?' (falta alguma guia?)':''}`,0,0);});
+  /* Habitação própria e permanente: o benefício do IMT e a cláusula de destino. */
+  const pHPP=P.filter(p=>/pr[óo]pria\s+(?:e\s+)?permanente/i.test(p.txt));
+  X('IMT').forEach(g=>{if(!g.nome)return;const dito=pHPP.some(p=>mesmoNome(g.nome,p.txt.match(/[A-ZÀ-Ý][A-ZÀ-Ý ]{8,}/g)?.find(n=>mesmoNome(n,g.nome))||''));
+    if(g.hpp&&!dito)add(pHPP[0]||onde(/destin/i),'fiscal','erro',`${g.nome} teve no IMT o benefício de habitação própria e permanente, mas o DPA não tem a declaração de destino em nome dele(a)`,0,0);
+    if(!g.hpp&&pHPP.some(p=>AP_N(p.txt).includes(AP_N(g.nome))))add(pHPP.find(p=>AP_N(p.txt).includes(AP_N(g.nome))),'fiscal','aviso',`${g.nome} declara habitação própria e permanente, mas a guia de IMT não tem esse benefício — confirme`,0,0);});
+  /* Heranças indivisas: o imóvel fica no NIF da herança do PRIMEIRO a falecer, e é
+     essa herança que vende nas guias. As seguintes (e os herdeiros) vêm por aí abaixo:
+     cada falecido seguinte tem de ser herdeiro de um anterior (trato sucessivo). */
+  const parts=X('ISM1').filter(m=>m.obito).sort((a,b)=>a.obito<b.obito?-1:1);
+  const nifPrimeira=(parts[0]||{}).nifHeranca||(X('HAB').find(h=>h.nifHeranca)||{}).nifHeranca||'';
+  guias.forEach(g=>{if(!g.alienanteNif)return;const alvo=onde(g.tipo==='IMT'?/Transmiss[õo]es Onerosas|IMT/i:/Imposto do Selo/i);
+    if(nifPrimeira&&/HERAN/i.test(g.alienante)&&g.alienanteNif!==nifPrimeira)add(alvo,'fiscal','erro',`Guia n.º ${g.numero}: o vendedor é ${g.alienante} (NIF ${g.alienanteNif}), mas a herança do primeiro a falecer${parts[0]?' ('+parts[0].autor+', '+isoPT(parts[0].obito)+')':''} tem o NIF ${nifPrimeira}`,0,0);
+    if(!nifPrimeira&&/HERAN/i.test(g.alienante))add(alvo,'fiscal','aviso',`Guia n.º ${g.numero}: vende uma herança (${g.alienante}) — junte a habilitação ou a participação de Imposto do Selo para confirmar o trato sucessivo`,0,0);});
+  parts.slice(1).forEach((m,i)=>{const antes=parts.slice(0,i+1);
+    if(m.autorNif&&!antes.some(a=>a.benef.some(b=>b.nif===m.autorNif)))add(onde(/herdeir|habilita/i),'legitimidade','aviso',`Trato sucessivo: ${m.autor} não aparece como herdeiro nas participações anteriores (${antes.map(a=>a.autor).join(', ')})`,0,0);});
+  /* Participação de Imposto do Selo (Modelo 1): o artigo vendido tem de constar da relação de bens. */
+  X('ISM1').forEach(m=>{const alvo=onde(/participa[çc][ãa]o|63\.?\s*[º°]?\s*-?\s*A/i);
+    if(artigo&&m.verbas.length&&!m.verbas.some(v=>v.artigo===artigo))
+      add(alvo,'fiscal','erro',`ERRO GRAVE — a participação de Imposto do Selo n.º ${m.numero||'?'} (${m.autor}) não tem o artigo ${artigo} na relação de bens (só: ${m.verbas.map(v=>v.artigo?'artigo '+v.artigo:v.desc||'verba '+v.n).join('; ')})${/da qual consta a rela/i.test(tudo)?' — e o termo diz que dela consta a relação dos bens objeto do contrato':''}`,0,0);
+    if(m.numero&&!tudo.includes(m.numero)&&N.includes(AP_N(m.autor)))add(alvo,'fiscal','aviso',`A participação de Imposto do Selo n.º ${m.numero} (${m.autor}, entregue em ${isoPT(m.recepcao)}) não está referida no termo — confirme se deve estar`,0,0);
+    if(m.numero&&tudo.includes(m.numero)&&m.recepcao&&!temData(m.recepcao))add(alvo,'fiscal','aviso',`A participação n.º ${m.numero} foi entregue em ${isoPT(m.recepcao)} — o DPA tem outra data`,0,0);
+  });
+  /* Procurações */
+  X('PROC').forEach(r=>{
+    const quem=r.nifs.map(n=>n).join(', ');
+    const alvo=onde(/procura[çc]/i);
+    const dt=isoPT(r.data);const pos=dt?tudo.indexOf(dt):-1;
+    if(dt&&pos<0)add(alvo,'legitimidade','erro',`Procuração de ${dt} (${r.forma}) não está referida no termo`,0,0);
+    if(pos>=0&&r.forma==='notarial'){const ctx=tudo.slice(Math.max(0,pos-180),pos);
+      if(/autenticad/i.test(ctx)){
+        const tc=x=>x.replace(/\b([A-ZÀ-Ý])([A-ZÀ-Ý]+)/g,(m,a,b)=>a+b.toLowerCase()).replace(/\b(Da|De|Do|Das|Dos|E)\b/g,y=>y.toLowerCase());
+        const nome=r.entidade?tc(r.entidade):'…',w=nome.split(' ').filter(x=>!/^(da|de|do|das|dos|e)$/.test(x));
+        const local=(r.cartorio.match(/, em [^,]+$/)||[''])[0];
+        const cart=/Notarial de /.test(r.cartorio)?r.cartorio:`Cartório Notarial de ${w[0]} ${w[w.length-1]}${local}`;
+        const frase=`pela procuração lavrada no dia ${dt}, no ${cart}, perante ${nome}, notária`;
+        const msg=`A procuração de ${dt} foi lavrada por notária — é um documento autêntico, não «autenticada»`;
+        /* Alteração marcada no próprio parágrafo do termo: troca o troço desta procuração. */
+        const pp=P.find(p=>p.txt.includes(dt));let feito=false;
+        if(pp){const t=pp.txt,d=t.indexOf(dt),mf=t.slice(d).match(/^[\s\S]{0,160}?not[áa]ri[ao]s?(?:,\s*com\s+cart[óo]rio\s+em\s+[A-ZÀ-Ý][a-zà-ú]+)?/);
+          if(mf){const o=add(pp,'legitimidade','erro',msg,d,mf[0].length,true);o.novo=frase.replace(/^pela /,/\be\s+$/.test(t.slice(Math.max(0,d-6),d))?'pela ':'pela ');feito=true;
+            /* «pelas Procurações autenticadas em» → «pela procuração autenticada em», se só restar uma autenticada */
+            const mp=t.match(/pel[ao]s\s+[Pp]rocura[çc][õo]es\s+autenticadas\s+em\s+/);
+            const outras=X('PROC').filter(x=>x!==r&&x.forma==='autenticada'&&t.includes(isoPT(x.data))).length;
+            if(mp&&outras===1&&mp.index+mp[0].length<=d){const o2=add(pp,'legitimidade','aviso','Com uma só procuração autenticada: «pela procuração autenticada em»',mp.index,mp[0].length,true);o2.novo='pela procuração autenticada em ';}}}
+        if(!feito)add(alvo,'legitimidade','erro',msg+`. Sugestão: «${frase}»`,0,0);}}
+    if(r.forma==='autenticada'&&r.cedula&&pos>=0&&!tudo.slice(pos-10,pos+200).includes(r.cedula))add(alvo,'legitimidade','aviso',`Procuração autenticada em ${dt}: confirme quem a autenticou (${r.entidade}, CP ${r.cedula})`,0,0);
+    if(!r.vender)add(alvo,'legitimidade','erro',`Procuração de ${dt||'?'}: não encontrei poderes para vender`,0,0);
+    if(!r.receber)add(alvo,'legitimidade','aviso',`Procuração de ${dt||'?'}: não encontrei poderes para receber o preço e dar quitação`,0,0);
+    if(artigo&&r.artigos.length&&!r.artigos.includes(artigo))add(alvo,'legitimidade','erro',`Procuração de ${dt||'?'}: refere o artigo ${r.artigos.join(', ')} e o DPA é do artigo ${artigo}`,0,0);
+    r.nifs.filter(n=>!D.includes(n)).forEach(n=>add(alvo,'legitimidade','aviso',`Procuração de ${dt||'?'}: o NIF ${n} não aparece no DPA`,0,0));
+  });
+  /* Habilitações */
+  X('HAB').forEach(h=>{const alvo=onde(/habilita[çc]/i),id=h.numero||h.codigo;
+    if(id&&!AP_N(tudo).includes(AP_N(id)))add(alvo,'legitimidade','erro',`Habilitação de ${h.falecido||'?'} (${id}) não está referida no DPA`,0,0);
+    if(h.data&&id&&AP_N(tudo).includes(AP_N(id))&&!temData(h.data))add(alvo,'legitimidade','aviso',`Habilitação ${id}: a data é ${isoPT(h.data)} — não a encontro no DPA`,0,0);
+    if(h.falecido&&!N.includes(AP_N(h.falecido)))add(alvo,'legitimidade','aviso',`Habilitação: o nome do falecido (${h.falecido}) não aparece igual no DPA`,0,0);
+  });
+  /* Toponímia: no contrato fica só a morada atual; a anterior e a certidão vão
+     para o termo («verifiquei… que arquivo»), que é da solicitadora. */
+  const i0=P.findIndex(p=>/TERMO\s+DE\s+AUTENTICA/i.test(p.txt)),i1=P.findIndex((p,i)=>i>i0&&/ENTIDADE\s+AUTENTICADORA/i.test(p.txt));
+  const termo=i0>=0?P.slice(i0,i1>i0?i1+1:P.length):[];const NT=AP_N(termo.map(p=>p.txt).join('\n'));
+  X('TOP').forEach(t=>{const alvo=onde(/sito\s+(?:em|n[ao])|situado/i);
+    if(artigo&&t.artigo&&t.artigo!==artigo)add(alvo,'cruzamento','erro',`A certidão de toponímia é do artigo ${t.artigo} e o DPA do artigo ${artigo}`,0,0);
+    t.ruas.forEach(r=>{const rn=AP_N(r.rua).replace(/^(RUA|AVENIDA|TRAVESSA|LARGO|PRACA|BECO|ESTRADA)\s+/,'');if(rn&&!N.includes(rn))add(alvo,'cruzamento','erro',`Toponímia: a morada atual é «${r.rua}${r.num?', n.º '+r.num:''}» — não a encontro no DPA`,0,0);});
+    if(t.anterior&&termo.length&&!NT.includes(AP_N(t.anterior))){
+      /* Os nomes das ruas como estão escritos no DPA (com acentos); o OCR perde-os. */
+      const VOG={a:'[aáàâã]',e:'[eéê]',i:'[ií]',o:'[oóôõ]',u:'[uú]',c:'[cç]'};
+      const comoNoDPA=x=>{const re=new RegExp(x.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[.*+?^${}()|[\]\\]/g,'\\$&').split('').map(ch=>VOG[ch.toLowerCase()]||(/\s/.test(ch)?'\\s+':ch)).join(''),'i');const m=tudo.match(re);return m?m[0]:x;};
+      const atual=t.ruas.map(r=>comoNoDPA(r.rua)+(r.num?', n.º '+r.num:'')).join(', e ');
+      const texto=`— que a morada do imóvel, antes sito ${/^(Bairro|Lugar|Monte|Herdade|S[íi]tio)/i.test(t.anterior)?'no':'em'} ${comoNoDPA(t.anterior)}, é atualmente na ${atual}, conforme certidão emitida pela Câmara Municipal de ${t.camara||'…'} em ${isoPT(t.data)||'…'}, que arquivo;`;
+      /* Entra como parágrafo novo (alteração marcada) logo a seguir ao da caderneta/certidão. */
+      const ic=termo.findIndex(p=>/caderneta|certid[ãa]o\s+permanente/i.test(p.txt));
+      const alvoP=ic>=0&&termo[ic+1]?termo[ic+1]:(termo.find(p=>/^\s*Verifiquei\s+ainda/i.test(p.txt))||null);
+      if(alvoP){const o=add(alvoP,'cruzamento','aviso','Toponímia: acrescentada no termo a morada anterior e a certidão da Câmara ⚠ (redação a validar)',0,0,true);o.insAntes=alvoP.i;o.insTexto=texto;}
+      else add(termo[0],'cruzamento','aviso',`Toponímia: falta no termo a referência à morada anterior e à certidão da Câmara. Sugestão ⚠: «${texto}»`,0,0);}
+  });
+  regrasPagamentos(P,add,docs);
 }
 
 /* ── Leitura dos PDFs no navegador (pdf.js) ── */
@@ -899,6 +1323,8 @@ const OCR_MARCA=/CART[AÃ]O DE CIDAD|CITIZEN CARD|\bPORTUGAL\b|<<<|[A-Z0-9]{2}<P
 /* Corta o fundo liso da digitalizadora (o cartão ocupa só um canto da folha):
    tira a cor das margens como «fundo» e fica com a caixa do que é diferente. */
 function ocrAparar(cv){
+  /* Se a página já tem o formato de um cartão (85,6 × 54 mm), é o próprio cartão: não corta. */
+  const rz=Math.max(cv.width,cv.height)/Math.min(cv.width,cv.height);if(rz>1.4&&rz<1.8)return cv;
   const W=cv.width,H=cv.height,k=Math.max(1,Math.round(Math.max(W,H)/800));
   const d=cv.getContext('2d').getImageData(0,0,W,H).data,px=(x,y)=>{const i=(y*W+x)*4;return[d[i],d[i+1],d[i+2]];};
   const borda=[];for(let x=0;x<W;x+=k){borda.push(px(x,0),px(x,H-1));}for(let y=0;y<H;y+=k){borda.push(px(0,y),px(W-1,y));}
@@ -926,20 +1352,22 @@ function ocrAparar(cv){
 }
 async function ocrPagina(cv){
   cv=ocrAparar(cv);
-  /* Tenta primeiro numa cópia mais pequena e, se não encontrar nada conhecido,
-     em tamanho real. No fim lê também a outra escala na posição escolhida e
-     junta os dois textos: o Tesseract às vezes lê melhor uma do que a outra. */
+  /* Documentos direitos (a maioria): uma só leitura chega. Só quando a página
+     vem de lado, ou é um cartão, se experimentam as outras posições e escalas
+     (o Tesseract às vezes lê melhor uma escala do que a outra). */
   const w=await ocrMotor(),escalas=[...new Set([ocrReduzir(cv,1600),ocrReduzir(cv,2600)])];let melhor=null;
+  const cartao=t=>/CITIZEN CARD|<<|[A-Z0-9]{2}<PRT/i.test(t)||(t.length<700&&/CART[AÃ]O DE CIDAD/i.test(t));
   for(const im of escalas){
     for(const g of [0,90,270,180]){
-      const r=(await w.recognize(ocrRodar(im,g))).data,marca=OCR_MARCA.test(r.text||'');
+      const r=(await w.recognize(ocrRodar(im,g))).data,txt=r.text||'',marca=OCR_MARCA.test(txt);
       const pont=(r.confidence||0)+(marca?40:0);
-      if(!melhor||pont>melhor.pont)melhor={g,pont,marca,im,texto:r.text||'',conf:r.confidence||0};
+      if(!melhor||pont>melhor.pont)melhor={g,pont,marca,im,texto:txt,conf:r.confidence||0};
+      if(g===0&&!cartao(txt)&&r.confidence>=65&&txt.replace(/\s/g,'').length>150)return{texto:txt,conf:Math.round(r.confidence),graus:0};
       if(marca&&r.confidence>55)break;
     }
     if(melhor.marca)break;
   }
-  const outra=escalas.find(e=>e!==melhor.im);
+  const outra=cartao(melhor.texto)||melhor.conf<60?escalas.find(e=>e!==melhor.im):null;
   const extra=outra?(await w.recognize(ocrRodar(outra,melhor.g))).data.text||'':'';
   return{texto:melhor.texto+'\n'+extra,conf:Math.round(melhor.conf),graus:melhor.g};
 }
@@ -971,9 +1399,16 @@ function lerMRZ(texto){
     if((m=l.match(/P[RK]T([0-9A-Z]{9})([0-9A-Z<])([0-9A-Z]{3})([0-9A-Z])/))){
       const dn=soDig(m[1]),ext=m[2]==='<'?soLet(m[3].slice(0,2))+soDig(m[3][2]):'',c=soDig(m[2]==='<'?m[4]:m[2]);
       L1.push({numero:dn+ext,civil:dn.slice(0,8),ok:mrzDig(m[2]==='<'?dn+'<'+ext:dn)===c});}
-    if((m=l.match(/([0-9A-Z]{6})([0-9A-Z])([MF<])([0-9A-Z]{6})([0-9A-Z])P[RK]T/))){
-      const na=soDig(m[1]),va=soDig(m[4]);if(!/^\d{6}$/.test(na)||!/^\d{6}$/.test(va))continue;
-      L2.push({nascimento:mrzData(na,false),okN:mrzDig(na)===soDig(m[2]),validade:mrzData(va,true),okV:mrzDig(va)===soDig(m[5]),sexo:m[3]});}
+    /* 2.ª linha: nascimento, sexo, validade. Se o OCR meteu um carácter a mais,
+       experimenta tirá-lo em cada posição e fica a versão que bate com os dígitos de controlo. */
+    const l2de=x=>{const m=x.match(/^([0-9A-Z]{6})([0-9A-Z])([MF<])([0-9A-Z]{6})([0-9A-Z])$/);if(!m)return null;
+      const na=soDig(m[1]),va=soDig(m[4]);if(!/^\d{6}$/.test(na)||!/^\d{6}$/.test(va))return null;
+      return{nascimento:mrzData(na,false),okN:mrzDig(na)===soDig(m[2]),validade:mrzData(va,true),okV:mrzDig(va)===soDig(m[5]),sexo:m[3]};};
+    const pr=l.match(/^(?:.*?)([0-9A-Z]{15,17})P[RK]T/);
+    if(pr){const s0=pr[1];let r=null;
+      if(s0.length>=15)r=l2de(s0.slice(-15));
+      if((!r||!(r.okN&&r.okV))&&s0.length>=16)for(let i=0;i<16;i++){const t=s0.slice(-16);const v=l2de(t.slice(0,i)+t.slice(i+1));if(v&&v.okN&&v.okV){r=v;break;}}
+      if(r)L2.push(r);}
   }
   if(!L1.length&&!L2.length)return null;
   const l1=L1.find(x=>x.ok)||L1[0],l2=L2.find(x=>x.okN&&x.okV)||L2.find(x=>x.okV)||L2[0];
@@ -1022,7 +1457,7 @@ function ccDeImagens(pags){
   const fr=[],ve=[],resto=[];
   pags.forEach(p=>{const m=lerMRZ(p.texto);
     if(m)ve.push({...p,m});
-    else if(/CART[AÃ]O DE CIDAD|CITIZEN CARD|CIVIL ID|\bPORTUGAL\b/i.test(p.texto)||/\d{8}\s?\d\s?[A-Z0-9]{3,4}\s+\d{2}\s?\d{2}\s?(?:19|20)\d{2}/i.test(p.texto))fr.push({...p,f:lerFrente(p.texto),usada:false});
+    else if(/CITIZEN CARD|CIVIL ID/i.test(p.texto)||(p.texto.length<700&&/CART[AÃ]O DE CIDAD/i.test(p.texto))||(p.texto.length<700&&(/\bPORTUGAL\b/i.test(p.texto)||/\d{8}\s?\d\s?[A-Z0-9]{3,4}\s+\d{2}\s?\d{2}\s?(?:19|20)\d{2}/i.test(p.texto))))fr.push({...p,f:lerFrente(p.texto),usada:false});
     else resto.push(p);});
   const fichas=[];
   ve.forEach(v=>{
@@ -1038,7 +1473,7 @@ function ccDeImagens(pags){
     if(m.cortado&&nomes===m.nomes&&apel===m.apelidos)avisos.push('o nome do verso pode estar cortado');
     const nif=nifDoVerso(v.texto);if(!nif)avisos.push('não consegui ler o NIF');
     fichas.push({pags:[f?.pag,v.pag].filter(Boolean).sort((a,b)=>a-b),avisos,
-      dados:{tipo:'CC',ocr:true,nome:[nomes,apel].filter(Boolean).join(' '),numero:m.numero||f?.f.numero||'',
+      dados:{tipo:'CC',ocr:true,nome:[nomes,apel].filter(Boolean).join(' '),partes:m.cortado&&nomes===m.nomes&&apel===m.apelidos?[nomes,apel]:null,numero:m.numero||f?.f.numero||'',
         validade:m.validade||f?.f.validade||'',nif,nascimento:m.nascimento||'',localidade:'',postal:'',arruamento:''}});
   });
   fr.filter(x=>!x.usada).forEach(f=>fichas.push({pags:[f.pag],avisos:['só tenho a frente — junte também o verso (as linhas «<<<» são as que se leem bem)','não consegui ler o NIF'],
@@ -1059,8 +1494,7 @@ async function lerImagens(nomeFich,lista,varios,jaLidas=[]){
   pags.sort((a,b)=>a.pag-b.pag);const {fichas,resto}=ccDeImagens(pags);
   fichas.forEach(f=>APOIO.push({ficheiro:nomeFich,nome:nomeFich+(varios||fichas.length+resto.length>1?` (${pg(f.pags)})`:''),tipo:'CC',ocr:true,dados:f.dados,
     nota:'Lido de imagem (digitalização) — confirme com o cartão.'+(f.avisos.length?' Atenção: '+f.avisos.join('; ')+'.':'')}));
-  resto.forEach(p=>APOIO.push({ficheiro:nomeFich,nome:nomeFich+(varios||fichas.length+resto.length>1?` (pág. ${p.pag})`:''),tipo:'',dados:null,texto:p.texto,
-    nota:p.texto.replace(/\s/g,'').length<20?'Digitalização sem texto legível.':`Digitalização lida (${p.texto.replace(/\s/g,'').length} caracteres), mas ainda não reconheço este tipo de documento.`}));
+  if(resto.length)lerNovos(nomeFich,resto,varios||fichas.length+resto.length>1).forEach(r=>APOIO.push(r));
 }
 const ROT_APOIO={CAD:'Caderneta predial',CRP:'Certidão predial',CC:'Cartão de cidadão',BC:'Boletim CGD',DC:'Complementar CGD'};
 async function juntarApoio(files){
@@ -1082,7 +1516,7 @@ async function juntarApoio(files){
       const varios=docs.length+(imagens?1:0)>1;
       /* Cartões digitalizados em «PDF pesquisável»: já trazem o texto do OCR da
          digitalizadora. Aproveita-o; se não chegar (sem n.º ou validade), lê a imagem. */
-      const ehCartao=t=>/CART[AÃ]O DE CIDAD|CITIZEN CARD|\bPORTUGAL\b|<<<|[A-Z0-9]{2}<PRT/i.test(t)&&!/Dados de Cart[ãa]o de Cidad[ãa]o/i.test(t);
+      const ehCartao=t=>(/CITIZEN CARD|<<<|[A-Z0-9]{2}<PRT/i.test(t)||(t.length<700&&/CART[AÃ]O DE CIDAD/i.test(t))||(/\bPORTUGAL\b/i.test(t)&&t.length<700))&&!/Dados de Cart[ãa]o de Cidad[ãa]o/i.test(t);
       const cartoes=docs.filter(d=>!d.tipo&&d.porPag.some(p=>ehCartao(p.texto)));
       /* Páginas de cartão com texto: as que têm as linhas «<<<» certas (dígitos de controlo)
          usam-se tal como vêm; as outras vão também à leitura de imagem. Tudo junto depois,
@@ -1091,7 +1525,9 @@ async function juntarApoio(files){
       cartoes.flatMap(d=>d.porPag).forEach(p=>{const m=lerMRZ(p.texto);
         if(m&&m.ok&&m.numero&&m.validade)jaLidas.push(p);else imgPags.push(p.pag);});
       imgPags.sort((a,b)=>a-b);
-      docs.filter(d=>!cartoes.includes(d)).forEach(d=>{const L=d.linhas;
+      const novos=docs.filter(d=>!cartoes.includes(d)&&!d.tipo);
+      if(novos.length)lerNovos(f.name,novos.flatMap(d=>d.porPag),varios).forEach(r=>{r.ocr=false;APOIO.push(r);});
+      docs.filter(d=>!cartoes.includes(d)&&d.tipo).forEach(d=>{const L=d.linhas;
         const reg={ficheiro:f.name,nome:f.name+(varios?` (pág. ${d.pags[0]}${d.pags.length>1?'–'+d.pags[d.pags.length-1]:''})`:''),tipo:d.tipo,nota:'',
           dados:d.tipo==='CAD'?apoioCAD(L):d.tipo==='CRP'?apoioCRP(L):d.tipo==='CC'?apoioCC(L):d.tipo==='BC'?apoioBC(L):null};
         if(!d.tipo)reg.nota='Não reconheço este tipo de documento (por agora: caderneta, certidão predial e ficha do cartão de cidadão).';
@@ -1106,8 +1542,9 @@ function pintarApoio(){
   const im=apoioImovel(APOIO);
   const linha=(r,v)=>v?`<tr><td style="color:var(--text-faint);padding:1px 10px 1px 0;white-space:nowrap">${r}</td><td>${esc(v)}</td></tr>`:'';
   $('apoio-lista').innerHTML=APOIO.map((d,i)=>`<div class="item" style="border-left-color:${d.tipo?'var(--green)':'var(--border-strong)'}">
-      <div class="cab"><span class="tag">${d.tipo?ROT_APOIO[d.tipo]+(d.tipo==='CRP'&&d.dados.fracao?' (fração '+d.dados.fracao+')':d.tipo==='CRP'?' (prédio)':''):'—'}</span>${d.ocr?'<span class="tag" style="background:var(--amber-bg,#fdf3d8)">lido de imagem</span>':''}${esc(d.nome)}<button class="btn" style="margin-left:auto;padding:1px 8px" onclick="tirarApoio(${i})">×</button></div>
+      <div class="cab"><span class="tag">${d.tipo&&d.tipo.startsWith('N_')?ROT_NOVOS[d.tipo.slice(2)]:d.tipo?ROT_APOIO[d.tipo]+(d.tipo==='CRP'&&d.dados.fracao?' (fração '+d.dados.fracao+')':d.tipo==='CRP'?' (prédio)':''):'—'}</span>${d.ocr?'<span class="tag" style="background:var(--amber-bg,#fdf3d8)">lido de imagem</span>':''}${esc(d.nome)}<button class="btn" style="margin-left:auto;padding:1px 8px" onclick="tirarApoio(${i})">×</button></div>
       ${d.nota?`<div class="nota">${esc(d.nota)}</div>`:''}
+      ${d.tipo&&d.tipo.startsWith('N_')?`<div style="font-size:12px">${esc(resumoDoc(d))}</div>`:''}
       ${d.tipo==='BC'?`<table style="font-size:12px">${linha('Empréstimo',d.dados.emprestimo)}${linha('Mutuários',d.dados.mutuarios.map(m=>m.nome+' ('+m.nif+')').join('; '))}${linha('Aquisição',fmtEUR(d.dados.aquisicao)+' €')}${linha('Capital',fmtEUR(d.dados.capital)+' €')}${linha('Prazo',d.dados.prazo+' meses')}${linha('Juros até / sobretaxa',d.dados.juroAte+'% / '+d.dados.sobretaxa+'%')}${linha('Despesas',fmtEUR(d.dados.despesas)+' €')}${linha('Montante máximo',fmtEUR(d.dados.maximo)+' €')}${linha('Imóvel',`fração ${d.dados.fracao||'—'}, descrição ${d.dados.descricao||'—'}, artigo ${d.dados.artigo||'—'}`)}${linha('A cancelar',d.dados.encargos.filter(e=>e.cancelar).map(e=>e.ap).join('; '))}</table>`:''}
       ${d.tipo==='DC'?`<table style="font-size:12px">${linha('Contrato',d.dados.contrato)}${linha('Parte devedora',d.dados.devedores.join('; '))}${linha('Montante',d.dados.capitalExt)}${linha('Prazo',d.dados.prazoExt+' meses')}${linha('Prestação',d.dados.prestacaoExt)}</table>`:''}
       ${d.tipo==='CC'?`<table style="font-size:12px">${linha('Nome',d.dados.nome)}${linha('NIF',d.dados.nif)}${linha('Cartão',d.dados.numero)}${linha('Válido até',isoPT(d.dados.validade))}${linha('Morada',[d.dados.arruamento,d.dados.localidade,d.dados.postal].filter(Boolean).join(', '))}</table>`:''}
