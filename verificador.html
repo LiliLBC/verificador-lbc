@@ -42,7 +42,7 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
 </head>
 <body>
 <div class="topbar">
-  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-17.1</span></div>
+  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-17.6</span></div>
   <div style="display:flex;gap:.6rem;align-items:center"><span id="login-info" style="font-size:11px;color:var(--text-faint)"></span>
     <button class="btn" id="btn-entrar" onclick="entrar()">Entrar</button>
     <button class="btn btn-p" id="btn-desc" onclick="descarregar()" disabled>Descarregar Word revisto</button></div>
@@ -104,6 +104,8 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
       <b>Participação de Imposto do Selo</b> — o artigo vendido tem de constar da relação de bens; trato sucessivo entre heranças.<br>
       <b>Procurações e habilitações</b> — procuração notarial ≠ autenticada; data, entidade e poderes (vender, receber o preço, artigo); habilitações referidas com número/código e data.<br>
       <b>Toponímia</b> — morada atual no contrato; a anterior e a certidão no termo.<br>
+      <b>Certificado energético</b> — número e validade iguais ao DPA e não caducado; declaração provisória com menos de 10 anos desde a emissão; o artigo ou a descrição do prédio têm de corresponder (erro só se nenhum bater); fração certa.<br>
+      <b>Direitos de preferência (Casa Pronta)</b> — consulta impressa no dia do ato; n.º do pedido, data de disponibilização, artigo, descrição, preço e compradores iguais ao DPA; entidades notificadas referidas no DPA e a pronúncia de cada uma.<br>
             <b>Condomínio</b> — havendo fração autónoma, o termo tem de mencionar a declaração do condomínio (art. 1424.º-A do Código Civil).
     </div>
   </div>
@@ -968,6 +970,8 @@ const mesmoNome=(a,b)=>{const A=tokNome(a),B=tokNome(b);if(!A.length||!B.length|
 
 /* ── Tipo de cada página ── */
 function tipoPagina(t){
+  if(/Certificado\s+Energ[ée]tico|Pr[ée]-?\s*Certificado|Declara\S*\s+Provis[óo]ria/i.test(t)&&/SCE\s?\d{6,}|ADENE/i.test(t))return'SCE';
+  if(/Consulta de Estado do Pedido|Direitos de Prefer\S+/i.test(t)&&/An[úu]ncio|Vendedor/i.test(t))return'CP';
   if(/IMPOSTO MUNICIPAL SOBRE AS TRANSMISS/i.test(t))return'IMT';
   if(/IMPOSTO\s+(DO\s+)?SELO\s*[-–]\s*Verba/i.test(t))return'ISV';
   if(/TRANSMISS[OÕ]ES\s+GRATUITAS/i.test(t))return'ISM1';
@@ -993,6 +997,7 @@ function agruparPaginas(pags){
       (tp===''&&cur.tipo!=='')||
       (tp==='CHQV'&&cur.tipo==='CHQ')||
       (tp==='RCC'&&cur.tipo==='RCC')||
+      (tp==='SCE'&&cur.tipo==='SCE'&&(t.match(/SCE\s?\d{6,}/i)||[''])[0].replace(/\s/g,'')===(cur.texto.match(/SCE\s?\d{6,}/i)||[''])[0].replace(/\s/g,''))||
       ((tp==='IMT'||tp==='ISV')&&tp===cur.tipo&&(!numDoc(t)||numDoc(t)===cur.num))||
       (tp==='ISM1'&&cur.tipo==='ISM1'&&(!numPart(t)||!cur.num||numPart(t)===cur.num))||
       (tp==='PROC'&&(cur.tipo==='PROCT'||cur.tipo==='PROC'))||
@@ -1003,7 +1008,7 @@ function agruparPaginas(pags){
   docs.forEach(d=>{if(d.tipo==='PROCT')d.tipo='PROC';if(d.tipo==='CHQ'&&/CHEQUE\s+VISADO/i.test(d.texto))d.visado=true;});
   return docs;
 }
-const ROT_NOVOS={IMT:'Guia de IMT',ISV:'Guia de Imposto do Selo',ISM1:'Participação de Imposto do Selo',RCC:'Inscrição da herança (NIF)',PROC:'Procuração',HAB:'Habilitação de herdeiros',TOP:'Certidão de toponímia',TRF:'Comprovativo de transferência',CHQ:'Cheque'};
+const ROT_NOVOS={SCE:'Certificado energético',CP:'Direitos de preferência (Casa Pronta)',IMT:'Guia de IMT',ISV:'Guia de Imposto do Selo',ISM1:'Participação de Imposto do Selo',RCC:'Inscrição da herança (NIF)',PROC:'Procuração',HAB:'Habilitação de herdeiros',TOP:'Certidão de toponímia',TRF:'Comprovativo de transferência',CHQ:'Cheque'};
 const g1=(t,re,i=1)=>((t.match(re)||[])[i]||'').trim();
 function lerDocumento(d){
   const t=d.texto,T=AP_N(t);
@@ -1023,6 +1028,32 @@ function lerDocumento(d){
       autorNif:g1(t,/NIF\/NIPC:\s*(\d{9})/),autor:g1(t,/NIF\/NIPC:\s*\d{9}\s*Nome:\s*([^\n]+)/),
       obito:g1(t,/Facto:?\s*\S+\s*\n?\s*Data:\s*(\d{4}-\d{2}-\d{2})/i),nifHeranca:g1(t,/NIF da Heran\S*:?\s*(\d{9})/i),
       benef:[...(t.split(/BENEFICI\S+\(s\)\s+DA\s+TRANSMISS/i)[1]||'').matchAll(/NIF:\s*(\d{9})\s*Nome:\s*([^\n]+)/g)].map(m=>({nif:m[1],nome:m[2].trim()})),recepcao:g1(t,/Data Rece\S*:?\s*(\d{4}-\d{2}-\d{2})/i),verbas};}
+  case'CP':{
+    const sec=(a,b)=>{const i=t.search(a);if(i<0)return'';const r=t.slice(i);const j=r.slice(1).search(b);return j<0?r:r.slice(0,j+1);};
+    const blocoEnt=sec(/Entidade\s+Inten/i,/N\S{0,2}\s*An[úu]ncio/i);
+    const ENT=[['IHRU',/Instituto\s+da\s+Habita/i],['Câmara',/C[âa]mara\s+Municipal/i],['Património Cultural',/Patrim\S+\s+Cultural|DGPC/i],['ESTAMO',/Estamo/i],['ICNF',/ICNF|Conserva\S+\s+da\s+Natureza/i],['Direção Regional de Cultura',/Dire\S+\s+Regional\s+de\s+Cultura/i]];
+    const pos=ENT.map(([n,re])=>{const m=blocoEnt.match(re);return m?{n,i:m.index}:null;}).filter(Boolean).sort((a,b)=>a.i-b.i);
+    const entidades=pos.map((e,k)=>{const tx=blocoEnt.slice(e.i,k+1<pos.length?pos[k+1].i:undefined);
+      const camara=e.n==='Câmara'?g1(tx.replace(/\n/g,' '),/C[âa]mara\s+Municipal\s+de\s+([A-ZÀ-Ý][a-zà-ú]+(?:\s+d[oa]\s+[A-ZÀ-Ý][a-zà-ú]+)?)/):'';
+      const intencao=/n[ãa]o\s+(pretende|exerce)/i.test(tx)?'não exerce':/pretende|exerce/i.test(tx)?'EXERCE':'sem pronúncia';
+      return{n:e.n==='Câmara'&&camara?'Câmara Municipal de '+camara:e.n,intencao};});
+    const nifsDe=x=>[...x.matchAll(/\b(\d{9})\b/g)].map(m=>m[1]).filter(nifValido);
+    const topo=t.split(/Consulta de Estado/i)[0];
+    const imp=(topo.match(/(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})/)||null);
+    return{tipo:'CP',pedido:g1(t,/Consulta de Estado do Pedido\s*\n?\s*(\d{3,8}\/\d{4})/i)||g1(t,/\b(\d{4,8}\/20\d{2})\b/),
+      anuncio:g1(t,/\d{3,8}\/\d{4}\s+(\d{2}-\d{2}-\d{4})/),disponivel:g1(t,/Disponibiliza\S*\s+no\s+Site\s*\n?\s*(\d{2}-\d{2}-\d{4})/i),
+      artigo:g1(t,/Artigo\s+Matricial\s*\n?\s*(\d+)/i),descricao:g1(t,/Descri\S*\s+em\s+Ficha\s*\n?[^\n\d]*(\d+)/i),
+      preco:eurN(g1(t,/Pre\S{1,2}o\s+Moeda\s*\n?\s*([\d.,]+)/i)),pago:/Estado\s*\n?[^\n]*\bPago\b/i.test(t),
+      previsivel:g1(t,/Data\s+previs\S+\s+do\s+neg\S+\s*\n?\s*(\d{2}-\d{2}-\d{4})/i),
+      vendedores:nifsDe(sec(/Vendedor\(?es\)?/i,/Comprador\(?es\)?/i)),compradores:nifsDe(sec(/Comprador\(?es\)?/i,/Identifica\S+\s+do\s+Im/i)),
+      impresso:imp?`${imp[3].length===2?'20'+imp[3]:imp[3]}-${imp[2].padStart(2,'0')}-${imp[1].padStart(2,'0')}`:'',entidades};}
+  case'SCE':{
+    const prov=/Declara\S*\s+Provis[óo]ria|Pr[ée]-?\s*Certificado/i.test(t)&&!/V[áa]lido\s+at[ée]/i.test(t);
+    return{tipo:'SCE',provisoria:prov,numero:g1(t,/\b(SCE\s?\d{6,15})\b/i).replace(/\s/g,'').toUpperCase(),
+      validade:(g1(t,/V[áa]lid[oa]\s+at[ée]\s*:?\s*(\d{2}\/\d{2}\/\d{4})/i).split('/').reverse().join('-')),
+      emissao:(g1(t,/Data\s+de\s+Emiss[ãa]o\s*:?\s*(\d{2}\/\d{2}\/\d{4})/i).split('/').reverse().join('-')),
+      conservatoria:g1(t,/Conservat[óo]ria\s+do\s+Registo\s+Predial\s+de\s+([^\n]+)/i),descricao:g1(t,/Inscri\S*\s+na\s+Conservat\S*\s*:?\s*(\d+)/i),
+      artigo:g1(t,/Artigo\s+Matricial\s*n?\S{0,2}\s*(\d+)/i),fracao:g1(t,/Fra\S+\s+Aut[óo]noma\s+([A-Z]{1,3})\b/),morada:g1(t,/Morada\s+([^\n]+)/)};}
   case'RCC':return{tipo:'RCC',nifHeranca:g1(t,/\n\s*(\d{9})\s+[A-Z][A-Z ]+-\s*CABE/),autor:g1(t,/Autor da Heran\S*[\s\S]{0,40}?Nome:\s*([^\n]+)/i)};
   case'PROC':{
     const termo=/TERMO\s+DE\s+AUTENTICA/i.test(t),notarial=!termo&&/perante mim/i.test(t)&&/not[áa]ri[ao]/i.test(t.slice(0,1500));
@@ -1066,6 +1097,8 @@ function resumoDoc(d){
   switch(x.tipo){
   case'IMT':case'ISV':return`n.º ${x.numero} · ${x.nome||x.nif} · ${euroPT(x.valor)} € · artigo ${x.artigo||'—'} · vendedor: ${x.alienante||'—'}${x.parte?' ('+x.parte+')':''}${x.hpp?' · habitação própria e permanente':''}${x.pago?' · com comprovativo de pagamento':' · SEM comprovativo de pagamento'}`;
   case'ISM1':return`n.º ${x.numero||'—'} · ${x.autor} · óbito ${isoPT(x.obito)} · entregue ${isoPT(x.recepcao)} · relação de bens: ${x.verbas.map(v=>v.artigo?`artigo ${v.artigo} (${v.quota})`:(v.desc||'verba '+v.n)).join('; ')||'—'}`;
+  case'CP':return`pedido ${x.pedido} · disponibilizado ${x.disponivel} · artigo ${x.artigo} · descrição ${x.descricao} · preço ${euroPT(x.preco)} € · ${x.entidades.map(e=>e.n+': '+e.intencao).join('; ')} · impresso ${x.impresso?isoPT(x.impresso):'— (sem data no topo)'}${x.previsivel?' · data previsível '+x.previsivel:''}`;
+  case'SCE':return`${x.provisoria?'declaração provisória':'certificado'} ${x.numero} · ${x.validade?'válido até '+isoPT(x.validade):x.emissao?'emitido em '+isoPT(x.emissao):'—'} · artigo ${x.artigo||'—'} · descrição ${x.descricao||'—'}${x.fracao?' · fração '+x.fracao:''} · ${x.morada}`;
   case'RCC':return`NIF da herança ${x.nifHeranca} · ${x.autor}`;
   case'PROC':return`${x.forma==='notarial'?'notarial (documento autêntico)':x.forma==='autenticada'?'autenticada':x.forma} · ${isoPT(x.data)||'data?'} · ${x.entidade||'—'}${x.cedula?' (CP '+x.cedula+')':''}${x.cartorio?' · '+x.cartorio:''} · poderes: ${x.vender?'vender':'—'}${x.receber?', receber o preço':''}${x.artigos.length?' · artigo '+x.artigos.join(', '):''}`;
   case'HAB':return`${x.forma==='pshh'?'procedimento simplificado':'escritura notarial'} · ${x.numero||x.codigo||'—'} · ${isoPT(x.data)||'data?'} · ${x.entidade||''} · ${x.falecido}`;
@@ -1199,6 +1232,43 @@ function apoioCruzarNovos(P,add,docs){
     if(m.numero&&!tudo.includes(m.numero)&&N.includes(AP_N(m.autor)))add(alvo,'fiscal','aviso',`A participação de Imposto do Selo n.º ${m.numero} (${m.autor}, entregue em ${isoPT(m.recepcao)}) não está referida no termo — confirme se deve estar`,0,0);
     if(m.numero&&tudo.includes(m.numero)&&m.recepcao&&!temData(m.recepcao))add(alvo,'fiscal','aviso',`A participação n.º ${m.numero} foi entregue em ${isoPT(m.recepcao)} — o DPA tem outra data`,0,0);
   });
+  /* Direitos de preferência (Casa Pronta): consulta atual, pedido, artigo, preço e pronúncias */
+  X('CP').forEach(c=>{const alvo=onde(/prefer[êe]ncia|casapronta/i),dAto=$('data-ato').value;
+    if(!c.impresso)add(alvo,'cruzamento','aviso','Direitos de preferência: não encontro a data de impressão no topo da consulta — imprima-a no dia do ato, com a data visível',0,0);
+    else if(dAto&&c.impresso!==dAto)add(alvo,'cruzamento','erro',`Direitos de preferência: a consulta foi impressa em ${isoPT(c.impresso)} — tem de ser do dia do ato (${isoPT(dAto)})`,0,0);
+    if(c.pedido&&!tudo.includes(c.pedido))add(alvo,'cruzamento','erro',`Direitos de preferência: o pedido é o n.º ${c.pedido} e não está no DPA`,0,0);
+    if(c.disponivel&&!tudo.includes(c.disponivel.replace(/-/g,'/')))add(alvo,'cruzamento','aviso',`Direitos de preferência: disponibilizado em ${c.disponivel.replace(/-/g,'/')} — o DPA tem outra data`,0,0);
+    if(artigo&&c.artigo&&c.artigo!==artigo)add(alvo,'cruzamento','erro',`Direitos de preferência: o anúncio é do artigo ${c.artigo} e o DPA do artigo ${artigo}`,0,0);
+    if(c.descricao&&!new RegExp(`(n[úu]mero|n\\.\\s*[º°o])\\s*${c.descricao}\\b`,'i').test(tudo))add(alvo,'cruzamento','erro',`Direitos de preferência: o anúncio é da descrição ${c.descricao} — não a encontro no DPA`,0,0);
+    if(preco&&c.preco&&Math.abs(c.preco-preco)>0.005)add(alvo,'cruzamento','erro',`Direitos de preferência: o preço anunciado é ${euroPT(c.preco)} € e o do DPA é ${euroPT(preco)} €`,0,0);
+    c.compradores.filter(n=>!D.includes(n)).forEach(n=>add(alvo,'cruzamento','erro',`Direitos de preferência: o comprador com NIF ${n} não está no DPA`,0,0));
+    const al=guias.map(g=>g.alienanteNif).filter(Boolean);
+    c.vendedores.filter(n=>al.length&&!al.includes(n)).forEach(n=>add(alvo,'cruzamento','aviso',`Direitos de preferência: o vendedor anunciado (NIF ${n}) não é o das guias de IMT/Selo (${[...new Set(al)].join(', ')})`,0,0));
+    if(!c.pago)add(alvo,'cruzamento','aviso','Direitos de preferência: não vejo o pagamento do anúncio como «Pago»',0,0);
+    c.entidades.forEach(e=>{const chave={IHRU:/IHRU|Habita[çc][ãa]o\s+e\s+d[ao]\s+Reabilita/i,'Património Cultural':/Patrim[óo]nio\s+Cultural|DGPC/i,ESTAMO:/ESTAMO/i,ICNF:/ICNF|Conserva[çc][ãa]o\s+da\s+Natureza/i}[e.n]||new RegExp(e.n.replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/[âa]/gi,'[âa]'),'i');
+      if(!chave.test(tudo))add(alvo,'cruzamento','erro',`Direitos de preferência: ${e.n} foi notificada no anúncio e não está referida no DPA`,0,0);
+      if(e.intencao==='EXERCE')add(alvo,'cruzamento','erro',`ATENÇÃO — ${e.n} declarou pretender exercer a preferência`,0,0);
+      if(e.intencao==='não exerce'&&/nada\s+diss/i.test(tudo))add(alvo,'cruzamento','aviso',`Direitos de preferência: ${e.n} pronunciou-se (não exerce) e o DPA diz que «nada disseram» — confirme a redação`,0,0);
+      if(e.intencao==='sem pronúncia'&&/declar\S*\s+n[ãa]o\s+(pretender|exercer)/i.test(tudo))add(alvo,'cruzamento','aviso',`Direitos de preferência: ${e.n} não se pronunciou — confirme a redação do DPA`,0,0);});
+  });
+  /* Certificado energético (ou declaração provisória): número, validade, prédio */
+  X('SCE').forEach(c=>{const alvo=onde(/SCE\s?\d|Certificado\s+Energ|Certifica[çc][ãa]o\s+Energ/i),dAto=$('data-ato').value;
+    const sem0=x=>String(x||'').replace(/\D/g,'').replace(/^0+/,'');
+    const noDPA=[...tudo.matchAll(/SCE\s?(\d{6,15})/gi)].map(m=>sem0(m[1]));
+    if(c.numero&&!noDPA.includes(sem0(c.numero)))add(alvo,'cruzamento','erro',noDPA.length?`Certificado energético: o n.º é ${c.numero} e o DPA tem SCE${noDPA.join(', SCE')}`:`Certificado energético: o n.º ${c.numero} não está no DPA`,0,0);
+    if(c.validade){
+      if(dAto&&c.validade<dAto)add(alvo,'cruzamento','erro',`Certificado energético ${c.numero}: caducou em ${isoPT(c.validade)}`,0,0);
+      const md=tudo.match(/SCE\s?\d{6,15}[^.;]{0,40}?v[áa]lid[oa]\s+at[ée]\s*(\d{2}\/\d{2}\/\d{4})/i);
+      if(md&&md[1]!==isoPT(c.validade))add(alvo,'cruzamento','erro',`Certificado energético ${c.numero}: é válido até ${isoPT(c.validade)} e o DPA diz ${md[1]}`,0,0);}
+    if(c.provisoria&&c.emissao){const lim=String(+c.emissao.slice(0,4)+10)+c.emissao.slice(4);
+      if(dAto&&lim<dAto)add(alvo,'cruzamento','erro',`Declaração provisória ${c.numero}: emitida em ${isoPT(c.emissao)} — tem mais de 10 anos`,0,0);
+      if(!tudo.includes(isoPT(c.emissao)))add(alvo,'cruzamento','aviso',`Declaração provisória ${c.numero}: emitida em ${isoPT(c.emissao)} — confirme a data no DPA`,0,0);}
+    /* Prédio: basta que o artigo OU a descrição batam; erro só se nenhum corresponder. */
+    const artOk=!!(artigo&&c.artigo&&c.artigo===artigo),descOk=!!(c.descricao&&new RegExp(`(n[úu]mero|n\\.\\s*[º°o])\\s*${c.descricao}\\b`,'i').test(tudo));
+    if((c.artigo||c.descricao)&&!artOk&&!descOk)add(alvo,'cruzamento','erro',`Certificado energético ${c.numero}: nem o artigo (${c.artigo||'—'}) nem a descrição (${c.descricao||'—'}) correspondem ao prédio do DPA`,0,0);
+    if(c.fracao&&!new RegExp(`letra\\s*[«"“]?\\s*${c.fracao}\\b`,'i').test(tudo))add(alvo,'cruzamento','erro',`Certificado energético ${c.numero}: é da fração «${c.fracao}»`,0,0);
+    if(c.conservatoria){const cn=AP_N(c.conservatoria);if(!new RegExp('REGISTO PREDIAL DE '+cn).test(N))add(alvo,'cruzamento','aviso',`Certificado energético ${c.numero}: indica a Conservatória do Registo Predial de ${c.conservatoria}`,0,0);}
+  });
   /* Procurações */
   X('PROC').forEach(r=>{
     const quem=r.nifs.map(n=>n).join(', ');
@@ -1265,7 +1335,8 @@ let APOIO=[],PDFJS=null;
 const PDFJS_URL='https://cdn.jsdelivr.net/npm/pdfjs-dist@6.2.108/build/pdf.min.mjs';
 async function pdfLinhas(buf){
   if(!PDFJS){PDFJS=await import(PDFJS_URL);PDFJS.GlobalWorkerOptions.workerSrc=PDFJS_URL.replace('pdf.min.mjs','pdf.worker.min.mjs');}
-  const doc=await PDFJS.getDocument({data:new Uint8Array(buf),verbosity:0}).promise;const paginas=[];pdfLinhas.doc=doc;
+  /* wasmUrl: descodificadores de imagens JBIG2/JPEG2000 (digitalizações a preto e branco) */
+  const doc=await PDFJS.getDocument({data:new Uint8Array(buf),verbosity:0,wasmUrl:PDFJS_URL.replace('build/pdf.min.mjs','wasm/')}).promise;const paginas=[];pdfLinhas.doc=doc;
   for(let n=1;n<=doc.numPages;n++){const tc=await (await doc.getPage(n)).getTextContent();const out=[];
     const its=tc.items.filter(i=>i.str!==undefined).map(i=>({s:i.str,x:i.transform[4],y:Math.round(i.transform[5])}));
     const g={};its.forEach(i=>{const k=Object.keys(g).find(y=>Math.abs(y-i.y)<=2);(g[k??i.y]=g[k??i.y]||[]).push(i);});
