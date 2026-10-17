@@ -37,17 +37,30 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
 .item .ex{font-family:'DM Mono',monospace;font-size:11.5px;color:var(--text-muted);white-space:pre-wrap;word-break:break-word}
 .item mark{background:#FFE08A;padding:0 1px;border-radius:2px}
 .nota{font-size:11.5px;color:var(--text-muted)}
+.dd{display:none;position:absolute;left:0;right:0;top:100%;z-index:20;background:var(--surface);border:1px solid var(--border-strong);border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.1);max-height:300px;overflow:auto}
+.dd div{padding:.45rem .7rem;font-size:13px;cursor:pointer}.dd div:hover{background:var(--accent-light)}
 .vazio{font-size:12px;color:var(--text-faint);padding:.6rem 0}
 </style>
 </head>
 <body>
 <div class="topbar">
-  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-17.13</span></div>
+  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-17.15</span></div>
   <div style="display:flex;gap:.6rem;align-items:center"><span id="login-info" style="font-size:11px;color:var(--text-faint)"></span>
     <button class="btn" id="btn-entrar" onclick="entrar()">Entrar</button>
     <button class="btn btn-p" id="btn-desc" onclick="descarregar()" disabled>Descarregar Word revisto</button></div>
 </div>
 <div class="container">
+
+  <div class="card" id="card-rec">
+    <div class="card-h"><div class="num">0</div><div><div class="card-t">Receção de documentos <span class="tag">piloto</span></div><div class="card-d">Abra a receção a partir da pasta do cliente no Portal (botão «📥 Documentos») e largue aqui tudo o que chegou. As pastas criam-se no Portal. Leio no computador, separo os documentos e proponho o nome (sigla da lista). Só ao carregar em «Gravar na pasta»: cada documento vai para a pasta principal, uma cópia dos ficheiros recebidos vai para «_originais» e a matriz de dados (MATRIZ_VERIFICADOR.json) é atualizada. Nunca substituo ficheiros.</div></div></div>
+    <div class="nota" id="rec-login"></div>
+    <div id="rec-escolha" style="position:relative;max-width:560px"><label class="l">Pasta do cliente (ESCRITURAS)</label><input class="inp" id="rec-pasta" placeholder="Entre com a conta da LBC" disabled oninput="recPesquisar()" onfocus="recPesquisar()" autocomplete="off"><div id="rec-dd" class="dd"></div></div>
+    <div class="nota" id="rec-sel" style="margin:.5rem 0"></div>
+    <div class="drop" id="drop-rec" onclick="document.getElementById('fich-rec').click()">Arraste para aqui os ficheiros recebidos (PDF, fotografias, Word) — vários ficheiros, ou um só com tudo junto</div>
+    <input type="file" id="fich-rec" multiple style="display:none">
+    <div id="rec-lista" style="margin-top:.7rem"></div>
+    <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-top:.5rem"><button class="btn btn-p" id="rec-gravar" onclick="recGravar()" disabled>Gravar na pasta</button><button class="btn" id="rec-ler" onclick="recLerPasta()" disabled>Ler para verificação os documentos já na pasta</button><span class="nota" id="rec-estado" style="margin:0"></span></div>
+  </div>
 
   <div class="card">
     <div class="card-h"><div class="num">1</div><div><div class="card-t">Documento</div><div class="card-d">O Word fica só neste computador: nada é enviado para fora.</div></div></div>
@@ -92,6 +105,7 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
   <div class="card">
     <div class="card-h"><div class="num">?</div><div><div class="card-t">O que verifica nesta versão</div><div class="card-d">Regras fixas. As de negritos e redação entram depois dos primeiros DPA revistos.</div></div></div>
     <div class="nota">
+      <b>Receção de documentos</b> — abre-se a partir da pasta do cliente no Portal (as pastas criam-se no Portal); separo e nomeio cada documento (SIGLA_identificação_data); os lidos de imagem pedem confirmação do nome; os não reconhecidos ficam com o nome original até escolher uma sigla (OUTROS_1, OUTROS_2…) ou forçar um nome. Gravo na pasta principal sem nunca substituir ficheiros, com cópia dos originais em «_originais», e atualizo a MATRIZ_VERIFICADOR.json. Documento que já está na pasta com os mesmos dados não se grava outra vez; com dados diferentes, aviso «doc com dados novos, atualizar gerador».<br>
       <b>Espaços</b> — espaços duplos, espaço antes de vírgula, ponto, ponto e vírgula, dois pontos ou parêntese; corrigidos como alteração marcada.<br>
       <b>Por preencher</b> — «…», reticências, [ ], { }, ⚠, XXX e linhas a preencher no meio do texto.<br>
       <b>Palavras repetidas</b> — «na na», «de de»…<br>
@@ -459,6 +473,7 @@ const dr=$('drop');
 ['dragleave','drop'].forEach(ev=>dr.addEventListener(ev,e=>{e.preventDefault();dr.classList.remove('over');}));
 dr.addEventListener('drop',e=>escolher(e.dataTransfer.files[0]));
 $('data-ato').value=new Date().toISOString().slice(0,10);
+$('data-ato').addEventListener('input',e=>{e.target.dataset.tocada='1';});
 
 /* ═══════════ PROCURAÇÕES REGISTADAS · e regras do termo (15/10/2026) ═══════════
    Lista «proc_bancos» no SharePoint (site lbcsolicitadora2): Título = entidade,
@@ -474,7 +489,8 @@ const SCOPES=['Sites.ReadWrite.All','User.Read'];
 const GRAPH='https://graph.microsoft.com/v1.0';
 const ADMIN='liliana.cardoso@lbc-solicitadora.pt';
 let msalApp=null,conta=null,token=null,SITE=null,LID=null,COLD='Dados',PROCS=[],procEd=null;
-async function tok(){try{const r=await msalApp.acquireTokenSilent({scopes:SCOPES,account:conta});token=r.accessToken;}catch(e){await msalApp.acquireTokenRedirect({scopes:SCOPES});}}
+const tokPortal=()=>{try{return(window.opener&&window.opener.graphToken)||'';}catch(_){return'';}};
+async function tok(){if(!conta&&tokPortal()){try{if(typeof window.opener.renovarToken==='function')await window.opener.renovarToken();}catch(_){}token=tokPortal();return;}try{const r=await msalApp.acquireTokenSilent({scopes:SCOPES,account:conta});token=r.accessToken;}catch(e){await msalApp.acquireTokenRedirect({scopes:SCOPES});}}
 async function gq(url,opt={}){await tok();const r=await fetch(url,{...opt,headers:{Authorization:'Bearer '+token,'Content-Type':'application/json',...(opt.headers||{})}});
   if(!r.ok&&r.status!==204)throw new Error(`Erro ${r.status}: ${(await r.text()).slice(0,200)}`);return r.status===204?{}:r.json();}
 async function entrar(){try{await msalApp.loginRedirect({scopes:SCOPES});}catch(e){alert('Não consegui entrar: '+e.message);}}
@@ -1313,9 +1329,9 @@ function lerNovos(nomeFich,pags,varios){
   const out=[];const pg=a=>a.length>1?`págs. ${a[0]}–${a[a.length-1]}`:`pág. ${a[0]}`;
   agruparPaginas(pags).forEach(d=>{
     if(d.tipo==='CAD'||d.tipo==='CRP'){const L=d.texto.split('\n').map(l=>l.trim()).filter(Boolean);
-      out.push({ficheiro:nomeFich,nome:nomeFich+(varios?` (${pg(d.pags)})`:''),tipo:d.tipo,dados:d.tipo==='CAD'?apoioCAD(L):apoioCRP(L),ocr:true,nota:'Lido de imagem — confirme os valores com o original.'});return;}
+      out.push({ficheiro:nomeFich,nome:nomeFich+(varios?` (${pg(d.pags)})`:''),pags:d.pags,tipo:d.tipo,dados:d.tipo==='CAD'?apoioCAD(L):apoioCRP(L),ocr:true,nota:'Lido de imagem — confirme os valores com o original.'});return;}
     const dados=d.tipo?lerDocumento(d):null;
-    out.push({ficheiro:nomeFich,nome:nomeFich+(varios?` (${pg(d.pags)})`:''),tipo:d.tipo?'N_'+d.tipo:'',dados,texto:d.texto,ocr:true,
+    out.push({ficheiro:nomeFich,nome:nomeFich+(varios?` (${pg(d.pags)})`:''),pags:d.pags,tipo:d.tipo?'N_'+d.tipo:'',dados,texto:d.texto,ocr:true,
       nota:d.tipo?'':(d.texto.replace(/\s/g,'').length<20?'Digitalização sem texto legível.':`Lido (${d.texto.replace(/\s/g,'').length} caracteres), mas ainda não reconheço este tipo de documento.`)});
   });
   return out;
@@ -1533,7 +1549,7 @@ function apoioCruzarNovos(P,add,docs){
 [Map,WeakMap].forEach(K=>{
   if(!K.prototype.getOrInsertComputed)K.prototype.getOrInsertComputed=function(k,f){if(!this.has(k))this.set(k,f(k));return this.get(k);};
   if(!K.prototype.getOrInsert)K.prototype.getOrInsert=function(k,v){if(!this.has(k))this.set(k,v);return this.get(k);};});
-let APOIO=[],PDFJS=null;
+let APOIO=[],PDFJS=null,NPAGS={};
 const PDFJS_URL='https://cdn.jsdelivr.net/npm/pdfjs-dist@6.2.108/build/pdf.min.mjs';
 async function pdfLinhas(buf){
   if(!PDFJS){PDFJS=await import(PDFJS_URL);PDFJS.GlobalWorkerOptions.workerSrc=PDFJS_URL.replace('pdf.min.mjs','pdf.worker.min.mjs');}
@@ -1775,7 +1791,7 @@ async function lerImagens(nomeFich,lista,varios,jaLidas=[]){
   APOIO.splice(APOIO.indexOf(marca),1);
   const pg=a=>a.length?(a.length>1?`págs. ${a[0]}–${a[a.length-1]}`:`pág. ${a[0]}`):'';
   pags.sort((a,b)=>a.pag-b.pag);const {fichas,resto}=ccDeImagens(pags);
-  fichas.forEach(f=>APOIO.push({ficheiro:nomeFich,nome:nomeFich+(varios||fichas.length+resto.length>1?` (${pg(f.pags)})`:''),tipo:'CC',ocr:true,dados:f.dados,
+  fichas.forEach(f=>APOIO.push({ficheiro:nomeFich,nome:nomeFich+(varios||fichas.length+resto.length>1?` (${pg(f.pags)})`:''),pags:f.pags,tipo:'CC',ocr:true,dados:f.dados,
     nota:'Lido de imagem (digitalização) — confirme com o cartão.'+(f.avisos.length?' Atenção: '+f.avisos.join('; ')+'.':'')}));
   if(resto.length)lerNovos(nomeFich,resto,varios||fichas.length+resto.length>1).forEach(r=>APOIO.push(r));
 }
@@ -1795,7 +1811,7 @@ async function juntarApoio(files){
     if(!/\.pdf$/i.test(f.name)){continue;}
     APOIO=APOIO.filter(x=>x.ficheiro!==f.name);
     try{
-      const {docs,imagens,imgPags}=separarDocumentos(await pdfLinhas(await f.arrayBuffer()));const pdoc=pdfLinhas.doc;
+      const {docs,imagens,imgPags}=separarDocumentos(await pdfLinhas(await f.arrayBuffer()));const pdoc=pdfLinhas.doc;NPAGS[f.name]=pdoc.numPages;
       const varios=docs.length+(imagens?1:0)>1;const jaLidasExtra=[];
       /* Cartões digitalizados em «PDF pesquisável»: já trazem o texto do OCR da
          digitalizadora. Aproveita-o; se não chegar (sem n.º ou validade), lê a imagem. */
@@ -1815,7 +1831,7 @@ async function juntarApoio(files){
       if(extras.length&&!imgPags.length)lerNovos(f.name,extras,varios).forEach(r=>{r.ocr=false;APOIO.push(r);});
       if(extras.length&&imgPags.length)jaLidasExtra.push(...extras);
       docs.filter(d=>!cartoes.includes(d)&&d.tipo).forEach(d=>{const L=d.linhas;
-        const reg={ficheiro:f.name,nome:f.name+(varios?` (pág. ${d.pags[0]}${d.pags.length>1?'–'+d.pags[d.pags.length-1]:''})`:''),tipo:d.tipo,nota:'',
+        const reg={ficheiro:f.name,nome:f.name+(varios?` (pág. ${d.pags[0]}${d.pags.length>1?'–'+d.pags[d.pags.length-1]:''})`:''),pags:d.pags,tipo:d.tipo,nota:'',
           dados:d.tipo==='CAD'?apoioCAD(L):d.tipo==='CRP'?apoioCRP(L):d.tipo==='CC'?apoioCC(L):d.tipo==='BC'?apoioBC(L):null};
         if(!d.tipo)reg.nota='Não reconheço este tipo de documento (por agora: caderneta, certidão predial e ficha do cartão de cidadão).';
         APOIO.push(reg);});
@@ -1854,6 +1870,340 @@ $('fich-apoio').addEventListener('change',e=>juntarApoio([...e.target.files]));
   ['dragleave','drop'].forEach(ev=>d.addEventListener(ev,e=>{e.preventDefault();d.classList.remove('over');}));
   d.addEventListener('drop',e=>juntarApoio([...e.dataTransfer.files]));})();
 
+/* ═══════════ RECEÇÃO DE DOCUMENTOS · piloto (17/10/2026) ═══════════
+   Os ficheiros chegam «em catadupa»: escolhe-se a pasta do cliente
+   (biblioteca ESCRITURAS, «AAAAMMDD NOME»), largam-se aqui e o verificador
+   lê-os (no computador), separa os documentos, propõe o nome
+   SIGLA_identificação_data e, só depois de carregar em «Gravar na pasta»:
+   – grava cada documento na pasta principal (nunca nas subpastas, nunca por cima de outro ficheiro);
+   – guarda uma cópia de cada ficheiro recebido em «_originais» (a Liliana apaga-a depois do DPA);
+   – atualiza a matriz de dados (MATRIZ_VERIFICADOR.json), que o gerador vai comparar com o rascunho.
+   Documento não reconhecido: fica com o nome original e só se grava depois de escolher
+   uma sigla da lista (OUTROS numera-se OUTROS_1, OUTROS_2…) ou de forçar um nome. */
+const REC={drive:null,pasta:null,pastas:[],files:new Map(),linhas:[],existentes:[],lendo:false,seq:0,origGravados:new Set(),msg:''};
+const SIGLAS=[['CC','Cartão de cidadão'],['CRP','Certidão permanente predial'],['CPU','Caderneta predial urbana'],['CPR','Caderneta predial rústica'],
+  ['IMT','Guia de IMT'],['IS','Guia de Imposto do Selo'],['PART-IS','Participação de Imposto do Selo'],['HAB','Habilitação de herdeiros'],['PROC','Procuração'],
+  ['TOP','Certidão de toponímia'],['SCE','Certificado energético'],['CP','Preferências (Casa Pronta)'],['TRF','Comprovativo de transferência'],['CHQ','Cheque'],
+  ['BC','Boletim de contrato CGD'],['DC','Documento complementar CGD'],['AU','Autorização de utilização'],['FTH','Ficha técnica da habitação'],
+  ['RCC','NIF da herança'],['OUTROS','Outros']];
+const ROT_SIGLA=Object.fromEntries(SIGLAS);
+const MATRIZ_NOME='MATRIZ_VERIFICADOR.json';
+const PDFLIB_URL='https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js';
+async function pdfLib(){
+  if(!window.PDFLib)await new Promise((ok,ko)=>{const s=document.createElement('script');s.src=PDFLIB_URL;s.onload=ok;s.onerror=()=>ko(new Error('não consegui carregar o separador de PDF'));document.head.appendChild(s);});
+  return window.PDFLib;
+}
+/* ── Nomes ── */
+const semAcento=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'');
+const parteNome=s=>semAcento(s).toUpperCase().replace(/[^A-Z0-9.,\-]+/g,'_').replace(/_+/g,'_').replace(/^[_.]+|[_.]+$/g,'');
+const nomeLivre=s=>String(s||'').replace(/[\\/:*?"<>|#%\u0000-\u001f]+/g,'_').replace(/\s+/g,' ').trim().replace(/^\.+|\.+$/g,'');
+const doisNomes=s=>{const t=semAcento(s).toUpperCase().split(/\s+/).filter(x=>x.length>2&&!/^(DOS|DAS|DE|DA|DO|E)$/.test(x));return t.length>1?t[0]+'_'+t[t.length-1]:(t[0]||'');};
+const isoDe=s=>{let m=String(s||'').match(/(\d{4})-(\d{2})-(\d{2})/);if(m)return m[0];m=String(s||'').match(/(\d{2})[-\/.](\d{2})[-\/.](\d{4})/);return m?`${m[3]}-${m[2]}-${m[1]}`:'';};
+function siglaDe(r){
+  if(!r)return'';
+  if(r.tipo==='CAD')return r.dados&&r.dados.natureza==='rústica'?'CPR':'CPU';
+  return({CRP:'CRP',CC:'CC',BC:'BC',DC:'DC',N_IMT:'IMT',N_ISV:'IS',N_ISM1:'PART-IS',N_RCC:'RCC',N_PROC:'PROC',N_HAB:'HAB',N_TOP:'TOP',N_SCE:'SCE',N_CP:'CP',N_TRF:'TRF',N_CHQ:'CHQ'})[r.tipo]||'';
+}
+/* Identificação para o nome: só o que foi lido; se faltar, fica SIGLA_1, SIGLA_2… */
+function identDe(r){
+  const x=(r&&r.dados)||{};const j=(...a)=>a.filter(Boolean).join('_');
+  switch(r&&r.tipo){
+  case'CC':return x.nome&&!/Aten[çc][ãa]o/.test(r.nota||'')?x.nome:'';
+  case'CRP':return x.descricao&&!x.descDuvida?x.descricao+(x.fracao?'-'+x.fracao:''):'';
+  case'CAD':return x.artigo?j(x.artigo+(x.fracao?'-'+x.fracao:''),isoDe(x.emitida)):'';
+  case'BC':return x.emprestimo||'';
+  case'DC':return x.contrato||'';
+  case'N_IMT':case'N_ISV':return /^\d{15}$/.test(x.numero||'')?x.numero:'';
+  case'N_ISM1':return x.numero?j(x.numero,doisNomes(x.autor)):'';
+  case'N_RCC':return x.nifHeranca||'';
+  case'N_PROC':return isoDe(x.data);
+  case'N_HAB':return x.falecido?j(doisNomes(x.falecido),isoDe(x.data)):'';
+  case'N_TOP':return x.artigo?j(x.artigo,isoDe(x.data)):'';
+  case'N_SCE':return (x.numero||'').replace(/^SCE/i,'');
+  case'N_CP':return (x.pedido||'').replace(/\//g,'-');
+  case'N_TRF':return x.valor?j(String(x.valor).replace('.',','),isoDe(x.data)):'';
+  case'N_CHQ':return x.numero||'';
+  }
+  return'';
+}
+const baseOriginal=f=>f.replace(/\.[^.]+$/,'');
+const extDe=f=>((f.match(/\.[^.\/]+$/)||['.pdf'])[0]).toLowerCase();
+/* ── Linhas (um documento = uma linha) ── */
+function montarLinhas(nomes){
+  for(const fn of nomes){
+    REC.linhas=REC.linhas.filter(l=>l.ficheiro!==fn||l.gravado);
+    const recs=APOIO.filter(r=>r.ficheiro===fn);const ext=extDe(fn);const pdf=ext==='.pdf';const tot=NPAGS[fn]||0;
+    let partes=pdf?recs.filter(r=>r.pags&&r.pags.length):[];
+    const usadas=new Set(partes.flatMap(r=>r.pags));
+    const faltam=pdf&&partes.length?Array.from({length:tot},(_,i)=>i+1).filter(n=>!usadas.has(n)):[];
+    let linhas;
+    if(!partes.length){const r=recs.find(x=>x.tipo)||null;linhas=[{r,pags:null}];}
+    else{linhas=partes.map(r=>({r,pags:[...r.pags].sort((a,b)=>a-b)}));if(faltam.length)linhas.push({r:null,pags:faltam});
+      linhas.sort((a,b)=>a.pags[0]-b.pags[0]);
+      if(linhas.length===1&&linhas[0].pags.length===tot)linhas[0].pags=null;}
+    linhas.forEach(({r,pags})=>{
+      const sigla=siglaDe(r),ident=sigla?parteNome(identDe(r)):'';
+      REC.linhas.push({id:++REC.seq,ficheiro:fn,ext,pags,r,siglaAuto:sigla,sigla,ident,
+        estado:!sigla?'nr':(ident&&r.ocr?'confirmar':'ok'),confirmado:false,manual:'',livre:false,gravado:'',erro:''});
+    });
+  }
+  recComparar();recNomes();
+}
+/* Compara cada documento lido com a matriz da pasta: o mesmo documento com os mesmos
+   dados não se grava outra vez (só se a Liliana quiser); com dados diferentes, avisa. */
+function recComparar(){
+  const docs=(REC.matriz&&REC.matriz.documentos||[]).filter(d=>!d.substituido_por);
+  REC.linhas.filter(l=>!l.gravado).forEach(l=>{l.dup='';l.novo=null;
+    if(!l.r||!l.r.dados)return;const doc={tipoLido:l.r.tipo,dados:limparDados(l.r.dados)};const ch=chaveMatriz(doc);if(!ch)return;
+    const ant=docs.filter(d=>d.tipoLido===doc.tipoLido&&chaveMatriz(d)===ch).pop();if(!ant)return;
+    const dif=diferencas(ant.dados,doc.dados);
+    if(!dif.length)l.dup=ant.ficheiro;else l.novo={ficheiro:ant.ficheiro,dif};});
+}
+/* Nome final de cada linha: numeração SIGLA_n e «_2» quando o nome já existe na pasta. */
+function recNomes(){
+  const ocup=new Set(REC.existentes.map(n=>n.toLowerCase()));
+  REC.linhas.filter(l=>l.gravado).forEach(l=>ocup.add(l.gravado.toLowerCase()));
+  const maxN=s=>{let m=0;const re=new RegExp('^'+s.replace(/[-.]/g,'\\$&')+'_(\\d+)(?:[_.]|$)','i');ocup.forEach(n=>{const x=n.match(re);if(x)m=Math.max(m,+x[1]);});return m;};
+  REC.linhas.filter(l=>!l.gravado).forEach(l=>{
+    let base;
+    if(l.manual)base=l.livre?nomeLivre(l.manual):parteNome(l.manual);
+    else if(l.sigla)base=l.sigla+'_'+(l.sigla===l.siglaAuto&&l.ident?l.ident:String(maxN(l.sigla)+1));
+    else base=baseOriginal(l.ficheiro);
+    let nome=base+l.ext,k=2;
+    while(ocup.has(nome.toLowerCase()))nome=`${base}_${k++}${l.ext}`;
+    ocup.add(nome.toLowerCase());l.final=nome;
+  });
+}
+const pronta=l=>!l.gravado&&(!l.dup||l.gravarDup)&&(l.estado==='ok'||(l.estado==='confirmar'&&(l.confirmado||l.manual))||(l.estado==='nr'&&(l.sigla||(l.livre&&l.manual))));
+/* ── Ecrã ── */
+function pintarRececao(){
+  const lig=conta||tokPortal();
+  $('rec-login').innerHTML=lig?'':'Abra a receção a partir da pasta do cliente no Portal, ou entre com a conta da LBC (botão «Entrar», em cima).';
+  $('rec-pasta').disabled=!lig||!REC.pastas.length;
+  $('rec-escolha').style.display=REC.doPortal?'none':'';
+  $('rec-sel').innerHTML=REC.pasta?`Pasta: <b>${esc(REC.pasta.nome)}</b>${REC.doPortal?' (aberta a partir do Portal)':''} · ${REC.existentes.length} ficheiro(s) na pasta principal`:'';
+  const pg=a=>{if(!a)return'ficheiro inteiro';const f=[];a.forEach(n=>{const u=f[f.length-1];if(u&&n===u[1]+1)u[1]=n;else f.push([n,n]);});
+    return(a.length>1?'págs. ':'pág. ')+f.map(([x,y])=>x===y?x:`${x}–${y}`).join(', ');};
+  const opc=l=>`<option value="">— escolher —</option>`+SIGLAS.map(([s,t])=>`<option value="${s}"${l.sigla===s&&!l.livre?' selected':''}>${s} · ${esc(t)}</option>`).join('')+`<option value="*"${l.livre?' selected':''}>✎ Forçar nome</option>`;
+  const cor={ok:'var(--green)',confirmar:'var(--amber)',nr:'var(--red)'};const corL=l=>l.dup?'var(--border-strong)':cor[l.estado];
+  const etq=l=>l.gravado?`<span class="tag" style="background:var(--green-light);color:var(--green)">✓ gravado</span>`
+    :l.dup?`<span class="tag">Já está na pasta com os mesmos dados (${esc(l.dup)})</span>`
+    :l.estado==='nr'?`<span class="tag" style="background:var(--red-light);color:var(--red)">Doc não reconhecido — valide e grave com um dos nomes da lista</span>`
+    :l.estado==='confirmar'?`<span class="tag" style="background:var(--amber-light);color:var(--amber)">Lido de imagem — confirme o nome</span>`
+    :`<span class="tag" style="background:var(--green-light);color:var(--green)">Reconhecido</span>`;
+  $('rec-lista').innerHTML=(REC.lendo?`<div class="nota">A ler os documentos… (as digitalizações demoram mais)</div>`:'')+REC.linhas.map(l=>{
+    const tipo=l.r&&l.r.tipo?(l.r.tipo.startsWith('N_')?ROT_NOVOS[l.r.tipo.slice(2)]:ROT_APOIO[l.r.tipo]):'';
+    if(l.gravado)return`<div class="item" style="border-left-color:var(--border-strong)"><div class="cab">${etq(l)}<span style="font-family:'DM Mono',monospace">${esc(l.gravado)}</span><span style="margin-left:auto;font-weight:400;color:var(--text-faint)">${esc(l.ficheiro)} · ${pg(l.pags)}</span></div></div>`;
+    return`<div class="item" style="border-left-color:${corL(l)}">
+      <div class="cab">${etq(l)}${tipo?esc(tipo):''}<span style="margin-left:auto;font-weight:400;color:var(--text-faint)">${esc(l.ficheiro)} · ${pg(l.pags)}</span></div>
+      <div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap">
+        <select class="inp" style="width:auto;max-width:260px" onchange="recSigla(${l.id},this.value)">${opc(l)}</select>
+        <input class="inp" style="flex:1;min-width:220px;font-family:'DM Mono',monospace" value="${esc(l.final.slice(0,-l.ext.length))}" ${l.estado==='nr'&&!l.sigla&&!l.livre?'disabled':''} onchange="recEditar(${l.id},this.value)"><span style="font-size:12px;color:var(--text-muted)">${esc(l.ext)}</span>
+        ${l.dup?`<label style="font-size:12px;white-space:nowrap"><input type="checkbox" ${l.gravarDup?'checked':''} onchange="recDup(${l.id},this.checked)"> gravar mesmo assim</label>`:''}
+        ${l.estado==='confirmar'?`<label style="font-size:12px;white-space:nowrap"><input type="checkbox" ${l.confirmado?'checked':''} onchange="recConfirmar(${l.id},this.checked)"> nome confirmado</label>`:''}
+      </div>
+      ${l.novo?`<div class="nota" style="color:var(--amber)">⚠ Doc com dados novos face a ${esc(l.novo.ficheiro)} — depois de gravar, atualizar o gerador: ${esc(l.novo.dif.map(d=>`${d.campo}: ${curto(d.antes)} → ${curto(d.depois)}`).join('; '))}</div>`:''}
+      ${l.erro?`<div class="nota" style="color:var(--red)">${esc(l.erro)}</div>`:''}
+      ${l.r&&l.r.nota&&l.estado!=='ok'?`<div class="nota">${esc(l.r.nota)}</div>`:''}</div>`;}).join('')
+    +(REC.msg?`<div class="nota" style="margin-top:.4rem;white-space:pre-wrap">${REC.msg}</div>`:'');
+  const n=REC.linhas.filter(pronta).length,pend=REC.linhas.filter(l=>!l.gravado&&!l.dup&&!pronta(l)).length,dup=REC.linhas.filter(l=>!l.gravado&&l.dup&&!l.gravarDup).length;
+  $('rec-gravar').disabled=!REC.pasta||!n||REC.lendo;
+  $('rec-gravar').textContent=n?`Gravar na pasta (${n})`:'Gravar na pasta';
+  $('rec-ler').disabled=!REC.pasta||REC.lendo;
+  $('rec-estado').textContent=[pend?`${pend} documento(s) à espera de validação`:'',dup?`${dup} já na pasta com os mesmos dados (não gravo)`:''].filter(Boolean).join(' · ');
+}
+const linhaRec=id=>REC.linhas.find(l=>l.id===id);
+window.recSigla=(id,v)=>{const l=linhaRec(id);if(!l)return;
+  if(v==='*'){l.livre=true;l.manual=l.manual||l.final.slice(0,-l.ext.length);l.sigla='';}
+  else{l.livre=false;l.manual='';l.sigla=v;}
+  recNomes();pintarRececao();};
+window.recEditar=(id,v)=>{const l=linhaRec(id);if(!l)return;v=v.trim();
+  if(!v){l.manual='';}else if(v!==l.final.slice(0,-l.ext.length)){l.manual=v;l.confirmado=true;}
+  recNomes();pintarRececao();};
+window.recDup=(id,v)=>{const l=linhaRec(id);if(l){l.gravarDup=v;pintarRececao();}};
+window.recConfirmar=(id,v)=>{const l=linhaRec(id);if(l){l.confirmado=v;pintarRececao();}};
+/* ── SharePoint ── */
+async function gRaw(url,opt={}){await tok();return fetch(url,{...opt,headers:{Authorization:'Bearer '+token,...(opt.headers||{})}});}
+async function recPastas(){
+  try{
+    const ds=await gq(`${GRAPH}/sites/lbcsolicitadorapt.sharepoint.com:/sites/Escritrio:/drives`);
+    const d=(ds.value||[]).find(x=>x.name==='ESCRITURAS');if(!d)throw new Error('biblioteca ESCRITURAS não encontrada');
+    REC.drive=d.id;REC.pastas=[];
+    let url=`${GRAPH}/drives/${d.id}/root/children?$top=999&$select=id,name,folder`;
+    while(url){const r=await gq(url);REC.pastas.push(...(r.value||[]).filter(x=>x.folder).map(x=>({id:x.id,nome:x.name})));url=r['@odata.nextLink']||'';}
+    REC.pastas.sort((a,b)=>b.nome.localeCompare(a.nome,'pt'));
+    $('rec-pasta').placeholder=`Pesquisar entre ${REC.pastas.length} pastas…`;
+  }catch(e){$('rec-pasta').placeholder='Sem ligação ao SharePoint';REC.msg='Pastas: '+esc(e.message);}
+  pintarRececao();
+}
+window.recPesquisar=()=>{
+  const q=norm($('rec-pasta').value.trim()),dd=$('rec-dd');
+  if(!q){dd.style.display='none';return;}
+  const res=REC.pastas.filter(p=>norm(p.nome).includes(q)).slice(0,10);
+  dd.innerHTML=res.length?res.map(p=>`<div onclick="recEscolher('${p.id}')">${esc(p.nome)}</div>`).join(''):'<div style="color:var(--text-faint);cursor:default">Sem resultados</div>';
+  dd.style.display='block';
+};
+document.addEventListener('click',e=>{if(!e.target.closest('#rec-pasta'))$('rec-dd').style.display='none';});
+async function recListar(){
+  const r=await gq(`${GRAPH}/drives/${REC.drive}/items/${REC.pasta.id}/children?$top=999&$select=id,name,folder,file,size`);
+  REC.filhos=r.value||[];REC.existentes=REC.filhos.filter(x=>!x.folder).map(x=>x.name);
+}
+/* O Portal abre o verificador com ?pasta=<biblioteca>|<pasta>: a receção fica logo nessa pasta. */
+async function recInicio(){
+  const q=new URLSearchParams(location.search).get('pasta');if(!q||REC.pasta||!(conta||tokPortal()))return;
+  const [drv,id]=q.split('|');if(!drv||!id)return;
+  try{const it=await gq(`${GRAPH}/drives/${drv}/items/${id}?$select=id,name`);REC.drive=drv;REC.doPortal=true;
+    if(!REC.pastas.some(x=>x.id===it.id))REC.pastas.push({id:it.id,nome:it.name});await recEscolher(it.id);}
+  catch(e){REC.msg='Não consegui abrir a pasta indicada pelo Portal: '+esc(e.message);pintarRececao();}
+}
+window.recEscolher=async id=>{
+  const p=REC.pastas.find(x=>x.id===id);if(!p)return;
+  REC.pasta=p;$('rec-pasta').value=p.nome;$('rec-dd').style.display='none';
+  /* A pasta começa pela data do DPA (AAAAMMDD): passa para a data do ato, se estiver vazia. */
+  const m=p.nome.match(/^(\d{4})(\d{2})(\d{2})\b/);if(m&&!$('data-ato').dataset.tocada){$('data-ato').value=`${m[1]}-${m[2]}-${m[3]}`;if(DOC)analisar();}
+  REC.matriz=null;
+  try{await recListar();REC.matriz=await recLerMatriz();}catch(e){REC.msg='Não consegui ler a pasta: '+esc(e.message);}
+  recComparar();recNomes();pintarRececao();
+};
+async function recSubpasta(nome){
+  const f=(REC.filhos||[]).find(x=>x.folder&&x.name.toLowerCase()===nome.toLowerCase());if(f)return f.id;
+  const r=await gq(`${GRAPH}/drives/${REC.drive}/items/${REC.pasta.id}/children`,{method:'POST',body:JSON.stringify({name:nome,folder:{},'@microsoft.graph.conflictBehavior':'fail'})});
+  (REC.filhos=REC.filhos||[]).push({id:r.id,name:r.name,folder:{}});return r.id;
+}
+/* Envia um ficheiro sem nunca substituir (conflictBehavior=fail), salvo a matriz (replace). */
+async function recEnviar(pai,nome,bytes,tipo,substituir=false){
+  const cb=substituir?'replace':'fail';const base=`${GRAPH}/drives/${REC.drive}/items/${pai}:/${encodeURIComponent(nome)}:`;
+  const len=bytes.byteLength;
+  if(len<=4*1024*1024){
+    const r=await gRaw(`${base}/content?@microsoft.graph.conflictBehavior=${cb}`,{method:'PUT',headers:{'Content-Type':tipo},body:bytes});
+    if(!r.ok)throw new Error(r.status===409?`já existe «${nome}»`:`erro ${r.status}`);return r.json();}
+  const s=await gRaw(`${base}/createUploadSession`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({item:{'@microsoft.graph.conflictBehavior':cb}})});
+  if(!s.ok)throw new Error(`erro ${s.status}`);const {uploadUrl}=await s.json();const C=320*1024*20;let fim=null;
+  for(let i=0;i<len;i+=C){const e=Math.min(len,i+C);
+    const r=await fetch(uploadUrl,{method:'PUT',headers:{'Content-Range':`bytes ${i}-${e-1}/${len}`},body:bytes.slice(i,e)});
+    if(!r.ok)throw new Error(r.status===409?`já existe «${nome}»`:`erro ${r.status} no envio`);fim=r;}
+  return fim.json();
+}
+const tipoMIME=ext=>({'.pdf':'application/pdf','.jpg':'image/jpeg','.jpeg':'image/jpeg','.png':'image/png','.docx':'application/vnd.openxmlformats-officedocument.wordprocessingml.document','.json':'application/json'})[ext]||'application/octet-stream';
+async function recBytes(l){
+  const f=REC.files.get(l.ficheiro);const buf=await f.arrayBuffer();
+  if(!l.pags)return new Uint8Array(buf);
+  const L=await pdfLib();const src=await L.PDFDocument.load(buf,{ignoreEncryption:true});const out=await L.PDFDocument.create();
+  (await out.copyPages(src,l.pags.map(n=>n-1))).forEach(p=>out.addPage(p));
+  return out.save();
+}
+/* ── Matriz de dados ── */
+async function recLerMatriz(){
+  if(!REC.existentes.includes(MATRIZ_NOME))return null;
+  const r=await gRaw(`${GRAPH}/drives/${REC.drive}/items/${REC.pasta.id}:/${MATRIZ_NOME}:/content`);
+  if(!r.ok)throw new Error('não consegui ler a matriz existente (erro '+r.status+')');
+  return r.json();
+}
+const limparDados=d=>d?JSON.parse(JSON.stringify(d,(k,v)=>k==='texto'?undefined:v)):null;
+/* Mesmo documento, versão nova: CC pelo NIF/número, certidão pela descrição, caderneta pelo artigo… */
+function chaveMatriz(d){
+  const x=d.dados||{};
+  switch(d.tipoLido){
+  case'CC':return x.nif||x.numero||'';
+  case'CRP':return x.descricao?x.descricao+(x.fracao?'-'+x.fracao:''):'';
+  case'CAD':return x.artigo?x.natureza+'-'+x.artigo+(x.fracao?'-'+x.fracao:''):'';
+  case'N_SCE':return x.artigo||x.descricao||'';
+  case'N_CP':return x.pedido||'';
+  case'N_TOP':return x.artigo||'';
+  case'BC':return x.emprestimo||'';case'DC':return x.contrato||'';
+  case'N_ISM1':return x.numero||'';case'N_HAB':return x.falecido||'';
+  }
+  return'';
+}
+const IGNORAR_DIF=new Set(['texto','pags']);
+function diferencas(a,b){
+  const out=[];const ks=new Set([...Object.keys(a||{}),...Object.keys(b||{})]);
+  /* Um campo que ficou por ler (vazio) num dos dois não é «dado novo»: só conta o que mudou de valor. */
+  const vazio=v=>v==null||v===''||(Array.isArray(v)&&!v.length);
+  ks.forEach(k=>{if(IGNORAR_DIF.has(k))return;const va=(a||{})[k],vb=(b||{})[k];if(vazio(va)||vazio(vb))return;
+    if(JSON.stringify(va)!==JSON.stringify(vb))out.push({campo:k,antes:va,depois:vb});});
+  return out;
+}
+const curto=v=>{const s=typeof v==='string'?v:JSON.stringify(v);return s.length>80?s.slice(0,77)+'…':s;};
+/* ── Gravar ── */
+window.recGravar=async()=>{
+  if(!REC.pasta)return;
+  const btn=$('rec-gravar');btn.disabled=true;btn.textContent='A gravar…';REC.msg='';
+  const avisos=[];
+  try{
+    await recListar();recNomes();
+    const prontas=REC.linhas.filter(pronta);
+    let mat=await recLerMatriz();
+    if(!mat)mat={versao:1,pasta:REC.pasta.nome,documentos:[],novidades:[]};
+    /* 1) Originais: uma cópia de cada ficheiro recebido em «_originais». */
+    const orig=await recSubpasta('_originais');
+    let nomesOrig=[];try{nomesOrig=((await gq(`${GRAPH}/drives/${REC.drive}/items/${orig}/children?$top=999&$select=name`)).value||[]).map(x=>x.name.toLowerCase());}catch(_){}
+    for(const fn of new Set(prontas.map(l=>l.ficheiro))){
+      if(REC.origGravados.has(fn))continue;
+      let nome=fn,k=2;while(nomesOrig.includes(nome.toLowerCase()))nome=`${baseOriginal(fn)}_${k++}${extDe(fn)}`;
+      try{await recEnviar(orig,nome,new Uint8Array(await REC.files.get(fn).arrayBuffer()),tipoMIME(extDe(fn)));nomesOrig.push(nome.toLowerCase());REC.origGravados.add(fn);}
+      catch(e){avisos.push(`Original «${fn}» não ficou em _originais: ${e.message}`);}
+    }
+    /* 2) Cada documento na pasta principal, com o nome validado. */
+    const agora=new Date().toISOString();
+    for(const l of prontas){
+      try{
+        const bytes=await recBytes(l);
+        await recEnviar(REC.pasta.id,l.final,bytes,tipoMIME(l.ext));
+        l.gravado=l.final;l.erro='';REC.existentes.push(l.final);
+        const doc={ficheiro:l.final,original:l.ficheiro,paginas:l.pags||'todas',sigla:l.sigla||(l.livre?'':''),tipoLido:l.r&&l.r.tipo||'',
+          leitura:l.r?(l.r.ocr?'imagem':'texto'):'',confirmado:l.estado!=='ok'||!!l.manual,gravado:agora,nota:l.r&&l.r.nota||'',dados:limparDados(l.r&&l.r.dados)};
+        /* Documento novo de algo que já estava na matriz (ex.: caderneta nova): regista o que mudou. */
+        const ch=chaveMatriz(doc);
+        if(ch){const ant=mat.documentos.filter(d=>!d.substituido_por&&d.tipoLido===doc.tipoLido&&chaveMatriz(d)===ch).pop();
+          if(ant){const dif=diferencas(ant.dados,doc.dados);ant.substituido_por=doc.ficheiro;
+            if(dif.length){mat.novidades.push({quando:agora,tipo:doc.sigla,chave:ch,ficheiro:doc.ficheiro,anterior:ant.ficheiro,campos:dif,tratado:false});
+              avisos.push(`⚠ ${doc.ficheiro}: doc com dados novos face a ${ant.ficheiro} — atualizar gerador (${dif.map(d=>`${d.campo}: ${curto(d.antes)} → ${curto(d.depois)}`).join('; ')}).`);}
+            else avisos.push(`${doc.ficheiro}: igual a ${ant.ficheiro} (sem dados novos).`);}}
+        mat.documentos.push(doc);
+      }catch(e){l.erro='Não gravei: '+e.message;}
+    }
+    /* 3) Matriz atualizada (resumo do imóvel incluído, para o gerador). */
+    mat.atualizado=agora;mat.pasta=REC.pasta.nome;
+    try{const ativos=mat.documentos.filter(d=>!d.substituido_por&&d.dados).map(d=>({tipo:d.tipoLido,dados:d.dados}));mat.imovel=limparDados(apoioImovel(ativos));}catch(_){}
+    await recEnviar(REC.pasta.id,MATRIZ_NOME,new TextEncoder().encode(JSON.stringify(mat,null,1)),'application/json',true);
+    if(!REC.existentes.includes(MATRIZ_NOME))REC.existentes.push(MATRIZ_NOME);
+    REC.matriz=mat;
+    const ok=prontas.filter(l=>l.gravado).length;
+    REC.msg=esc(`Gravados ${ok} de ${prontas.length} documento(s) na pasta; originais em _originais; matriz atualizada.`)+(avisos.length?'\n'+avisos.map(esc).join('\n'):'');
+  }catch(e){REC.msg=`<span style="color:var(--red)">Não consegui gravar: ${esc(e.message)}</span>`;}
+  recComparar();recNomes();pintarRececao();
+};
+/* ── Ler para verificação os documentos que já estão na pasta principal ── */
+window.recLerPasta=async()=>{
+  if(!REC.pasta)return;
+  try{
+    await recListar();
+    const sel=REC.filhos.filter(x=>!x.folder&&(/\.(pdf|jpe?g|png)$/i.test(x.name)||/^DC_.*\.docx$/i.test(x.name)));
+    if(!sel.length){REC.msg='Não há documentos (PDF/imagem) na pasta principal.';pintarRececao();return;}
+    REC.lendo=true;REC.msg=`A descarregar ${sel.length} documento(s) da pasta…`;pintarRececao();
+    const files=[];
+    for(const x of sel){const r=await gRaw(`${GRAPH}/drives/${REC.drive}/items/${x.id}/content`);if(r.ok)files.push(new File([await r.blob()],x.name));}
+    REC.msg=`A ler ${files.length} documento(s)… o resultado aparece nos documentos de apoio (3).`;pintarRececao();
+    await juntarApoio(files);
+    REC.msg=`Lidos ${files.length} documento(s) da pasta — veja os documentos de apoio (3).`;
+  }catch(e){REC.msg='Não consegui ler a pasta: '+esc(e.message);}
+  REC.lendo=false;pintarRececao();
+};
+/* ── Receber ficheiros ── */
+async function recReceber(files){
+  if(!files.length)return;
+  files.forEach(f=>REC.files.set(f.name,f));
+  REC.lendo=true;REC.msg='';pintarRececao();
+  try{await juntarApoio(files);}catch(e){REC.msg='Erro na leitura: '+esc(e.message);}
+  REC.lendo=false;montarLinhas(files.map(f=>f.name));pintarRececao();
+}
+$('fich-rec').addEventListener('change',e=>{recReceber([...e.target.files]);e.target.value='';});
+(()=>{const d=$('drop-rec');['dragenter','dragover'].forEach(ev=>d.addEventListener(ev,e=>{e.preventDefault();d.classList.add('over');}));
+  ['dragleave','drop'].forEach(ev=>d.addEventListener(ev,e=>{e.preventDefault();d.classList.remove('over');}));
+  d.addEventListener('drop',e=>recReceber([...e.dataTransfer.files]));})();
+pintarRececao();
+
 /* ── Login ── */
 (function(){
   const s=document.createElement('script');s.src='https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js';
@@ -1863,10 +2213,10 @@ $('fich-apoio').addEventListener('change',e=>juntarApoio([...e.target.files]));
       await msalApp.initialize();
       const resp=await msalApp.handleRedirectPromise().catch(()=>null);
       conta=resp?.account||msalApp.getAllAccounts()[0]||null;
-      pintarProcs();if(conta)await carregarProcs();
+      pintarProcs();pintarRececao();if(conta||tokPortal()){await recInicio();if(!REC.doPortal)recPastas();}if(conta)await carregarProcs();
     }catch(e){$('proc-estado').textContent='Login indisponível: '+e.message;}
   };
-  s.onerror=()=>{$('proc-estado').textContent='Sem acesso ao serviço de login — a verificação corre sem as procurações.';};
+  s.onerror=()=>{$('proc-estado').textContent='Sem acesso ao serviço de login — a verificação corre sem as procurações.';pintarRececao();if(tokPortal())recInicio();};
   document.head.appendChild(s);
 })();
 
