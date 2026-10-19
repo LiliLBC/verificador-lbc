@@ -49,7 +49,7 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
 </head>
 <body>
 <div class="topbar">
-  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-19.18</span></div>
+  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-19.19</span></div>
   <div style="display:flex;gap:.6rem;align-items:center"><span id="login-info" style="font-size:11px;color:var(--text-faint)"></span>
     <button class="btn" id="btn-entrar" onclick="entrar()">Entrar</button>
     <button class="btn btn-p" id="btn-desc" onclick="descarregar()" disabled>Descarregar Word revisto</button></div>
@@ -2013,10 +2013,12 @@ function juntarContinuacoes(fn){
 }
 const COD_CRP=/\b[A-Z]{2}\s?-\s?\d{4}\s?-\s?\d{4,6}\s?-\s?\d{6}\s?-\s?\d{6}\b/;
 const ehCRP=t=>COD_CRP.test(t)&&(/(?:Certid\S{1,2}o\s+Permanente|Informa\S{1,3}o\s+(?:Predial\s+)?Simplificada)/i.test(t)||/C\S{1,2}digo\s+de\s+acesso/i.test(t)||/INSCRI\S{1,4}\s*-\s*AVERBAMENTOS|DESCRI\S{1,4}\s+(?:DO\s+)?(?:PR\S{1,2}DIO|FRA\S{1,3}O)|Registo\s+Predial/i.test(t));
+/* Como no Portal: o SharePoint abre sem a barra lateral nem o cabeçalho do site (env=WebView). */
+const embedSP=url=>!url?url:/[?&]env=/.test(url)?url:url+(url.includes('?')?'&':'?')+'env=WebView';
 /* Documento que está na pasta do cliente: o nome abre o ficheiro (ver/imprimir). */
 function linkPasta(fn,rot){
   const f=typeof REC!=='undefined'&&(REC.filhos||[]).find(x=>!x.folder&&x.name===fn);
-  return f&&f.webUrl?`<a href="${esc(f.webUrl)}" target="_blank" rel="noopener" title="Abrir o documento" style="color:var(--accent-dark)">${esc(rot)} ↗</a>`:esc(rot);
+  return f&&f.webUrl?`<a href="${esc(embedSP(f.webUrl))}" target="_blank" rel="noopener" title="Abrir o documento" style="color:var(--accent-dark)">${esc(rot)} ↗</a>`:esc(rot);
 }
 const ROT_APOIO={CAD:'Caderneta predial',CRP:'Certidão predial',CRC:'Certidão comercial',CC:'Cartão de cidadão',BC:'Boletim CGD',DC:'Complementar CGD'};
 async function juntarApoio(files){
@@ -2305,15 +2307,15 @@ function pintarFicheirosPasta(){
       <div class="nota" style="white-space:pre-wrap;margin:0">${vers.map(v=>`${esc(ROT_TIPO(v.tipo))} (${esc(v.chave)}): mais recente ${esc(v.novo)} (${esc(v.data)}); anterior(es): ${v.antigos.map(a=>`${esc(a.ficheiro)} (${esc(a.data)}${a.igual?', mesmos dados':''})`).join(', ')}`).join('\n')}</div></div>`:'')
     +`<details style="margin:.5rem 0;border:1px solid var(--border);border-radius:8px;padding:.5rem .7rem;background:var(--surface2)"${aberto===false?'':' open'}><summary style="cursor:pointer;font-size:13px;font-weight:600">📁 Documentos na pasta «${esc(REC.pasta.nome)}» (${fs.length}) — clique no nome para abrir</summary>
     <div style="margin:.4rem 0"><button class="btn" style="padding:2px 10px" onclick="recLerPasta(true)" ${REC.lendo?'disabled':''}>🔄 Voltar a ler todos os documentos da pasta</button></div>
-    <div style="font-size:12px;margin:.4rem 0 0 .2rem;line-height:1.7">${fs.map(x=>`<a href="${esc(x.webUrl||'#')}" target="_blank" rel="noopener" style="color:var(--accent-dark);text-decoration:none;font-family:'DM Mono',monospace">${esc(x.name)}</a>${/\.(pdf|jpe?g|png)$/i.test(x.name)&&REC.matriz&&!conhecidos.has(x.name)?' <span class="tag" style="background:var(--amber-light);color:var(--amber)">não passou pelo verificador</span>':''}${subst[x.name]?` <span class="tag">versão anterior — a mais recente é ${esc(subst[x.name])}</span>`:''}`).join('<br>')||'—'}
-    ${ds.length?`<div style="margin-top:.5rem">${(REC.filhos||[]).filter(x=>x.folder).sort((a,b)=>a.name.localeCompare(b.name,'pt')).map(x=>`<details class="subp" data-id="${esc(x.id)}" ontoggle="recSubpastaAbrir(this)" style="margin:.15rem 0"><summary style="cursor:pointer">📁 ${esc(x.name)}${x.webUrl?` <a href="${esc(x.webUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="font-size:11px;color:var(--text-faint)">abrir no SharePoint ↗</a>`:''}</summary><div class="subp-lista" style="margin:.2rem 0 .3rem 1.2rem;color:var(--text-faint)">…</div></details>`).join('')}</div>`:''}</div></details>`;
+    <div style="font-size:12px;margin:.4rem 0 0 .2rem;line-height:1.7">${fs.map(x=>`<a href="${esc(embedSP(x.webUrl)||'#')}" target="_blank" rel="noopener" style="color:var(--accent-dark);text-decoration:none;font-family:'DM Mono',monospace">${esc(x.name)}</a>${/\.(pdf|jpe?g|png)$/i.test(x.name)&&REC.matriz&&!conhecidos.has(x.name)?' <span class="tag" style="background:var(--amber-light);color:var(--amber)">não passou pelo verificador</span>':''}${subst[x.name]?` <span class="tag">versão anterior — a mais recente é ${esc(subst[x.name])}</span>`:''}`).join('<br>')||'—'}
+    ${ds.length?`<div style="margin-top:.5rem">${(REC.filhos||[]).filter(x=>x.folder).sort((a,b)=>a.name.localeCompare(b.name,'pt')).map(x=>`<details class="subp" data-id="${esc(x.id)}" ontoggle="recSubpastaAbrir(this)" style="margin:.15rem 0"><summary style="cursor:pointer">📁 ${esc(x.name)}${x.webUrl?` <a href="${esc(embedSP(x.webUrl))}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="font-size:11px;color:var(--text-faint)">abrir no SharePoint ↗</a>`:''}</summary><div class="subp-lista" style="margin:.2rem 0 .3rem 1.2rem;color:var(--text-faint)">…</div></details>`).join('')}</div>`:''}</div></details>`;
 }
 /* Subpasta (DPA, _originais…): mostra os ficheiros quando se abre. */
 window.recSubpastaAbrir=async el=>{
   if(!el.open||el.dataset.lida)return;el.dataset.lida='1';const box=el.querySelector('.subp-lista');
   try{const r=await gq(`${GRAPH}/drives/${REC.drive}/items/${el.dataset.id}/children?$top=999&$select=id,name,folder,webUrl`);
     const xs=(r.value||[]).sort((a,b)=>(!!b.folder-!!a.folder)||a.name.localeCompare(b.name,'pt'));
-    box.innerHTML=xs.length?xs.map(x=>`${x.folder?'📁 ':''}<a href="${esc(x.webUrl||'#')}" target="_blank" rel="noopener" style="color:var(--accent-dark);text-decoration:none;font-family:'DM Mono',monospace">${esc(x.name)}</a>`).join('<br>'):'(vazia)';}
+    box.innerHTML=xs.length?xs.map(x=>`${x.folder?'📁 ':''}<a href="${esc(embedSP(x.webUrl)||'#')}" target="_blank" rel="noopener" style="color:var(--accent-dark);text-decoration:none;font-family:'DM Mono',monospace">${esc(x.name)}</a>`).join('<br>'):'(vazia)';}
   catch(e){box.textContent='Não foi possível abrir: '+e.message;el.dataset.lida='';}
 };
 const novaLinha=(base,extra)=>({id:++REC.seq,ficheiro:base.ficheiro,ext:base.ext,pags:null,r:null,siglaAuto:'',sigla:'',ident:'',estado:'nr',confirmado:false,manual:'',livre:false,gravado:'',erro:'',...extra});
