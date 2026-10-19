@@ -49,7 +49,7 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
 </head>
 <body>
 <div class="topbar">
-  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-19.17</span></div>
+  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-19.18</span></div>
   <div style="display:flex;gap:.6rem;align-items:center"><span id="login-info" style="font-size:11px;color:var(--text-faint)"></span>
     <button class="btn" id="btn-entrar" onclick="entrar()">Entrar</button>
     <button class="btn btn-p" id="btn-desc" onclick="descarregar()" disabled>Descarregar Word revisto</button></div>
@@ -2306,8 +2306,16 @@ function pintarFicheirosPasta(){
     +`<details style="margin:.5rem 0;border:1px solid var(--border);border-radius:8px;padding:.5rem .7rem;background:var(--surface2)"${aberto===false?'':' open'}><summary style="cursor:pointer;font-size:13px;font-weight:600">📁 Documentos na pasta «${esc(REC.pasta.nome)}» (${fs.length}) — clique no nome para abrir</summary>
     <div style="margin:.4rem 0"><button class="btn" style="padding:2px 10px" onclick="recLerPasta(true)" ${REC.lendo?'disabled':''}>🔄 Voltar a ler todos os documentos da pasta</button></div>
     <div style="font-size:12px;margin:.4rem 0 0 .2rem;line-height:1.7">${fs.map(x=>`<a href="${esc(x.webUrl||'#')}" target="_blank" rel="noopener" style="color:var(--accent-dark);text-decoration:none;font-family:'DM Mono',monospace">${esc(x.name)}</a>${/\.(pdf|jpe?g|png)$/i.test(x.name)&&REC.matriz&&!conhecidos.has(x.name)?' <span class="tag" style="background:var(--amber-light);color:var(--amber)">não passou pelo verificador</span>':''}${subst[x.name]?` <span class="tag">versão anterior — a mais recente é ${esc(subst[x.name])}</span>`:''}`).join('<br>')||'—'}
-    ${ds.length?`<div style="color:var(--text-faint);margin-top:.3rem">Subpastas: ${ds.map(esc).join(', ')}</div>`:''}</div></details>`;
+    ${ds.length?`<div style="margin-top:.5rem">${(REC.filhos||[]).filter(x=>x.folder).sort((a,b)=>a.name.localeCompare(b.name,'pt')).map(x=>`<details class="subp" data-id="${esc(x.id)}" ontoggle="recSubpastaAbrir(this)" style="margin:.15rem 0"><summary style="cursor:pointer">📁 ${esc(x.name)}${x.webUrl?` <a href="${esc(x.webUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="font-size:11px;color:var(--text-faint)">abrir no SharePoint ↗</a>`:''}</summary><div class="subp-lista" style="margin:.2rem 0 .3rem 1.2rem;color:var(--text-faint)">…</div></details>`).join('')}</div>`:''}</div></details>`;
 }
+/* Subpasta (DPA, _originais…): mostra os ficheiros quando se abre. */
+window.recSubpastaAbrir=async el=>{
+  if(!el.open||el.dataset.lida)return;el.dataset.lida='1';const box=el.querySelector('.subp-lista');
+  try{const r=await gq(`${GRAPH}/drives/${REC.drive}/items/${el.dataset.id}/children?$top=999&$select=id,name,folder,webUrl`);
+    const xs=(r.value||[]).sort((a,b)=>(!!b.folder-!!a.folder)||a.name.localeCompare(b.name,'pt'));
+    box.innerHTML=xs.length?xs.map(x=>`${x.folder?'📁 ':''}<a href="${esc(x.webUrl||'#')}" target="_blank" rel="noopener" style="color:var(--accent-dark);text-decoration:none;font-family:'DM Mono',monospace">${esc(x.name)}</a>`).join('<br>'):'(vazia)';}
+  catch(e){box.textContent='Não foi possível abrir: '+e.message;el.dataset.lida='';}
+};
 const novaLinha=(base,extra)=>({id:++REC.seq,ficheiro:base.ficheiro,ext:base.ext,pags:null,r:null,siglaAuto:'',sigla:'',ident:'',estado:'nr',confirmado:false,manual:'',livre:false,gravado:'',erro:'',...extra});
 /* Juntar: as páginas desta linha passam para a linha de cima (fica o documento reconhecido, se só um o for). */
 window.recJuntar=id=>{const l=linhaRec(id);if(!l)return;const i=REC.linhas.indexOf(l),a=REC.linhas[i-1];if(!a||a.ficheiro!==l.ficheiro||a.gravado)return;
