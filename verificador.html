@@ -49,7 +49,7 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
 </head>
 <body>
 <div class="topbar">
-  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-19.16</span></div>
+  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-19.17</span></div>
   <div style="display:flex;gap:.6rem;align-items:center"><span id="login-info" style="font-size:11px;color:var(--text-faint)"></span>
     <button class="btn" id="btn-entrar" onclick="entrar()">Entrar</button>
     <button class="btn btn-p" id="btn-desc" onclick="descarregar()" disabled>Descarregar Word revisto</button></div>
@@ -2013,6 +2013,11 @@ function juntarContinuacoes(fn){
 }
 const COD_CRP=/\b[A-Z]{2}\s?-\s?\d{4}\s?-\s?\d{4,6}\s?-\s?\d{6}\s?-\s?\d{6}\b/;
 const ehCRP=t=>COD_CRP.test(t)&&(/(?:Certid\S{1,2}o\s+Permanente|Informa\S{1,3}o\s+(?:Predial\s+)?Simplificada)/i.test(t)||/C\S{1,2}digo\s+de\s+acesso/i.test(t)||/INSCRI\S{1,4}\s*-\s*AVERBAMENTOS|DESCRI\S{1,4}\s+(?:DO\s+)?(?:PR\S{1,2}DIO|FRA\S{1,3}O)|Registo\s+Predial/i.test(t));
+/* Documento que está na pasta do cliente: o nome abre o ficheiro (ver/imprimir). */
+function linkPasta(fn,rot){
+  const f=typeof REC!=='undefined'&&(REC.filhos||[]).find(x=>!x.folder&&x.name===fn);
+  return f&&f.webUrl?`<a href="${esc(f.webUrl)}" target="_blank" rel="noopener" title="Abrir o documento" style="color:var(--accent-dark)">${esc(rot)} ↗</a>`:esc(rot);
+}
 const ROT_APOIO={CAD:'Caderneta predial',CRP:'Certidão predial',CRC:'Certidão comercial',CC:'Cartão de cidadão',BC:'Boletim CGD',DC:'Complementar CGD'};
 async function juntarApoio(files){
   for(const f of files){
@@ -2064,7 +2069,7 @@ function pintarApoio(){
   const im=apoioImovel(APOIO);
   const linha=(r,v)=>v?`<tr><td style="color:var(--text-faint);padding:1px 10px 1px 0;white-space:nowrap">${r}</td><td>${esc(v)}</td></tr>`:'';
   $('apoio-lista').innerHTML=APOIO.map((d,i)=>`<div class="item" style="border-left-color:${d.tipo?'var(--green)':'var(--border-strong)'}">
-      <div class="cab"><span class="tag">${d.tipo&&d.tipo.startsWith('N_')?ROT_NOVOS[d.tipo.slice(2)]:d.tipo?(d.tipo==='CRP'&&d.dados.simplificada?'Informação predial simplificada':ROT_APOIO[d.tipo])+(d.tipo==='CRP'&&d.dados.fracao?' (fração '+d.dados.fracao+')':d.tipo==='CRP'?' (prédio)':''):'—'}</span>${d.ocr?'<span class="tag" style="background:var(--amber-bg,#fdf3d8)">lido de imagem</span>':''}${d.daMatriz?'<span class="tag">da matriz</span>':''}${esc(d.nome)}<button class="btn" style="margin-left:auto;padding:1px 8px" onclick="tirarApoio(${i})">×</button></div>
+      <div class="cab"><span class="tag">${d.tipo&&d.tipo.startsWith('N_')?ROT_NOVOS[d.tipo.slice(2)]:d.tipo?(d.tipo==='CRP'&&d.dados.simplificada?'Informação predial simplificada':ROT_APOIO[d.tipo])+(d.tipo==='CRP'&&d.dados.fracao?' (fração '+d.dados.fracao+')':d.tipo==='CRP'?' (prédio)':''):'—'}</span>${d.ocr?'<span class="tag" style="background:var(--amber-bg,#fdf3d8)">lido de imagem</span>':''}${d.daMatriz?'<span class="tag">da matriz</span>':''}${linkPasta(d.ficheiro,d.nome)}<button class="btn" style="margin-left:auto;padding:1px 8px" onclick="tirarApoio(${i})">×</button></div>
       ${d.nota?`<div class="nota">${esc(d.nota)}</div>`:''}
       ${d.tipo&&d.tipo.startsWith('N_')?`<div style="font-size:12px">${esc(resumoDoc(d))}</div>`:''}
       ${d.tipo==='BC'?`<table style="font-size:12px">${linha('Empréstimo',d.dados.emprestimo)}${linha('Mutuários',d.dados.mutuarios.map(m=>m.nome+' ('+m.nif+')').join('; '))}${linha('Aquisição',fmtEUR(d.dados.aquisicao)+' €')}${linha('Capital',fmtEUR(d.dados.capital)+' €')}${linha('Prazo',d.dados.prazo+' meses')}${linha('Juros até / sobretaxa',d.dados.juroAte+'% / '+d.dados.sobretaxa+'%')}${linha('Despesas',fmtEUR(d.dados.despesas)+' €')}${linha('Montante máximo',fmtEUR(d.dados.maximo)+' €')}${linha('Imóvel',`fração ${d.dados.fracao||'—'}, descrição ${d.dados.descricao||'—'}, artigo ${d.dados.artigo||'—'}`)}${linha('A cancelar',d.dados.encargos.filter(e=>e.cancelar).map(e=>e.ap).join('; '))}</table>`:''}
@@ -2293,12 +2298,12 @@ function pintarFicheirosPasta(){
   const fs=(REC.filhos||[]).filter(x=>!x.folder&&x.name!==MATRIZ_NOME).sort((a,b)=>a.name.localeCompare(b.name,'pt'));
   const ds=(REC.filhos||[]).filter(x=>x.folder).map(x=>x.name);
   const conhecidos=new Set(((REC.matriz&&REC.matriz.documentos)||[]).map(d=>d.ficheiro));
-  const aberto=el.querySelector('details')?.open;
+  const dt=el.querySelector('details');const aberto=dt?dt.open:undefined;
   const vers=(REC.versoes||[]).filter(v=>v.antigos.length);
   const subst={};((REC.matriz&&REC.matriz.documentos)||[]).forEach(d=>{if(d.substituido_por)subst[d.ficheiro]=d.substituido_por;});
   el.innerHTML=(vers.length?`<div class="item" style="border-left-color:var(--amber);margin:.4rem 0"><div class="cab">⚠ Documentos com versão mais recente — na verificação e no gerador conta só a mais recente</div>
       <div class="nota" style="white-space:pre-wrap;margin:0">${vers.map(v=>`${esc(ROT_TIPO(v.tipo))} (${esc(v.chave)}): mais recente ${esc(v.novo)} (${esc(v.data)}); anterior(es): ${v.antigos.map(a=>`${esc(a.ficheiro)} (${esc(a.data)}${a.igual?', mesmos dados':''})`).join(', ')}`).join('\n')}</div></div>`:'')
-    +`<details style="margin:.3rem 0"${aberto?' open':''}><summary style="cursor:pointer;font-size:12.5px;font-weight:600">Ficheiros na pasta «${esc(REC.pasta.nome)}» (${fs.length})</summary>
+    +`<details style="margin:.5rem 0;border:1px solid var(--border);border-radius:8px;padding:.5rem .7rem;background:var(--surface2)"${aberto===false?'':' open'}><summary style="cursor:pointer;font-size:13px;font-weight:600">📁 Documentos na pasta «${esc(REC.pasta.nome)}» (${fs.length}) — clique no nome para abrir</summary>
     <div style="margin:.4rem 0"><button class="btn" style="padding:2px 10px" onclick="recLerPasta(true)" ${REC.lendo?'disabled':''}>🔄 Voltar a ler todos os documentos da pasta</button></div>
     <div style="font-size:12px;margin:.4rem 0 0 .2rem;line-height:1.7">${fs.map(x=>`<a href="${esc(x.webUrl||'#')}" target="_blank" rel="noopener" style="color:var(--accent-dark);text-decoration:none;font-family:'DM Mono',monospace">${esc(x.name)}</a>${/\.(pdf|jpe?g|png)$/i.test(x.name)&&REC.matriz&&!conhecidos.has(x.name)?' <span class="tag" style="background:var(--amber-light);color:var(--amber)">não passou pelo verificador</span>':''}${subst[x.name]?` <span class="tag">versão anterior — a mais recente é ${esc(subst[x.name])}</span>`:''}`).join('<br>')||'—'}
     ${ds.length?`<div style="color:var(--text-faint);margin-top:.3rem">Subpastas: ${ds.map(esc).join(', ')}</div>`:''}</div></details>`;
