@@ -49,7 +49,7 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
 </head>
 <body>
 <div class="topbar">
-  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-19.10</span></div>
+  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-19.12</span></div>
   <div style="display:flex;gap:.6rem;align-items:center"><span id="login-info" style="font-size:11px;color:var(--text-faint)"></span>
     <button class="btn" id="btn-entrar" onclick="entrar()">Entrar</button>
     <button class="btn btn-p" id="btn-desc" onclick="descarregar()" disabled>Descarregar Word revisto</button></div>
@@ -741,7 +741,7 @@ function apoioCRP(L){
     conservatoria,descricao:dm?dm[1]:'',descDuvida:descLidas.length>1?descLidas:null,descData:dm?dm[2]:'',fracao:dm&&dm[3]?dm[3]:'',
     fregDesc,fregMatriz:g(/FREGUESIA:\s*([^\n]+?)\.?\s*$/m),
     freguesia:fregDesc||g(/FREGUESIA:\s*([^\n]+?)\.?\s*$/m),
-    codigo:(t.match(COD_CRP)||[''])[0].replace(/\s/g,''),simplificada:/^IS-/i.test(g(/\b((?:PP|PA|CA|IS)-\s?\d{4})/))||/Informa\S{1,3}o\s+(?:Predial\s+)?Simplificada/i.test(t),validade:val?`${val[3]}-${val[2]}-${val[1]}`:'',
+    codigo:(t.match(COD_CRP)||[''])[0].replace(/\s/g,''),simplificada:/^IS-/i.test(g(/\b([A-Z]{2}-\s?\d{4})/))||/Informa\S{1,3}o\s+(?:Predial\s+)?Simplificada/i.test(t),validade:val?`${val[3]}-${val[2]}-${val[1]}`:'',
     matriz:g(/MATRIZ n[ºo°]:\s*(\d+)/),
     ac:area(/(?:a\.c\.\s*de|S\.c\.)\s*([\d,]+)\s*m/i),ad:(comp.match(/(?:a\.d\.\s*de|S\.d\.)\s*[\d,]+\s*m/gi)||[]).length===1?area(/(?:a\.d\.\s*de|S\.d\.)\s*([\d,]+)\s*m/i):'',
     areaTotal:g(/[ÁA]REA TOTAL:\s*([\d.,]+)/),areaCob:g(/[ÁA]REA COBERTA:\s*([\d.,]+)/),areaDesc:g(/[ÁA]REA DESCOBERTA:\s*([\d.,]+)/),
@@ -821,7 +821,7 @@ function apoioCruzar(P,add,docs,dataAto){
     if(ocrIm&&im.descricao){const ds=[...tudo.matchAll(/sob\s+o\s+(?:n[úu]mero|n\.\s*[º°o])\s*(\d+)/gi)].map(m=>m[1]),pp=(im.codigo.match(/-0*(\d+)$/)||[])[1];
       const certo=ds.find(d=>quase(im.descricao,d));if(certo&&certo!==im.descricao){VER(alvo,`na certidão (lida de imagem) leu-se a descrição ${im.descricao}; o DPA tem ${certo} — confirme na certidão`);im.descricao=certo;}}
     docs.filter(d=>d.dados&&d.dados.tipo==='CRP'&&d.dados.descDuvida).forEach(d=>VER(alvo,`na certidão «${d.nome}» o n.º da descrição foi lido de formas diferentes (${d.dados.descDuvida.join(' / ')}) — não consigo confirmar; verifique na certidão`));
-    if(ocrIm&&im.codigo){const cs=[...tudo.matchAll(/\b(?:PP|PA|CA|IS)-\d{4}-[\d-]+\d/g)].map(m=>m[0]);const c2=cs.find(c=>quase(im.codigo,c));if(c2&&c2!==im.codigo){VER(onde(/\b(?:PP|PA|CA|IS)-\d{4}/),`na certidão (lida de imagem) leu-se o código ${im.codigo}; o DPA tem ${c2} — confirme na certidão`);im.codigo=c2;}}
+    if(ocrIm&&im.codigo){const cs=[...tudo.matchAll(/\b[A-Z]{2}-\d{4}-[\d-]+\d/g)].map(m=>m[0]);const c2=cs.find(c=>quase(im.codigo,c));if(c2&&c2!==im.codigo){VER(onde(/\b[A-Z]{2}-\d{4}/),`na certidão (lida de imagem) leu-se o código ${im.codigo}; o DPA tem ${c2} — confirme na certidão`);im.codigo=c2;}}
     if(im.descricao&&!new RegExp(`(n[úu]mero|n\\.\\s*[º°o])\\s*${im.descricao}\\b`,'i').test(tudo))
       add(alvo,'cruzamento','erro',`Certidão predial: o prédio está descrito sob o n.º ${im.descricao} — não encontrei esse número no DPA`,0,0);
     if(im.conservatoria){const cons=AP_N(im.conservatoria);
@@ -873,7 +873,7 @@ function apoioCruzar(P,add,docs,dataAto){
     im.onus.forEach(o=>{
       if(!new RegExp(`AP\\.\\s*${o.num}\\s+de\\s+${o.data.replace(/\//g,'\\/')}`,'i').test(tudo))
         add(onde(/hipoteca|cancelamento|ren[úu]ncia|distrate/i),'cruzamento','erro',`Está em vigor ${o.tipo.toLowerCase()} pela ${o.ap}${o.pessoas.length?' a favor de '+o.pessoas.map(x=>x.nome).join(', '):''}${o.capital?' (capital '+o.capital+' €)':''} — o DPA não trata do cancelamento`,0,0);});
-    if(im.validade&&dataAto&&im.validade<dataAto)add(onde(/\b(?:PP|PA|CA|IS)-\d{4}/),'cruzamento','erro',`A certidão permanente caducou em ${isoPT(im.validade)}`,0,0);
+    if(im.validade&&dataAto&&im.validade<dataAto)add(onde(/\b[A-Z]{2}-\d{4}/),'cruzamento','erro',`A certidão permanente caducou em ${isoPT(im.validade)}`,0,0);
     if(im.codigo&&!C.includes(im.codigo.toUpperCase()))add(onde(/certid[ãa]o permanente/i),'cruzamento','aviso',`O código da certidão (${im.codigo}) não aparece no DPA`,0,0);
   }
   docs.filter(d=>d.dados&&d.dados.tipo==='CC').forEach(d=>{const c=d.dados;
@@ -1304,7 +1304,9 @@ function lerDocumento(d){
     return{tipo:'CP',pedido:g1(t,/Consulta de Estado do Pedido\s*\n?\s*(\d{3,8}\/\d{4})/i)||g1(t,/\b(\d{4,8}\/20\d{2})\b/),
       anuncio:g1(t,/\d{3,8}\/\d{4}\s+(\d{2}-\d{2}-\d{4})/),disponivel:g1(t,/Disponibiliza\S*\s+no\s+Site\s*\n?\s*(\d{2}-\d{2}-\d{4})/i),
       artigo:g1(t,/Artigo\s+Matricial\s*\n?\s*(\d+)/i),descricao:g1(t,/Descri\S*\s+em\s+Ficha\s*\n?[^\n\d]*(\d+)/i),
-      preco:eurN(g1(t,/Pre\S{1,2}o\s+Moeda\s*\n?\s*([\d.,]+)/i)),pago:/Estado\s*\n?[^\n]*\bPago\b/i.test(t),
+      /* O preço vem no último bloco («Dados da Transmissão»), às vezes noutra página; o OCR pode
+         ler as colunas «Preço / Moeda» separadas do valor. */
+      preco:eurN(g1(t,/Pre\S{1,2}o\s+Moeda\s*\n?\s*([\d][\d.,]*)/i)||g1(t,/Pre\S{1,2}o\s*\n\s*([\d][\d.,]{2,})/i)||g1(t.split(/Dados\s+da\s+Transmiss/i).slice(1).join(' '),/([\d][\d.,]{2,})\s*(?:\n\s*)?(?:Euros?|EUR|€)/i)||g1(t,/Pre\S{1,2}o[\s\S]{0,60}?\b(\d[\d.,]{3,})\b/i)),pago:/Estado\s*\n?[^\n]*\bPago\b/i.test(t),
       previsivel:g1(t,/Data\s+previs\S+\s+do\s+neg\S+\s*\n?\s*(\d{2}-\d{2}-\d{4})/i),
       vendedores:nifsDe(sec(/Vendedor\(?es\)?/i,/Comprador\(?es\)?/i)),compradores:nifsDe(sec(/Comprador\(?es\)?/i,/Identifica\S+\s+do\s+Im/i)),
       impresso:imp?`${imp[3].length===2?'20'+imp[3]:imp[3]}-${imp[2].padStart(2,'0')}-${imp[1].padStart(2,'0')}`:'',entidades};}
@@ -1686,7 +1688,7 @@ function crcCruzar(P,add,docs,dataAto){
       add(p0,'sociedade',outro?'erro':'aviso',outro?`${nome}: o NIPC no DPA é ${outro}, mas na certidão é ${x.nipc}`:`${nome}: o NIPC ${x.nipc} da certidão não aparece no DPA`,0,0);}
     /* Código e validade da certidão */
     if(x.codigo){const cods=[...tudo.matchAll(/\b\d{4}-\d{4}-\d{4}\b/g)].map(m=>m[0]);
-      if(!cods.includes(x.codigo)){const out=cods.filter(c=>!/^(?:PP|PA|CA|IS)-/.test(c));
+      if(!cods.includes(x.codigo)){const out=cods.filter(c=>!/^[A-Z]{2}-/.test(c));
         add(onde(/c[óo]digo\s+de\s+acesso|certid[ãa]o\s+(?:permanente\s+)?(?:do\s+)?registo\s+comercial/i),'sociedade',out.length?'erro':'aviso',
           out.length?`${nome}: o código da certidão comercial no DPA (${out.join(', ')}) não é o da certidão junta (${x.codigo})`:`${nome}: o DPA não refere o código de acesso da certidão comercial (${x.codigo})`,0,0);}}
     if(x.validade&&dataAto&&x.validade<dataAto)add(p0,'sociedade','erro',`${nome}: a certidão comercial caducou em ${isoPT(x.validade)} (antes da data do ato)`,0,0);
@@ -1981,7 +1983,7 @@ async function lerImagens(nomeFich,lista,varios,jaLidas=[]){
    Não junta se a página começa um documento novo («Página - 1 -», outro código de acesso,
    outra fração). */
 function crpPeloNome(fn){
-  const m=fn.match(/\b((?:PP|PA|CA|IS)-\d{4}-\d{4,6}-\d{6}-\d{6})\b/);if(!m)return;
+  const m=fn.match(/\b([A-Z]{2}-\d{4}-\d{4,6}-\d{6}-\d{6})\b/);if(!m)return;
   APOIO.filter(r=>r.ficheiro===fn&&!r.tipo&&(r.texto||'').replace(/\s/g,'').length>200).forEach(r=>{
     const L=r.texto.split('\n').map(l=>l.trim()).filter(Boolean);const d=apoioCRP(L);
     if(!d.codigo)d.codigo=m[1];
@@ -2004,7 +2006,7 @@ function juntarContinuacoes(fn){
     if(b.ocr&&!/confirme/.test(a.nota||''))a.nota=((a.nota||'')+' Parte lida de imagem — confirme os valores com o original.').trim();
     APOIO.splice(APOIO.indexOf(b),1);recs.splice(i,1);i--;}
 }
-const COD_CRP=/\b(?:PP|PA|CA|IS)\s?-\s?\d{4}\s?-\s?\d{4,6}\s?-\s?\d{6}\s?-\s?\d{6}\b/;
+const COD_CRP=/\b[A-Z]{2}\s?-\s?\d{4}\s?-\s?\d{4,6}\s?-\s?\d{6}\s?-\s?\d{6}\b/;
 const ehCRP=t=>COD_CRP.test(t)&&(/(?:Certid\S{1,2}o\s+Permanente|Informa\S{1,3}o\s+(?:Predial\s+)?Simplificada)/i.test(t)||/C\S{1,2}digo\s+de\s+acesso/i.test(t)||/INSCRI\S{1,4}\s*-\s*AVERBAMENTOS|DESCRI\S{1,4}\s+(?:DO\s+)?(?:PR\S{1,2}DIO|FRA\S{1,3}O)|Registo\s+Predial/i.test(t));
 const ROT_APOIO={CAD:'Caderneta predial',CRP:'Certidão predial',CRC:'Certidão comercial',CC:'Cartão de cidadão',BC:'Boletim CGD',DC:'Complementar CGD'};
 async function juntarApoio(files){
