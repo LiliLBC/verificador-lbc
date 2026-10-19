@@ -37,6 +37,11 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
 .item .ex{font-family:'DM Mono',monospace;font-size:11.5px;color:var(--text-muted);white-space:pre-wrap;word-break:break-word}
 .item mark{background:#FFE08A;padding:0 1px;border-radius:2px}
 .nota{font-size:11.5px;color:var(--text-muted)}
+.minis{display:flex;gap:4px;flex-wrap:wrap;align-items:center;margin:.35rem 0}
+.mini-p{height:84px;min-width:60px;border:1px solid var(--border-strong);border-radius:3px;background:var(--surface2);cursor:zoom-in;object-fit:contain}
+#rec-ver{display:none;position:fixed;inset:0;z-index:1000;background:rgba(20,20,20,.82);flex-direction:column;align-items:center;justify-content:flex-start;padding:1rem;overflow:auto}
+#rec-ver img{max-width:min(96vw,1000px);background:#fff;box-shadow:0 4px 24px rgba(0,0,0,.4)}
+.ver-cab{display:flex;gap:.5rem;align-items:center;color:#fff;font-size:13px;margin-bottom:.6rem;flex-wrap:wrap;justify-content:center}
 .dd{display:none;position:absolute;left:0;right:0;top:100%;z-index:20;background:var(--surface);border:1px solid var(--border-strong);border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.1);max-height:300px;overflow:auto}
 .dd div{padding:.45rem .7rem;font-size:13px;cursor:pointer}.dd div:hover{background:var(--accent-light)}
 .vazio{font-size:12px;color:var(--text-faint);padding:.6rem 0}
@@ -44,7 +49,7 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
 </head>
 <body>
 <div class="topbar">
-  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-17.16</span></div>
+  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-19.4</span></div>
   <div style="display:flex;gap:.6rem;align-items:center"><span id="login-info" style="font-size:11px;color:var(--text-faint)"></span>
     <button class="btn" id="btn-entrar" onclick="entrar()">Entrar</button>
     <button class="btn btn-p" id="btn-desc" onclick="descarregar()" disabled>Descarregar Word revisto</button></div>
@@ -52,13 +57,14 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
 <div class="container">
 
   <div class="card" id="card-rec">
-    <div class="card-h"><div class="num">0</div><div><div class="card-t">Receção de documentos <span class="tag">piloto</span></div><div class="card-d">Abra a receção a partir da pasta do cliente no Portal (botão «📥 Documentos») e largue aqui tudo o que chegou. As pastas criam-se no Portal. Leio no computador, separo os documentos e proponho o nome (sigla da lista). Só ao carregar em «Gravar na pasta»: cada documento vai para a pasta principal, uma cópia dos ficheiros recebidos vai para «_originais» e a matriz de dados (MATRIZ_VERIFICADOR.json) é atualizada. Nunca substituo ficheiros.</div></div></div>
+    <div class="card-h"><div class="num">0</div><div><div class="card-t">Receção de documentos <span class="tag">piloto</span></div><div class="card-d">Abre-se a partir da pasta do cliente no Portal (botão «📥 Documentos»); as pastas criam-se no Portal. Os ficheiros recebidos são lidos no computador, separados por documento e com nome proposto (sigla da lista). Só ao carregar em «Gravar na pasta»: cada documento é gravado na pasta principal, uma cópia dos ficheiros recebidos fica em «_originais» e a matriz de dados (MATRIZ_VERIFICADOR.json) é atualizada. Nenhum ficheiro é substituído.</div></div></div>
     <div class="nota" id="rec-login"></div>
     <div id="rec-escolha" style="position:relative;max-width:560px"><label class="l">Pasta do cliente (ESCRITURAS)</label><input class="inp" id="rec-pasta" placeholder="Entre com a conta da LBC" disabled oninput="recPesquisar()" onfocus="recPesquisar()" autocomplete="off"><div id="rec-dd" class="dd"></div></div>
     <div class="nota" id="rec-sel" style="margin:.5rem 0"></div>
     <div class="drop" id="drop-rec" onclick="document.getElementById('fich-rec').click()">Arraste para aqui os ficheiros recebidos (PDF, fotografias, Word) — vários ficheiros, ou um só com tudo junto</div>
     <input type="file" id="fich-rec" multiple style="display:none">
     <div id="rec-lista" style="margin-top:.7rem"></div>
+    <div id="rec-ver" onclick="this.style.display='none'"></div>
     <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-top:.5rem"><button class="btn btn-p" id="rec-gravar" onclick="recGravar()" disabled>Gravar na pasta</button><button class="btn" id="rec-ler" onclick="recLerPasta()" disabled>Usar na verificação os documentos da pasta</button><span class="nota" id="rec-estado" style="margin:0"></span></div>
   </div>
 
@@ -78,7 +84,7 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
   </div>
 
   <div class="card">
-    <div class="card-h"><div class="num">3</div><div><div class="card-t">Documentos de apoio <span class="tag">piloto</span></div><div class="card-d">Caderneta, certidão permanente predial, fichas do cartão de cidadão e, nas da CGD, o boletim de contrato (PDF) e o documento complementar (Word). O nome dos ficheiros não importa: reconheço-os pelo conteúdo e cruzo-os com o DPA. Os cartões de cidadão digitalizados (imagem) também se leem — tudo no seu computador, nada é enviado.</div></div></div>
+    <div class="card-h"><div class="num">3</div><div><div class="card-t">Documentos de apoio <span class="tag">piloto</span></div><div class="card-d">Caderneta, certidão permanente predial, fichas do cartão de cidadão e, nas da CGD, o boletim de contrato (PDF) e o documento complementar (Word). O nome dos ficheiros não importa: são reconhecidos pelo conteúdo e cruzados com o DPA. Os cartões de cidadão digitalizados (imagem) também se leem — tudo no seu computador, nada é enviado.</div></div></div>
     <div class="drop" id="drop-apoio" onclick="document.getElementById('fich-apoio').click()">Arraste para aqui os PDFs de apoio (ou fotografias JPG/PNG) — vários ficheiros, ou um só com tudo junto</div>
     <input type="file" id="fich-apoio" accept=".pdf,.docx,.jpg,.jpeg,.png" multiple style="display:none">
     <div id="apoio-lista" style="margin-top:.7rem"></div>
@@ -105,7 +111,10 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
   <div class="card">
     <div class="card-h"><div class="num">?</div><div><div class="card-t">O que verifica nesta versão</div><div class="card-d">Regras fixas. As de negritos e redação entram depois dos primeiros DPA revistos.</div></div></div>
     <div class="nota">
-      <b>Receção de documentos</b> — abre-se a partir da pasta do cliente no Portal (as pastas criam-se no Portal); separo e nomeio cada documento (SIGLA_identificação_data); os lidos de imagem pedem confirmação do nome; os não reconhecidos ficam com o nome original até escolher uma sigla (OUTROS_1, OUTROS_2…) ou forçar um nome. Gravo na pasta principal sem nunca substituir ficheiros, com cópia dos originais em «_originais», e atualizo a MATRIZ_VERIFICADOR.json. Documento que já está na pasta com os mesmos dados não se grava outra vez; com dados diferentes, aviso «doc com dados novos, atualizar gerador».<br>
+      <b>Receção de documentos</b> — abre-se a partir da pasta do cliente no Portal (as pastas criam-se no Portal); cada documento é separado e nomeado (SIGLA_identificação_data); os lidos de imagem pedem confirmação do nome; os não reconhecidos ficam com o nome original até escolher uma sigla (OUTROS_1, OUTROS_2…) ou forçar um nome. Grava na pasta principal sem nunca substituir ficheiros, com cópia dos originais em «_originais», e atualiza a MATRIZ_VERIFICADOR.json. Documento que já está na pasta com os mesmos dados não se grava outra vez; com dados diferentes, surge o aviso «doc com dados novos, atualizar gerador».<br>
+      <b>Juntar e separar à mão</b> — na receção cada documento mostra as miniaturas das páginas (clique para ver em grande). «⤒ Juntar ao de cima» junta páginas que pertencem ao documento anterior; «✂ Separar» divide um bloco a partir da página indicada.<br>
+      <b>Distrate (cancelamento de hipoteca)</b> — o distrate, o termo de autenticação e a folha do registo online do ato formam um só documento. Validade de uso face à data do ato, termo de autenticação, descrição igual à da certidão predial e hipotecas em vigor na certidão iguais às inscrições a cancelar.<br>
+      <b>Sociedades (certidão comercial)</b> — todas as páginas da certidão formam um só documento. Conferidos com o DPA: código de acesso e validade, firma e NIPC, sede, capital social, objeto (compra e venda de imóveis), órgãos atuais e forma de obrigar (quem tem de intervir), mandato, sócios e quotas, e o depósito das contas do último exercício cujo prazo já terminou (até ao 15.º dia do 7.º mês após o fim do exercício ⚠).<br>
       <b>Espaços</b> — espaços duplos, espaço antes de vírgula, ponto, ponto e vírgula, dois pontos ou parêntese; corrigidos como alteração marcada.<br>
       <b>Por preencher</b> — «…», reticências, [ ], { }, ⚠, XXX e linhas a preencher no meio do texto.<br>
       <b>Palavras repetidas</b> — «na na», «de de»…<br>
@@ -115,7 +124,7 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
       <b>Valores</b> — o número e o extenso entre parênteses não coincidem.<br>
       <b>Concordância</b> — «o Primeira», «a Segundo», «os Segundos Outorgante»; «portador» com estado civil no feminino e vice-versa.<br>
       <b>Procurações</b> — com a sessão iniciada, confere os códigos (PR-…) das entidades registadas e, se houver lista, os procuradores.<br>
-      <b>Documentos de apoio (piloto)</b> — com a caderneta, as certidões prediais (do prédio e da fração, ligadas pelo n.º da descrição) e as fichas dos cartões: descrição, conservatória, freguesia da descrição e da matriz, autorização de utilização, artigo, fração, freguesia, câmara do concelho certo, VPT, áreas, titular inscrito, ónus por cancelar, validade da certidão e dados de cada cartão de cidadão. Cartões digitalizados em imagem: leio as linhas «&lt;&lt;&lt;» do verso (com os dígitos de controlo) e a frente — o que vem de imagem fica sempre como aviso a confirmar.<br>
+      <b>Documentos de apoio (piloto)</b> — com a caderneta, as certidões prediais (do prédio e da fração, ligadas pelo n.º da descrição) e as fichas dos cartões: descrição, conservatória, freguesia da descrição e da matriz, autorização de utilização, artigo, fração, freguesia, câmara do concelho certo, VPT, áreas, titular inscrito, ónus por cancelar, validade da certidão e dados de cada cartão de cidadão. Cartões digitalizados em imagem: são lidas as linhas «&lt;&lt;&lt;» do verso (com os dígitos de controlo) e a frente — o que vem de imagem fica sempre como aviso a confirmar.<br>
       <b>Verificar documento</b> — regra de base: o que o verificador não conseguiu conferir com certeza (documento não reconhecido, campo ilegível, leitura de imagem que não bate letra a letra) aparece SEMPRE como «Verificar documento». Silêncio = conferido.<br>
       <b>Trato sucessivo</b> — dos titulares inscritos na certidão (e usufrutos/reservas) até aos vendedores: se não forem os mesmos, reconstrói as sucessões com as habilitações e participações (óbito, data, freguesia, testamento, herdeiros com estado civil, repetindo para herdeiros falecidos) e confere que nenhum herdeiro final falta no DPA, nem o cônjuge em comunhão geral.<br>
       <b>Correções marcadas</b> — «notaria», «á ordem», «reprsent…», «Propria», «CREDITO AGRICOLA», «Conservatória de…» sem o tipo de registo, «os Primeiros… que vende», cabeçalho PRIMEIRO/PRIMEIROS.<br>
@@ -189,7 +198,7 @@ function paragrafos(xml){
 }
 
 /* ── Regras ── */
-const R={verificar:'Verificar documento',trato:'Trato sucessivo',pagamento:'Preço e pagamentos',fiscal:'IMT e Selo',legitimidade:'Procurações e habilitações',termo:'Termo e contrato',cgd:'CGD (boletim/complementar)',cruzamento:'Documentos de apoio',procuracao:'Procuração',condominio:'Condomínio',grafia:'Grafia',espaco:'Espaços',preencher:'Por preencher',repetida:'Palavra repetida',nif:'NIF/NIPC',validade:'Validade',valor:'Valor e extenso',concord:'Concordância'};
+const R={verificar:'Verificar documento',sociedade:'Sociedade (certidão comercial)',trato:'Trato sucessivo',pagamento:'Preço e pagamentos',fiscal:'IMT e Selo',legitimidade:'Procurações e habilitações',termo:'Termo e contrato',cgd:'CGD (boletim/complementar)',cruzamento:'Documentos de apoio',procuracao:'Procuração',condominio:'Condomínio',grafia:'Grafia',espaco:'Espaços',preencher:'Por preencher',repetida:'Palavra repetida',nif:'NIF/NIPC',validade:'Validade',valor:'Valor e extenso',concord:'Concordância'};
 function regras(P,dataAto){
   const A=[];const add=(p,tipo,grav,msg,ini,len,corr)=>{const o={p:p.i,tipo,grav,msg,ini,len,txt:p.txt,corr:!!corr};A.push(o);return o;};
   const nifs={};
@@ -592,6 +601,8 @@ const RE_PR=/PR-\d{5}-\d{5}-\d{5}/gi;
 function regrasDocumento(P,add){
   try{apoioCruzar(P,add,APOIO,$('data-ato').value);}catch(e){console.error('cruzamento',e);}
   try{cgdCruzar(P,add,APOIO);}catch(e){console.error('cgd',e);}
+  try{distrateCruzar(P,add,APOIO,$('data-ato').value);}catch(e){console.error('distrate',e);}
+  try{crcCruzar(P.map(p=>({...p,txt:p.txt.replace(/[\u00a0\u202f\u2009]/g,' ')})),add,APOIO,$('data-ato').value);}catch(e){console.error('crc',e);}
   /* Espaços inseparáveis (Word) passam a espaços normais — mesmo comprimento, as posições não mudam. */
   try{verificarCobertura(P,add);}catch(e){console.error('cobertura',e);}
   try{construirTrato(P.map(p=>({...p,txt:p.txt.replace(/[\u00a0\u202f\u2009]/g,' ')})),APOIO,add);}catch(e){console.error('trato',e);}
@@ -1114,11 +1125,11 @@ function pintarTrato(){
    Silêncio do verificador = verificado. Por isso: documento não reconhecido,
    campo que não se conseguiu ler, ou leitura duvidosa → «Verificar documento». */
 const CAMPOS={CC:{nome:'nome',numero:'n.º do cartão',validade:'validade',nif:'NIF'},CAD:{artigo:'artigo',vpt:'valor patrimonial'},
-  CRP:{descricao:'n.º da descrição',codigo:'código PP',validade:'validade'},
+  CRP:{descricao:'n.º da descrição',codigo:'código PP',validade:'validade'},CRC:{codigo:'código de acesso',validade:'validade',nipc:'NIPC',firma:'firma'},
   N_IMT:{numero:'n.º da guia',valor:'valor',nif:'NIF',artigo:'artigo'},N_ISV:{numero:'n.º da guia',valor:'valor',nif:'NIF',artigo:'artigo'},
   N_ISM1:{numero:'n.º de registo'},N_PROC:{data:'data',entidade:'quem a fez'},N_HAB:{data:'data'},N_TOP:{artigo:'artigo'},
   N_TRF:{valor:'valor',ibanDest:'IBAN de destino'},N_CHQ:{numero:'n.º do cheque'},N_CP:{pedido:'n.º do pedido',artigo:'artigo',preco:'preço'},
-  N_SCE:{numero:'n.º do certificado'}};
+  N_SCE:{numero:'n.º do certificado'},N_DIST:{credor:'credor',inscricoes:'inscrições a cancelar',descricao:'n.º da descrição',validade:'validade'}};
 function verificarCobertura(P,add){
   const alvo=P.find(p=>p.txt.trim())||P[0];
   APOIO.forEach(d=>{
@@ -1157,11 +1168,17 @@ function palavrasNum(t){
 /* Datas por extenso ou com números → «AAAA-MM-DD» (primeira que encontrar). */
 function lerData(texto){
   const t=norm(texto);let m;
-  if((m=t.match(/\b(\d{1,2})\s+de\s+([a-z]+)\s+de\s+(\d{4})\b/))){const mi=MESES.indexOf(m[2]);if(mi>=0)return`${m[3]}-${String(mi+1).padStart(2,'0')}-${m[1].padStart(2,'0')}`;}
+  /* Não serve: data futura, nem a validade/emissão de um cartão ou a data de nascimento
+     citadas no texto (ex.: «cartão de cidadão válido até 24 de setembro de 2028»). */
+  const hoje=new Date().toISOString().slice(0,10);
+  const fora=(i,iso)=>iso>hoje||/(valid|nascid|nascimento|emitid|emissao)[^.;]{0,30}$/.test(t.slice(Math.max(0,i-45),i));
+  for(const x of t.matchAll(/\b(\d{1,2})\s+de\s+([a-z]+)\s+de\s+(\d{4})\b/g)){const mi=MESES.indexOf(x[2]);if(mi<0)continue;
+    const iso=`${x[3]}-${String(mi+1).padStart(2,'0')}-${x[1].padStart(2,'0')}`;if(!fora(x.index,iso))return iso;}
   const re=/(?:no dia|aos)\s+([a-z ]+?)\s+(?:dias\s+do\s+mes\s+)?de\s+([a-z]+)\s+(?:do\s+ano\s+)?de\s+([a-z ]+?)(?=[,.;:]|\s+(?:perante|no|na|em|compareceu)\b|$)/;
   if((m=t.match(re))||(m=t.match(/aos\s+(\d{1,2})\s+dias\s+do\s+mes\s+de\s+([a-z]+)\s+do\s+ano\s+([a-z ]+?)(?=[,.;]|$)/))){
     const d=/^\d+$/.test(m[1])?+m[1]:palavrasNum(m[1]),mi=MESES.indexOf(m[2]),a=palavrasNum(m[3]);
-    if(d&&mi>=0&&a>1900)return`${a}-${String(mi+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;}
+    const iso=`${a}-${String(mi+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    if(d&&mi>=0&&a>1900&&iso<=new Date().toISOString().slice(0,10))return iso;}
   return'';
 }
 const dataPT=iso=>isoPT(iso);
@@ -1179,6 +1196,7 @@ const mesmoNome=(a,b)=>{const A=tokNome(a),B=tokNome(b);if(!A.length||!B.length|
 /* ── Tipo de cada página ── */
 function tipoPagina(t){
   if(/Certificado\s+Energ[ée]tico|Pr[ée]-?\s*Certificado|Declara\S*\s+Provis[óo]ria/i.test(t)&&/SCE\s?\d{6,}|ADENE/i.test(t))return'SCE';
+  if(/Certid\S{1,2}o\s+de\s+Registo/i.test(t)&&/C\S{1,2}digo\s+de\s+acesso:?\s*\d{4}-\d{4}-\d{4}/i.test(t))return'CRC';
   if(/CADERNETA\s+PREDIAL\s+(URBANA|R\S{1,2}STICA)/.test(t))return'CAD';
   if(/Certid\S{1,2}o\s+Permanente/i.test(t)&&/PP-\s?\d{4}/i.test(t))return'CRP';
   if(/Consulta de Estado do Pedido|Direitos de Prefer\S+/i.test(t)&&/An[úu]ncio|Vendedor/i.test(t))return'CP';
@@ -1186,6 +1204,11 @@ function tipoPagina(t){
   if(/IMPOSTO\s+(DO\s+)?SELO\s*[-–]\s*Verba/i.test(t))return'ISV';
   if(/TRANSMISS[OÕ]ES\s+GRATUITAS/i.test(t))return'ISM1';
   if(/Registo Central de Contribuinte/i.test(t))return'RCC';
+  /* Folha do registo online do ato (Ordem dos Advogados, OSAE…) e termo de autenticação
+     «do documento que antecede»: pertencem ao documento anterior. */
+  if(/NATUREZA\s+E\s+ESP\S{1,3}CIE\s+DO\s+A\S{1,2}TO/i.test(t))return'ANEXO';
+  if(/Cancelamento\s+de\s+Hipoteca|\bDISTRATE\b|autorizar\s+o\s+cancelamento/i.test(t)&&!/TERMO\s+DE\s+AUTENTICA/i.test(t))return'DIST';
+  if(/TERMO\s+DE\s+AUTENTICA/i.test(t)&&/\bantecede\b/i.test(t))return'TERMOA';
   if(/TERMO\s+DE\s+AUTENTICA/i.test(t)&&/PROCURA/i.test(t))return'PROCT';
   if(/^\s*PROCURA[CÇG][AÃ]O\s*$/im.test(t)||/constitu\w*\s+(seu|sua|seus)\s+bastante/i.test(t))return'PROC';
   if(/HABILITA\S{1,3}\s+DE\s+HERDEIROS|Procedimento\s+Simplificado|HABILITA[CÇG][AÃ]O/i.test(t))return'HAB';
@@ -1203,8 +1226,11 @@ const numPart=t=>((t.match(/Registo\s+da\s+Participa\S*:?\s*(\d{5,8})/i)||[])[1]
 function agruparPaginas(pags){
   const docs=[];let cur=null;
   pags.forEach(p=>{const t=p.texto,tp=tipoPagina(t);
+    const codC=(t.match(/codcertidao=\s?(\d{4}-\d{4}-\d{4})/i)||[])[1];
     const cont=cur&&(
+      (cur.tipo==='CRC'&&tp!=='CRC'&&(!tp||(codC&&cur.texto.includes(codC))))||
       (tp===''&&cur.tipo!=='')||
+      ((tp==='ANEXO'||tp==='TERMOA')&&cur.tipo!=='')||
       (tp==='CHQV'&&cur.tipo==='CHQ')||
       (tp==='RCC'&&cur.tipo==='RCC')||
       (tp==='CAD'&&cur.tipo==='CAD'&&!/P\S{1,2}gina\s+1\s+de/i.test(t))||
@@ -1212,7 +1238,7 @@ function agruparPaginas(pags){
       (tp==='SCE'&&cur.tipo==='SCE'&&(t.match(/SCE\s?\d{6,}/i)||[''])[0].replace(/\s/g,'')===(cur.texto.match(/SCE\s?\d{6,}/i)||[''])[0].replace(/\s/g,''))||
       ((tp==='IMT'||tp==='ISV')&&tp===cur.tipo&&(!numDoc(t)||numDoc(t)===cur.num))||
       (tp==='ISM1'&&cur.tipo==='ISM1'&&(!numPart(t)||!cur.num||numPart(t)===cur.num))||
-      (tp==='PROC'&&(cur.tipo==='PROCT'||cur.tipo==='PROC'))||
+      (tp==='PROC'&&(cur.tipo==='PROCT'||cur.tipo==='PROC'||cur.tipo==='TERMOA'))||
       (tp==='HAB'&&cur.tipo==='HAB'));
     if(cont){cur.pags.push(p.pag);cur.texto+='\n'+t;if(!cur.num)cur.num=tp==='ISM1'?numPart(t):numDoc(t);if(tp==='CHQV')cur.visado=true;return;}
     cur={tipo:tp==='CHQV'?'CHQ':tp,pags:[p.pag],texto:t,num:tp==='ISM1'?numPart(t):numDoc(t),visado:tp==='CHQV'};docs.push(cur);
@@ -1221,10 +1247,10 @@ function agruparPaginas(pags){
      junta-se ao documento que vem a seguir. */
   for(let i=docs.length-2;i>=0;i--){const d=docs[i],n=docs[i+1];
     if(!d.tipo&&n.tipo&&/CERTIFICO|conforme\s+(?:o|com\s+o)\s+original/i.test(d.texto)){n.pags=[...d.pags,...n.pags];n.texto=d.texto+'\n'+n.texto;docs.splice(i,1);}}
-  docs.forEach(d=>{if(d.tipo==='PROCT')d.tipo='PROC';if(d.tipo==='CHQ'&&/CHEQUE\s+VISADO/i.test(d.texto))d.visado=true;});
+  docs.forEach(d=>{if(d.tipo==='TERMOA')d.tipo=/PROCURA/i.test(d.texto)?'PROC':'';if(d.tipo==='ANEXO')d.tipo='';if(d.tipo==='PROCT')d.tipo='PROC';if(d.tipo==='CHQ'&&/CHEQUE\s+VISADO/i.test(d.texto))d.visado=true;});
   return docs;
 }
-const ROT_NOVOS={SCE:'Certificado energético',CP:'Direitos de preferência (Casa Pronta)',IMT:'Guia de IMT',ISV:'Guia de Imposto do Selo',ISM1:'Participação de Imposto do Selo',RCC:'Inscrição da herança (NIF)',PROC:'Procuração',HAB:'Habilitação de herdeiros',TOP:'Certidão de toponímia',TRF:'Comprovativo de transferência',CHQ:'Cheque'};
+const ROT_NOVOS={DIST:'Distrate (cancelamento de hipoteca)',SCE:'Certificado energético',CP:'Direitos de preferência (Casa Pronta)',IMT:'Guia de IMT',ISV:'Guia de Imposto do Selo',ISM1:'Participação de Imposto do Selo',RCC:'Inscrição da herança (NIF)',PROC:'Procuração',HAB:'Habilitação de herdeiros',TOP:'Certidão de toponímia',TRF:'Comprovativo de transferência',CHQ:'Cheque'};
 const g1=(t,re,i=1)=>((t.match(re)||[])[i]||'').trim();
 function lerDocumento(d){
   const t=d.texto,T=AP_N(t);
@@ -1270,6 +1296,19 @@ function lerDocumento(d){
       emissao:(g1(t,/Data\s+de\s+Emiss[ãa]o\s*:?\s*(\d{2}\/\d{2}\/\d{4})/i).split('/').reverse().join('-')),
       conservatoria:g1(t,/Conservat[óo]ria\s+do\s+Registo\s+Predial\s+de\s+([^\n]+)/i),descricao:g1(t,/Inscri\S*\s+na\s+Conservat\S*\s*:?\s*(\d+)/i),
       artigo:g1(t,/Artigo\s+Matricial\s*n?\S{0,2}\s*(\d+)/i),fracao:g1(t,/Fra\S+\s+Aut[óo]noma\s+([A-Z]{1,3})\b/),morada:g1(t,/Morada\s+([^\n]+)/)};}
+  case'DIST':{
+    const tl=t.replace(/\s+/g,' ');
+    const aps=[...tl.matchAll(/(?:C-?\s*)?Ap\.?\s*(\d+)\s+de\s+(\d{2})\/(\d{2})\/(\d{4})/gi)].map(m=>({num:m[1],data:`${m[4]}/${m[3]}/${m[2]}`}));
+    const val=g1(tl,/at[ée]\s+ao\s+dia\s+(\d{2}\/\d{2}\/\d{4})/i)||g1(tl,/v[áa]lid[oa]\s+at[ée]\s+(\d{2}\/\d{2}\/\d{4})/i);
+    return{tipo:'DIST',credor:g1(tl,/([A-ZÀ-Ý][A-ZÀ-Ý0-9 .,&-]{2,60}?,?\s*S\.?\s*A\.?),?\s*(?:\S\s+)?(?:é|e|€|6)\s+uma\s+entidade/)||g1(tl,/([A-ZÀ-Ý][A-ZÀ-Ý .,&-]{2,60}?,?\s*S\.?\s*A\.?),\s*(?:com\s+sede|pessoa)/),
+      inscricoes:aps,total:/cancelamento\s+total/i.test(tl),
+      conservatoria:g1(tl,/Registo\s+Predial\s+de\s+([A-ZÀ-Ýa-zà-ú][A-ZÀ-Ýa-zà-ú -]+?)\s*,/),
+      descricao:g1(tl,/sob\s+\S{1,2}\(?s?\)?\s+n[úu]mero\(?s?\)?\s+([\d ,e]+?)\s*,/i).replace(/\s+/g,' ').trim(),
+      freguesia:g1(tl,/n[úu]mero\(?s?\)?\s+[\d ,e]+?\s*,\s*da\s+fre\S+\s+de\s+([A-ZÀ-Ýa-zà-ú][A-ZÀ-Ýa-zà-ú -]+?)\s*,/i),
+      beneficiario:g1(tl,/no\s+interesse\s+d[oa]\s+([A-ZÀ-Ýa-zà-ú].{3,60}?,?\s*S\.\s*A\.?)/i),
+      validade:val?val.split('/').reverse().join('-'):'',data:lerData(t.split(/TERMO\s+DE\s+AUTENTICA/i)[0].slice(-600))||lerData(t),
+      autenticado:/TERMO\s+DE\s+AUTENTICA|reconhe\S*\s+(?:a\s+)?assinatura/i.test(t),
+      registoAto:g1(tl,/COM\s+O\s+N\S{0,3}\s*:?\s*([0-9A-Z]+\/[A-Z]?\d+)/i)};}
   case'RCC':return{tipo:'RCC',nifHeranca:g1(t,/\n\s*(\d{9})\s+[A-Z][A-Z ]+-\s*CABE/),autor:g1(t,/Autor da Heran\S*[\s\S]{0,40}?Nome:\s*([^\n]+)/i)};
   case'PROC':{
     const termo=/TERMO\s+DE\s+AUTENTICA/i.test(t),notarial=!termo&&/perante mim/i.test(t)&&/not[áa]ri[ao]/i.test(t.slice(0,1500));
@@ -1315,6 +1354,7 @@ function resumoDoc(d){
   case'ISM1':return`n.º ${x.numero||'—'} · ${x.autor} · óbito ${isoPT(x.obito)} · entregue ${isoPT(x.recepcao)} · relação de bens: ${x.verbas.map(v=>v.artigo?`artigo ${v.artigo} (${v.quota})`:(v.desc||'verba '+v.n)).join('; ')||'—'}`;
   case'CP':return`pedido ${x.pedido} · disponibilizado ${x.disponivel} · artigo ${x.artigo} · descrição ${x.descricao} · preço ${euroPT(x.preco)} € · ${x.entidades.map(e=>e.n+': '+e.intencao).join('; ')} · impresso ${x.impresso?isoPT(x.impresso):'— (sem data no topo)'}${x.previsivel?' · data previsível '+x.previsivel:''}`;
   case'SCE':return`${x.provisoria?'declaração provisória':'certificado'} ${x.numero} · ${x.validade?'válido até '+isoPT(x.validade):x.emissao?'emitido em '+isoPT(x.emissao):'—'} · artigo ${x.artigo||'—'} · descrição ${x.descricao||'—'}${x.fracao?' · fração '+x.fracao:''} · ${x.morada}`;
+  case'DIST':return`${x.credor||'credor?'} · cancelamento ${x.total?'total':''} de ${x.inscricoes.map(a=>'AP. '+a.num+' de '+a.data).join(' e ')||'?'} · descrição ${x.descricao||'?'}${x.freguesia?' ('+x.freguesia+')':''}${x.conservatoria?' · CRP '+x.conservatoria:''}${x.beneficiario?' · no interesse de '+x.beneficiario:''} · válido até ${isoPT(x.validade)||'?'}${x.autenticado?' · com termo de autenticação':' · SEM termo de autenticação'}`;
   case'RCC':return`NIF da herança ${x.nifHeranca} · ${x.autor}`;
   case'PROC':return`${x.forma==='notarial'?'notarial (documento autêntico)':x.forma==='autenticada'?'autenticada':x.forma} · ${isoPT(x.data)||'data?'} · ${x.entidade||'—'}${x.cedula?' (CP '+x.cedula+')':''}${x.cartorio?' · '+x.cartorio:''} · poderes: ${x.vender?'vender':'—'}${x.receber?', receber o preço':''}${x.artigos.length?' · artigo '+x.artigos.join(', '):''}`;
   case'HAB':return`${x.forma==='pshh'?'procedimento simplificado':'escritura notarial'} · ${x.numero||x.codigo||'—'} · ${isoPT(x.data)||'data?'} · ${x.entidade||''} · ${x.falecido}`;
@@ -1328,11 +1368,11 @@ function resumoDoc(d){
 function lerNovos(nomeFich,pags,varios){
   const out=[];const pg=a=>a.length>1?`págs. ${a[0]}–${a[a.length-1]}`:`pág. ${a[0]}`;
   agruparPaginas(pags).forEach(d=>{
-    if(d.tipo==='CAD'||d.tipo==='CRP'){const L=d.texto.split('\n').map(l=>l.trim()).filter(Boolean);
-      out.push({ficheiro:nomeFich,nome:nomeFich+(varios?` (${pg(d.pags)})`:''),pags:d.pags,tipo:d.tipo,dados:d.tipo==='CAD'?apoioCAD(L):apoioCRP(L),ocr:true,nota:'Lido de imagem — confirme os valores com o original.'});return;}
+    if(d.tipo==='CAD'||d.tipo==='CRP'||d.tipo==='CRC'){const L=d.texto.split('\n').map(l=>l.trim()).filter(Boolean);
+      out.push({ficheiro:nomeFich,nome:nomeFich+(varios?` (${pg(d.pags)})`:''),pags:d.pags,linhas:L,tipo:d.tipo,dados:d.tipo==='CAD'?apoioCAD(L):d.tipo==='CRC'?apoioCRC(L):apoioCRP(L),ocr:true,nota:'Lido de imagem — confirme os valores com o original.'});return;}
     const dados=d.tipo?lerDocumento(d):null;
     out.push({ficheiro:nomeFich,nome:nomeFich+(varios?` (${pg(d.pags)})`:''),pags:d.pags,tipo:d.tipo?'N_'+d.tipo:'',dados,texto:d.texto,ocr:true,
-      nota:d.tipo?'':(d.texto.replace(/\s/g,'').length<20?'Digitalização sem texto legível.':`Lido (${d.texto.replace(/\s/g,'').length} caracteres), mas ainda não reconheço este tipo de documento.`)});
+      nota:d.tipo?'':(d.texto.replace(/\s/g,'').length<20?'Digitalização sem texto legível.':`Lido (${d.texto.replace(/\s/g,'').length} caracteres), mas este tipo de documento ainda não é reconhecido.`)});
   });
   return out;
 }
@@ -1544,6 +1584,122 @@ function apoioCruzarNovos(P,add,docs){
   regrasPagamentos(P,add,docs);
 }
 
+/* ═══════════ CERTIDÃO DE REGISTO COMERCIAL · piloto (19/10/2026) ═══════════
+   Compradores, vendedores ou mutuários podem ser sociedades. Da certidão permanente
+   comercial interessam: código de acesso e validade, firma, NIPC, sede, capital,
+   objeto (se permite a compra e venda de imóveis), forma de obrigar, órgãos atuais
+   (gerentes/administradores) e mandato, sócios e quotas, e o depósito das contas
+   do último exercício cujo prazo já terminou. Todas as páginas são UM documento. */
+function apoioCRC(L){
+  /* Tira cabeçalho e rodapé do navegador («19/10/26, 10:51 Consulta de…», endereço e n.º de página). */
+  const linhas=L.filter(l=>!/^\d{2}\/\d{2}\/\d{2},\s*\d{1,2}:\d{2}\s+Consulta de Certid/i.test(l)&&!/^https?:\/\/\S+\s+\d+\/\d+$/.test(l)&&!/^https?:\/\//.test(l));
+  const t=linhas.join('\n');const g=(re,i=1,x=t)=>((x.match(re)||[])[i]||'').trim();
+  const iIns=t.search(/Inscri[çc][õo]es\s*-\s*Averbamentos/i);
+  /* Matrícula: os rótulos da coluna da esquerda partem-se em várias linhas e misturam-se com os valores. */
+  let mat=(iIns>0?t.slice(0,iIns):t).replace(/\n(Sociais\/Liquidat\S+|\/Administrador ou|Gestor Judicial:|Encerramento do|Exerc[íi]cio:|dos\(s\) Mandato\(s\):|\(\d+\):)(?=\s|$)/g,'\n').replace(/^(Sociais\/Liquidat\S+|\/Administrador ou|Gestor Judicial:)\s*/gm,'');
+  const ins=iIns>0?t.slice(iIns):'';
+  const val=g(/V[áa]lida\s+at[ée]:?\s*(\d{2}\/\d{2}\/\d{4})/i);
+  const objeto=g(/Obje[c]?to:\s*([\s\S]+?)\n\s*Capital:/i,1,mat).replace(/\s*\n\s*/g,' ');
+  const sedeM=mat.match(/Sede:\s*(?:Morada:\s*)?([^\n]+)(?:\n\s*(Distrito:[^\n]+))?(?:\n\s*(\d{4}[\s-]+\d{3}[^\n]*))?/i);
+  /* Órgãos atuais (matrícula): cargo em maiúsculas seguido de «Nome:» e «NIF/NIPC:». */
+  const orgT=g(/[ÓO]rg[ãa]os\s+([\s\S]+?)(?:\nConservat[óo]ria onde|\nOs elementos constantes|$)/i,1,mat);
+  const orgaos=[];let cargo='';
+  orgT.split('\n').forEach(l=>{const c=l.match(/^\s*([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇ ()\/]+):\s*(.*)$/);
+    let resto=l;if(c&&!/^(NOME|NIF)/i.test(c[1])){cargo=c[1].trim();resto=c[2];}
+    const n=resto.match(/Nome:\s*(.+)/i);if(n)orgaos.push({cargo,nome:n[1].trim(),nif:''});
+    const f=resto.match(/NIF\/NIPC:\s*(\d{9})/i);if(f&&orgaos.length&&!orgaos[orgaos.length-1].nif)orgaos[orgaos.length-1].nif=f[1];});
+  /* Sócios e quotas (sociedades por quotas): «QUOTA: … TITULAR: …» nas inscrições. Leitura piloto. */
+  const socios=[...ins.matchAll(/QUOTA[S]?:?\s*([\d.,]+)\s*Euros[\s\S]{0,40}?TITULAR(?:ES)?:?\s*([^\n]+)(?:\n\s*NIF\/NIPC:\s*(\d{9}))?/gi)]
+    .map(m=>({quota:m[1],nome:m[2].replace(/^Nome\/Firma:\s*/i,'').trim(),nif:m[3]||''}));
+  const movQuotas=/TRANSMISS\S+\s+DE\s+QUOTA|CESS\S+\s+DE\s+QUOTA|DIVIS\S+\s+DE\s+QUOTA|UNIFICA\S+|AMORTIZA\S+|AUMENTO\s+DE\s+CAPITAL/i.test(ins);
+  const contas=[...new Set([...t.matchAll(/Ano da Presta\S+ de Contas:\s*(\d{4})/gi)].map(m=>+m[1]))].sort((a,b)=>a-b);
+  const enc=mat.match(/Data do\s+(\d{1,2})\s+([A-Za-zçÇ]+)/);
+  const natureza=g(/Natureza Jur[íi]dica:\s*([^\n]+)/i,1,mat);
+  return{tipo:'CRC',codigo:g(/C[óo]digo de acesso:\s*(\d{4}-\d{4}-\d{4})/i),validade:val?val.split('/').reverse().join('-'):'',
+    subscrita:g(/subscrita em\s*(\d{2}\/\d{2}\/\d{4})/i).split('/').reverse().join('-'),
+    nipc:g(/NIF\/NIPC:\s*(\d{9})/i,1,mat),firma:g(/Firma:\s*([^\n]+)/i,1,mat),natureza,
+    anonima:/AN[óÓo]NIMA/i.test(natureza),quotas:/QUOTAS/i.test(natureza)||/UNIPESSOAL/i.test(natureza),
+    sede:sedeM?sedeM[1].trim():'',sedeLocal:sedeM&&sedeM[2]?sedeM[2].replace(/\s+—\s+/g,', ').trim():'',sedePostal:sedeM&&sedeM[3]?sedeM[3].trim():'',
+    objeto,imoveis:/compra\s+e\s+venda\s+de\s+(?:de\s+)?(?:bens\s+)?(?:im[óo]ve|imobili)|revenda\s+dos\s+(?:im[óo]veis\s+)?adquiridos|aquisi\S+\s+de\s+im[óo]veis\s+para\s+revenda/i.test(objeto),
+    caeImoveis:/68100|68110/.test(mat),
+    capital:g(/Capital:\s*([\d.,]+)\s*(?:Euros|EUR|€)/i,1,mat),
+    formaObrigar:g(/Forma de Obrigar:\s*([\s\S]+?)\n\s*(?:Prazo de dura|[ÓO]rg[ãa]os)/i,1,mat).replace(/\s*\n\s*/g,' '),
+    mandato:g(/Prazo de dura\S+\s*(?:dos\(s\) Mandato\(s\):)?\s*(\d{4}\s*\/\s*\d{4})/i,1,mat).replace(/\s/g,''),
+    encerramento:enc?{dia:+enc[1],mes:MESES.indexOf(norm(enc[2]))+1}:{dia:31,mes:12},
+    constituicao:(g(/Insc\.1\s+AP\.\s*\d+\/(\d{8})/i,1,ins)||'').replace(/(\d{4})(\d{2})(\d{2})/,'$1-$2-$3'),
+    orgaos,socios,movQuotas,contas};
+}
+/* Último exercício cujas contas já tinham de estar depositadas à data do ato
+   (até ao 15.º dia do 7.º mês a seguir ao fim do exercício). */
+function contasExigiveis(x,dataAto){
+  const d=dataAto||new Date().toISOString().slice(0,10);const mes=(x.encerramento&&x.encerramento.mes)||12;
+  for(let y=+d.slice(0,4);y>1990;y--){const lim=new Date(Date.UTC(y,mes-1+7,15)).toISOString().slice(0,10);
+    if(lim<d)return{ano:y,limite:lim};}
+  return null;
+}
+function distrateCruzar(P,add,docs,dataAto){
+  const ds=docs.filter(d=>d.tipo==='N_DIST'&&d.dados);if(!ds.length)return;
+  const im=apoioImovel(docs);const alvo=P.find(p=>/cancelamento|distrate|hipoteca/i.test(p.txt))||P.find(p=>p.txt.trim())||P[0];
+  ds.forEach(d=>{const x=d.dados,oc=d.ocr,A=(sev,m)=>add(alvo,'cruzamento',oc&&sev==='erro'?'aviso':sev,m+(oc&&sev==='erro'?' (lido de imagem — confirme)':''),0,0);
+    const nome=`Distrate${x.credor?' de '+x.credor:''}`;
+    if(x.validade&&dataAto&&x.validade<dataAto)A('erro',`${nome}: só podia ser usado até ${isoPT(x.validade)} — a data do ato é posterior`);
+    if(!x.autenticado)A('aviso',`${nome}: não encontrei termo de autenticação nem reconhecimento de assinaturas`);
+    if(im&&im.descricao&&x.descricao&&!x.descricao.split(/[ ,e]+/).includes(im.descricao))A('erro',`${nome}: refere a descrição ${x.descricao}, mas a certidão é da descrição ${im.descricao}`);
+    if(im&&im.onus){
+      const hip=im.onus.filter(o=>/hipoteca/i.test(o.tipo)&&(!x.credor||!o.pessoas.length||o.pessoas.some(p=>tokNome(p.nome)[0]===tokNome(x.credor)[0])));
+      hip.forEach(o=>{if(!x.inscricoes.some(a=>a.num===o.num&&a.data===o.data))A('aviso',`${nome}: a hipoteca ${o.ap} (certidão) não está entre as inscrições a cancelar (${x.inscricoes.map(a=>'AP. '+a.num+' de '+a.data).join(', ')||'nenhuma lida'})`);});
+      x.inscricoes.forEach(a=>{if(!im.onus.some(o=>o.num===a.num&&o.data===a.data))A('aviso',`${nome}: a inscrição AP. ${a.num} de ${a.data} não aparece em vigor na certidão predial`);});}
+  });
+}
+function crcCruzar(P,add,docs,dataAto){
+  const tudo=P.map(p=>p.txt).join('\n'),T=norm(tudo);
+  const onde=re=>P.find(p=>re.test(p.txt))||P.find(p=>p.txt.trim())||P[0];
+  docs.filter(d=>d.tipo==='CRC'&&d.dados).forEach(d=>{const x=d.dados;
+    const nomeFirma=norm(x.firma).replace(/[.,]/g,'').replace(/\s+-\s+/g,' ');
+    const nucleo=nomeFirma.split(/\s+(?:-\s+)?/).filter(w=>w.length>2&&!/^(lda|sa|unipessoal|limitada|sociedade)$/.test(w)).slice(0,2).join(' ');
+    const pFirma=P.filter(p=>{const t=norm(p.txt).replace(/[.,]/g,'').replace(/\s+-\s+/g,' ');return (nucleo&&t.includes(nucleo))||(x.nipc&&p.txt.replace(/\D/g,' ').includes(x.nipc));});
+    const nome=`«${x.firma||d.nome}»`;
+    if(!pFirma.length){add(P[0],'sociedade','aviso',`Verificar documento: foi junta a certidão comercial de ${nome}, mas a sociedade não aparece no DPA`,0,0);return;}
+    const p0=pFirma[0];
+    /* NIPC */
+    if(x.nipc&&!tudo.replace(/[\s.]/g,'').includes(x.nipc)){
+      const outro=(p0.txt.match(/(?:NIPC|pessoa\s+coletiva|contribuinte)[^0-9]{0,40}(\d{9})/i)||[])[1];
+      add(p0,'sociedade',outro?'erro':'aviso',outro?`${nome}: o NIPC no DPA é ${outro}, mas na certidão é ${x.nipc}`:`${nome}: o NIPC ${x.nipc} da certidão não aparece no DPA`,0,0);}
+    /* Código e validade da certidão */
+    if(x.codigo){const cods=[...tudo.matchAll(/\b\d{4}-\d{4}-\d{4}\b/g)].map(m=>m[0]);
+      if(!cods.includes(x.codigo)){const out=cods.filter(c=>!/^PP-/.test(c));
+        add(onde(/c[óo]digo\s+de\s+acesso|certid[ãa]o\s+(?:permanente\s+)?(?:do\s+)?registo\s+comercial/i),'sociedade',out.length?'erro':'aviso',
+          out.length?`${nome}: o código da certidão comercial no DPA (${out.join(', ')}) não é o da certidão junta (${x.codigo})`:`${nome}: o DPA não refere o código de acesso da certidão comercial (${x.codigo})`,0,0);}}
+    if(x.validade&&dataAto&&x.validade<dataAto)add(p0,'sociedade','erro',`${nome}: a certidão comercial caducou em ${isoPT(x.validade)} (antes da data do ato)`,0,0);
+    /* Sede */
+    if(x.sede){const rua=norm(x.sede.split(',')[0]).replace(/^(rua|avenida|av\.?|travessa|largo|praca|estrada)\s+/,'');
+      if(rua.length>4&&!T.includes(rua))add(p0,'sociedade','aviso',`${nome}: a sede na certidão é «${x.sede}» — não a encontrei no DPA`,0,0);}
+    /* Capital social */
+    if(x.capital){const cap=eurN(x.capital);const m=p0.txt.match(/capital\s+social\s+(?:de\s+)?(?:€\s*)?([\d .]+,\d{2})/i)||tudo.match(/capital\s+social\s+(?:de\s+)?(?:€\s*)?([\d .]+,\d{2})/i);
+      if(!m)add(p0,'sociedade','aviso',`${nome}: o DPA não refere o capital social (${x.capital} €)`,0,0);
+      else if(Math.abs(eurN(m[1])-cap)>0.009)add(p0,'sociedade','erro',`${nome}: capital social ${m[1]} € no DPA, ${x.capital} € na certidão`,0,0);}
+    /* Objeto social */
+    if(!x.imoveis)add(p0,'sociedade','aviso',`${nome}: o objeto social não refere a compra e venda de imóveis${x.caeImoveis?' (só o CAE 68)':''} — verificar se o ato cabe no objeto`,0,0);
+    /* Quem intervém pela sociedade: órgãos atuais e forma de obrigar */
+    const nomesOrg=x.orgaos.map(o=>o.nome);
+    const presente=n=>{const tk=tokNome(n);return tk.length&&P.some(p=>{const q=tokNome(p.txt);return tk[0]&&q.includes(tk[0])&&q.includes(tk[tk.length-1]);});};
+    const pres=x.orgaos.filter(o=>presente(o.nome));
+    if(x.orgaos.length&&!pres.length)add(p0,'sociedade','aviso',`${nome}: nenhum dos órgãos registados (${x.orgaos.map(o=>o.nome+' — '+o.cargo.toLowerCase()).join('; ')}) intervém no DPA — confirmar a representação (procuração?)`,0,0);
+    const nAss=(x.formaObrigar.match(/\b(duas|dois|2|tr[êe]s|3)\s+(?:dos\s+)?(?:gerentes|administradores)/i)||[])[1];
+    const precisa=nAss?({duas:2,dois:2,'2':2,'tres':3,'três':3,'3':3})[norm(nAss)]||2:1;
+    if(pres.length&&pres.length<precisa)add(p0,'sociedade','erro',`${nome}: a sociedade obriga-se ${x.formaObrigar} — no DPA só intervém ${pres.map(o=>o.nome).join(', ')}`,0,0);
+    if(!x.orgaos.length)add(p0,'verificar','aviso',`Verificar documento: «${d.nome}» — não consegui ler os gerentes/administradores atuais`,0,0);
+    /* Mandato */
+    const fimM=+(x.mandato.split('/')[1]||0);if(fimM&&dataAto&&fimM<+dataAto.slice(0,4))
+      add(p0,'sociedade','aviso',`${nome}: o mandato registado dos órgãos (${x.mandato}) já terminou — confirmar se há designação posterior`,0,0);
+    /* Contas */
+    const ex=contasExigiveis(x,dataAto);const ini=x.constituicao?+x.constituicao.slice(0,4):0;
+    if(ex&&ex.ano>=ini&&!x.contas.includes(ex.ano))add(p0,'sociedade','aviso',`${nome}: não está depositada a prestação de contas de ${ex.ano} (prazo terminou a ${isoPT(ex.limite)}); última depositada: ${x.contas.length?x.contas[x.contas.length-1]:'nenhuma'} ⚠`,0,0);
+    /* Sócios e quotas (sociedades por quotas) */
+    if(!x.anonima&&x.socios.length&&x.movQuotas)add(p0,'verificar','aviso',`Verificar documento: «${d.nome}» — houve transmissões/alterações de quotas; confirme os sócios e quotas atuais na certidão`,0,0);
+  });
+}
+
 /* ── Leitura dos PDFs no navegador (pdf.js) ── */
 /* O pdf.js novo usa Map.getOrInsertComputed, que os navegadores mais antigos ainda não têm. */
 [Map,WeakMap].forEach(K=>{
@@ -1570,13 +1726,18 @@ function separarDocumentos(paginas){
   paginas.forEach((L,i)=>{
     const t=L.join('\n');
     /* Pouco texto (≤ 250 caracteres, p. ex. só a assinatura digital) = página digitalizada: lê-se a imagem. */
+    /* Páginas da mesma certidão comercial (o código vem no rodapé de cada página) ficam juntas. */
+    const codC=(t.match(/codcertidao=(\d{4}-\d{4}-\d{4})/i)||[])[1];
+    const pagCRC=t.replace(/\s/g,'').length>=250&&/Insc\.\s*\d|Men[çc][ãa]o\s+DEP|AP\.\s*\d+\/\d{8}|Registo\s+Comercial|Fim\s+da\s+Certid/i.test(t)&&!/C\S{1,2}digo\s+de\s+acesso:?\s*\d{4}-\d{4}-\d{4}/i.test(t);
+    if(atual&&atual.tipo==='CRC'&&(codC?codC===atual.cod:pagCRC)){atual.linhas.push(...L);atual.pags.push(i+1);atual.porPag.push({pag:i+1,texto:t});return;}
     if(t.replace(/\s/g,'').length<250&&!/Dados de Cart|CADERNETA|Certid\S+o Permanente|BOLETIM/i.test(t)){imagens++;imgPags.push(i+1);atual=null;return;}
     let ini='';
     if(/Dados de Cart[ãa]o de Cidad[ãa]o/i.test(t))ini='CC';
+    else if(/Certid\S{1,2}o\s+de\s+Registo/i.test(t)&&/C\S{1,2}digo\s+de\s+acesso:?\s*\d{4}-\d{4}-\d{4}/i.test(t))ini='CRC';
     else if(/Certid\S{1,2}o\s+Permanente/i.test(t)&&/C\S{1,2}digo\s+de\s+acesso:?\s*PP-/i.test(t))ini='CRP';
     else if(/BOLETIM DE CONTRATO/i.test(t)&&/Caixa Geral de Dep[óo]sitos/i.test(t))ini='BC';
     else if(/CADERNETA\s+PREDIAL\s+(URBANA|R\S{1,2}STICA)/.test(t)&&!/Certificado\s+Energ/i.test(t)&&(!atual||atual.tipo!=='CAD'||/P[áa]gina\s+1\s+de/i.test(t)))ini='CAD';
-    if(ini){atual={tipo:ini,linhas:[...L],pags:[i+1],porPag:[{pag:i+1,texto:t}]};docs.push(atual);}
+    if(ini){atual={tipo:ini,linhas:[...L],pags:[i+1],porPag:[{pag:i+1,texto:t}],cod:ini==='CRC'?(t.match(/C\S{1,2}digo\s+de\s+acesso:?\s*(\d{4}-\d{4}-\d{4})/i)||[])[1]:''};docs.push(atual);}
     else if(atual){atual.linhas.push(...L);atual.pags.push(i+1);atual.porPag.push({pag:i+1,texto:t});}
     else docs.push(atual={tipo:'',linhas:[...L],pags:[i+1],porPag:[{pag:i+1,texto:t}]});
   });
@@ -1795,7 +1956,29 @@ async function lerImagens(nomeFich,lista,varios,jaLidas=[]){
     nota:'Lido de imagem (digitalização) — confirme com o cartão.'+(f.avisos.length?' Atenção: '+f.avisos.join('; ')+'.':'')}));
   if(resto.length)lerNovos(nomeFich,resto,varios||fichas.length+resto.length>1).forEach(r=>APOIO.push(r));
 }
-const ROT_APOIO={CAD:'Caderneta predial',CRP:'Certidão predial',CC:'Cartão de cidadão',BC:'Boletim CGD',DC:'Complementar CGD'};
+/* Um documento com páginas de texto e páginas digitalizadas (ou uma página que o OCR não
+   classificou) chega partido em pedaços. Junta ao documento anterior a página seguinte que
+   não é reconhecida como outro documento: certidões predial e comercial e caderneta.
+   Não junta se a página começa um documento novo («Página - 1 -», outro código de acesso,
+   outra fração). */
+function juntarContinuacoes(fn){
+  const PARSE={CAD:apoioCAD,CRP:apoioCRP,CRC:apoioCRC};
+  const recs=APOIO.filter(r=>r.ficheiro===fn&&r.pags&&r.pags.length).sort((a,b)=>a.pags[0]-b.pags[0]);
+  const txt=r=>r.linhas?r.linhas.join('\n'):(r.texto||'');
+  for(let i=1;i<recs.length;i++){const a=recs[i-1],b=recs[i];
+    if(!PARSE[a.tipo]||!a.linhas||b.pags[0]!==a.pags[a.pags.length-1]+1)continue;
+    const tb=txt(b);if(/P\S{1,2}gina\s*-\s*1\s*-/i.test(tb))continue;
+    let junta=!b.tipo;
+    if(b.tipo===a.tipo&&b.dados){const x=a.dados||{},y=b.dados;
+      junta=a.tipo==='CRC'?(!y.codigo||y.codigo===x.codigo):a.tipo==='CRP'?(!y.codigo&&(!y.descricao||y.descricao===x.descricao)&&(y.fracao||'')===(x.fracao||'')):(!y.artigo||y.artigo===x.artigo);}
+    if(!junta)continue;
+    a.linhas=[...a.linhas,...tb.split('\n').map(l=>l.trim()).filter(Boolean)];a.pags=[...a.pags,...b.pags];
+    a.dados=PARSE[a.tipo](a.linhas);if(b.ocr)a.ocr=true;
+    a.nome=fn+` (págs. ${a.pags[0]}–${a.pags[a.pags.length-1]})`;
+    if(b.ocr&&!/confirme/.test(a.nota||''))a.nota=((a.nota||'')+' Parte lida de imagem — confirme os valores com o original.').trim();
+    APOIO.splice(APOIO.indexOf(b),1);recs.splice(i,1);i--;}
+}
+const ROT_APOIO={CAD:'Caderneta predial',CRP:'Certidão predial',CRC:'Certidão comercial',CC:'Cartão de cidadão',BC:'Boletim CGD',DC:'Complementar CGD'};
 async function juntarApoio(files){
   for(const f of files){
     if(/\.docx$/i.test(f.name)){
@@ -1831,11 +2014,12 @@ async function juntarApoio(files){
       if(extras.length&&!imgPags.length)lerNovos(f.name,extras,varios).forEach(r=>{r.ocr=false;APOIO.push(r);});
       if(extras.length&&imgPags.length)jaLidasExtra.push(...extras);
       docs.filter(d=>!cartoes.includes(d)&&d.tipo).forEach(d=>{const L=d.linhas;
-        const reg={ficheiro:f.name,nome:f.name+(varios?` (pág. ${d.pags[0]}${d.pags.length>1?'–'+d.pags[d.pags.length-1]:''})`:''),pags:d.pags,tipo:d.tipo,nota:'',
-          dados:d.tipo==='CAD'?apoioCAD(L):d.tipo==='CRP'?apoioCRP(L):d.tipo==='CC'?apoioCC(L):d.tipo==='BC'?apoioBC(L):null};
+        const reg={ficheiro:f.name,nome:f.name+(varios?` (pág. ${d.pags[0]}${d.pags.length>1?'–'+d.pags[d.pags.length-1]:''})`:''),pags:d.pags,linhas:/^(CAD|CRP|CRC)$/.test(d.tipo)?L:null,tipo:d.tipo,nota:'',
+          dados:d.tipo==='CAD'?apoioCAD(L):d.tipo==='CRP'?apoioCRP(L):d.tipo==='CRC'?apoioCRC(L):d.tipo==='CC'?apoioCC(L):d.tipo==='BC'?apoioBC(L):null};
         if(!d.tipo)reg.nota='Não reconheço este tipo de documento (por agora: caderneta, certidão predial e ficha do cartão de cidadão).';
         APOIO.push(reg);});
       if(imgPags.length||jaLidas.length)await lerImagens(f.name,imgPags.map(n=>({pag:n,canvas:()=>pdfPaginaCanvas(pdoc,n)})),varios,jaLidas);
+      juntarContinuacoes(f.name);
     }catch(e){APOIO.push({ficheiro:f.name,nome:f.name,tipo:'',dados:null,nota:'Não consegui abrir: '+e.message});}
   }
   pintarApoio();if(DOC)analisar();
@@ -1850,6 +2034,11 @@ function pintarApoio(){
       ${d.tipo&&d.tipo.startsWith('N_')?`<div style="font-size:12px">${esc(resumoDoc(d))}</div>`:''}
       ${d.tipo==='BC'?`<table style="font-size:12px">${linha('Empréstimo',d.dados.emprestimo)}${linha('Mutuários',d.dados.mutuarios.map(m=>m.nome+' ('+m.nif+')').join('; '))}${linha('Aquisição',fmtEUR(d.dados.aquisicao)+' €')}${linha('Capital',fmtEUR(d.dados.capital)+' €')}${linha('Prazo',d.dados.prazo+' meses')}${linha('Juros até / sobretaxa',d.dados.juroAte+'% / '+d.dados.sobretaxa+'%')}${linha('Despesas',fmtEUR(d.dados.despesas)+' €')}${linha('Montante máximo',fmtEUR(d.dados.maximo)+' €')}${linha('Imóvel',`fração ${d.dados.fracao||'—'}, descrição ${d.dados.descricao||'—'}, artigo ${d.dados.artigo||'—'}`)}${linha('A cancelar',d.dados.encargos.filter(e=>e.cancelar).map(e=>e.ap).join('; '))}</table>`:''}
       ${d.tipo==='DC'?`<table style="font-size:12px">${linha('Contrato',d.dados.contrato)}${linha('Parte devedora',d.dados.devedores.join('; '))}${linha('Montante',d.dados.capitalExt)}${linha('Prazo',d.dados.prazoExt+' meses')}${linha('Prestação',d.dados.prestacaoExt)}</table>`:''}
+      ${d.tipo==='CRC'?`<table style="font-size:12px">${linha('Firma',d.dados.firma+(d.dados.nipc?' — NIPC '+d.dados.nipc:''))}${linha('Natureza',d.dados.natureza)}${linha('Sede',[d.dados.sede,d.dados.sedePostal].filter(Boolean).join(', '))}${linha('Capital',d.dados.capital?d.dados.capital+' €':'')}
+        ${linha('Objeto',d.dados.objeto)}${linha('Compra e venda de imóveis',d.dados.imoveis?'sim, no objeto':'NÃO consta do objeto'+(d.dados.caeImoveis?' (só CAE 68)':''))}
+        ${linha('Forma de obrigar',d.dados.formaObrigar)}${linha('Órgãos atuais',d.dados.orgaos.map(o=>`${o.nome}${o.nif?' ('+o.nif+')':''} — ${o.cargo.toLowerCase()}`).join('; '))}${linha('Mandato',d.dados.mandato)}
+        ${linha('Sócios e quotas',d.dados.anonima?'sociedade anónima (ações — sem quotas na certidão)':d.dados.socios.map(x=>`${x.nome}${x.nif?' ('+x.nif+')':''}: ${x.quota} €`).join('; ')+(d.dados.movQuotas?' — houve transmissões/alterações: confirmar':''))}
+        ${linha('Contas depositadas',d.dados.contas.length?d.dados.contas.join(', '):'nenhuma')}${linha('Certidão',d.dados.codigo+(d.dados.validade?' — válida até '+isoPT(d.dados.validade):''))}</table>`:''}
       ${d.tipo==='CC'?`<table style="font-size:12px">${linha('Nome',d.dados.nome)}${linha('NIF',d.dados.nif)}${linha('Cartão',d.dados.numero)}${linha('Válido até',isoPT(d.dados.validade))}${linha('Morada',[d.dados.arruamento,d.dados.localidade,d.dados.postal].filter(Boolean).join(', '))}</table>`:''}
     </div>`).join('')
     +(im?`<div class="item" style="border-left-color:var(--accent)"><div class="cab">Ficha do imóvel, a partir dos documentos</div><table style="font-size:12px">
@@ -1884,13 +2073,13 @@ const REC={drive:null,pasta:null,pastas:[],files:new Map(),linhas:[],existentes:
 const SIGLAS=[['CC','Cartão de cidadão'],['CRP','Certidão permanente predial'],['CPU','Caderneta predial urbana'],['CPR','Caderneta predial rústica'],
   ['IMT','Guia de IMT'],['IS','Guia de Imposto do Selo'],['PART-IS','Participação de Imposto do Selo'],['HAB','Habilitação de herdeiros'],['PROC','Procuração'],
   ['TOP','Certidão de toponímia'],['SCE','Certificado energético'],['CP','Preferências (Casa Pronta)'],['TRF','Comprovativo de transferência'],['CHQ','Cheque'],
-  ['BC','Boletim de contrato CGD'],['DC','Documento complementar CGD'],['AU','Autorização de utilização'],['FTH','Ficha técnica da habitação'],
+  ['CRC','Certidão de registo comercial'],['DIST','Distrate (cancelamento de hipoteca)'],['BC','Boletim de contrato CGD'],['DC','Documento complementar CGD'],['AU','Autorização de utilização'],['FTH','Ficha técnica da habitação'],
   ['RCC','NIF da herança'],['OUTROS','Outros']];
 const ROT_SIGLA=Object.fromEntries(SIGLAS);
 const MATRIZ_NOME='MATRIZ_VERIFICADOR.json';
 const PDFLIB_URL='https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js';
 async function pdfLib(){
-  if(!window.PDFLib)await new Promise((ok,ko)=>{const s=document.createElement('script');s.src=PDFLIB_URL;s.onload=ok;s.onerror=()=>ko(new Error('não consegui carregar o separador de PDF'));document.head.appendChild(s);});
+  if(!window.PDFLib)await new Promise((ok,ko)=>{const s=document.createElement('script');s.src=PDFLIB_URL;s.onload=ok;s.onerror=()=>ko(new Error('não foi possível carregar o separador de PDF'));document.head.appendChild(s);});
   return window.PDFLib;
 }
 /* ── Nomes ── */
@@ -1902,7 +2091,7 @@ const isoDe=s=>{let m=String(s||'').match(/(\d{4})-(\d{2})-(\d{2})/);if(m)return
 function siglaDe(r){
   if(!r)return'';
   if(r.tipo==='CAD')return r.dados&&r.dados.natureza==='rústica'?'CPR':'CPU';
-  return({CRP:'CRP',CC:'CC',BC:'BC',DC:'DC',N_IMT:'IMT',N_ISV:'IS',N_ISM1:'PART-IS',N_RCC:'RCC',N_PROC:'PROC',N_HAB:'HAB',N_TOP:'TOP',N_SCE:'SCE',N_CP:'CP',N_TRF:'TRF',N_CHQ:'CHQ'})[r.tipo]||'';
+  return({CRP:'CRP',CRC:'CRC',CC:'CC',BC:'BC',DC:'DC',N_IMT:'IMT',N_ISV:'IS',N_ISM1:'PART-IS',N_RCC:'RCC',N_PROC:'PROC',N_HAB:'HAB',N_TOP:'TOP',N_SCE:'SCE',N_CP:'CP',N_TRF:'TRF',N_CHQ:'CHQ',N_DIST:'DIST'})[r.tipo]||'';
 }
 /* Identificação para o nome: só o que foi lido; se faltar, fica SIGLA_1, SIGLA_2… */
 function identDe(r){
@@ -1911,6 +2100,7 @@ function identDe(r){
   case'CC':return x.nome&&!/Aten[çc][ãa]o/.test(r.nota||'')?x.nome:'';
   case'CRP':return x.descricao&&!x.descDuvida?x.descricao+(x.fracao?'-'+x.fracao:''):'';
   case'CAD':return x.artigo?j(x.artigo+(x.fracao?'-'+x.fracao:''),isoDe(x.emitida)):'';
+  case'CRC':return x.nipc?j(parteNome((x.firma||'').split(/[\s,-]+/).find(w=>w.length>2)||''),x.nipc):'';
   case'BC':return x.emprestimo||'';
   case'DC':return x.contrato||'';
   case'N_IMT':case'N_ISV':return /^\d{15}$/.test(x.numero||'')?x.numero:'';
@@ -1923,10 +2113,21 @@ function identDe(r){
   case'N_CP':return (x.pedido||'').replace(/\//g,'-');
   case'N_TRF':return x.valor?j(String(x.valor).replace('.',','),isoDe(x.data)):'';
   case'N_CHQ':return x.numero||'';
+  case'N_DIST':return j(parteNome((()=>{const w=(x.credor||'').split(/[\s,]+/).filter(w=>w.length>1&&!/^S\.?A\.?$/i.test(w));return w[0]&&w[0].length<=4&&w[1]?w[0]+w[1]:w[0]||'';})()),(x.descricao||'').split(/[ ,e]+/)[0],isoDe(x.data));
   }
   return'';
 }
 const baseOriginal=f=>f.replace(/\.[^.]+$/,'');
+/* Sem identificação segura, aproveita-se o nome original quando diz alguma coisa e o ficheiro
+   traz um só documento (num ficheiro com vários, o nome original não é de nenhum em particular)
+   («CC_MariePeixoto (2).pdf» → CC_MARIEPEIXOTO); nomes sem significado («scan0001»,
+   «IMG_2034», «documento (3)») ficam numerados: SIGLA_1, SIGLA_2… */
+const PAL_TIPO=/\b(cc|cartao|cidadao|crp|certidao|permanente|predial|crc|comercial|dist|distrate|cancelamento|hipoteca|registo|consulta|cpu|cpr|caderneta|urbana|rustica|imt|is|imposto|selo|guia|duc|part|participacao|hab|habilitacao|herdeiros|pshh|proc|procuracao|top|toponimia|sce|certificado|energetico|cp|preferencia|preferencias|casa|pronta|trf|transferencia|comprovativo|chq|cheque|bc|boletim|dc|complementar|au|autorizacao|utilizacao|fth|ficha|tecnica|rcc|outros|doc|documento|copia|scan|digitalizacao|digitalizado|img|imagem|image|file|ficheiro|pdf|whatsapp|untitled|sem|titulo|novo|merged|final|pagamentos|pagamento|docs|documentos)\b/g;
+function identOriginal(fn){
+  let b=semAcento(baseOriginal(fn)).toLowerCase().replace(/\(\d+\)/g,' ').replace(/^[0-9a-f]{8}-/,'').replace(/[_\-.]+/g,' ');
+  b=b.replace(/\b(scan|img|image|imagem|dsc|pxl|foto|photo|doc|wa)\d+\b/g,' ').replace(PAL_TIPO,' ').replace(/\b\w*\d\w*\b/g,' ').replace(/\s+/g,' ').trim();
+  return (b.match(/[a-z]/g)||[]).length>=4?parteNome(b):'';
+}
 const extDe=f=>((f.match(/\.[^.\/]+$/)||['.pdf'])[0]).toLowerCase();
 /* ── Linhas (um documento = uma linha) ── */
 function montarLinhas(nomes){
@@ -1942,9 +2143,9 @@ function montarLinhas(nomes){
       linhas.sort((a,b)=>a.pags[0]-b.pags[0]);
       if(linhas.length===1&&linhas[0].pags.length===tot)linhas[0].pags=null;}
     linhas.forEach(({r,pags})=>{
-      const sigla=siglaDe(r),ident=sigla?parteNome(identDe(r)):'';
+      const sigla=siglaDe(r),idLido=sigla?parteNome(identDe(r)):'',idOrig=sigla&&!idLido&&linhas.length===1?identOriginal(fn):'',ident=idLido||idOrig;
       REC.linhas.push({id:++REC.seq,ficheiro:fn,ext,pags,r,siglaAuto:sigla,sigla,ident,
-        estado:!sigla?'nr':(ident&&r.ocr?'confirmar':'ok'),confirmado:false,manual:'',livre:false,gravado:'',erro:''});
+        estado:!sigla?'nr':(idLido&&r.ocr?'confirmar':'ok'),confirmado:false,manual:'',livre:false,gravado:'',erro:''});
     });
   }
   recComparar();recNomes();
@@ -1992,10 +2193,15 @@ function pintarRececao(){
     :l.estado==='confirmar'?`<span class="tag" style="background:var(--amber-light);color:var(--amber)">Lido de imagem — confirme o nome</span>`
     :`<span class="tag" style="background:var(--green-light);color:var(--green)">Reconhecido</span>`;
   $('rec-lista').innerHTML=(REC.lendo?`<div class="nota">A ler os documentos… (as digitalizações demoram mais)</div>`:'')+REC.linhas.map(l=>{
-    const tipo=l.r&&l.r.tipo?(l.r.tipo.startsWith('N_')?ROT_NOVOS[l.r.tipo.slice(2)]:ROT_APOIO[l.r.tipo]):'';
+    const tipo=l.r&&l.r.tipo?(l.r.tipo.startsWith('N_')?ROT_NOVOS[l.r.tipo.slice(2)]:ROT_APOIO[l.r.tipo]+(l.r.tipo==='CRP'&&l.r.dados?(l.r.dados.fracao?` — fração ${l.r.dados.fracao}`:(l.r.dados.fracoes||[]).length?` — prédio em propriedade horizontal (frações ${l.r.dados.fracoes.join(', ')})`:' — prédio'):'')):'';
     if(l.gravado)return`<div class="item" style="border-left-color:var(--border-strong)"><div class="cab">${etq(l)}<span style="font-family:'DM Mono',monospace">${esc(l.gravado)}</span><span style="margin-left:auto;font-weight:400;color:var(--text-faint)">${esc(l.ficheiro)} · ${pg(l.pags)}</span></div></div>`;
+    const ant=REC.linhas[REC.linhas.indexOf(l)-1];const podeJuntar=ant&&!ant.gravado&&ant.ficheiro===l.ficheiro;
+    const pags=paginasLinha(l);
     return`<div class="item" style="border-left-color:${corL(l)}">
-      <div class="cab">${etq(l)}${tipo?esc(tipo):''}<span style="margin-left:auto;font-weight:400;color:var(--text-faint)">${esc(l.ficheiro)} · ${pg(l.pags)}</span></div>
+      <div class="cab">${etq(l)}${tipo?esc(tipo):''}<span style="margin-left:auto;font-weight:400;color:var(--text-faint)">${esc(l.ficheiro)} · ${pg(l.pags)}</span>
+        ${podeJuntar?`<button class="btn" style="padding:1px 8px" title="Estas páginas fazem parte do documento de cima" onclick="recJuntar(${l.id})">⤒ Juntar ao de cima</button>`:''}
+        ${l.ext==='.pdf'&&pags.length>1?`<button class="btn" style="padding:1px 8px" title="Este bloco tem mais do que um documento" onclick="recSeparar(${l.id})">✂ Separar</button>`:''}</div>
+      ${pags.length?`<div class="minis">${pags.slice(0,12).map(n=>{const k=l.ficheiro+'|'+n;return`<img class="mini-p" id="mi-${fid(l.ficheiro)}-${n}" data-f="${esc(l.ficheiro)}" data-p="${n}" ${REC.thumbs[k]?`src="${REC.thumbs[k]}"`:''} title="pág. ${n} — clique para ver" onclick="recVer(${fid(l.ficheiro)},${n})">`;}).join('')}${pags.length>12?`<span class="nota" style="margin:0">+${pags.length-12} págs.</span>`:''}</div>`:''}
       <div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap">
         <select class="inp" style="width:auto;max-width:260px" onchange="recSigla(${l.id},this.value)">${opc(l)}</select>
         <input class="inp" style="flex:1;min-width:220px;font-family:'DM Mono',monospace" value="${esc(l.final.slice(0,-l.ext.length))}" ${l.estado==='nr'&&!l.sigla&&!l.livre?'disabled':''} onchange="recEditar(${l.id},this.value)"><span style="font-size:12px;color:var(--text-muted)">${esc(l.ext)}</span>
@@ -2010,9 +2216,55 @@ function pintarRececao(){
   $('rec-gravar').disabled=!REC.pasta||!n||REC.lendo;
   $('rec-gravar').textContent=n?`Gravar na pasta (${n})`:'Gravar na pasta';
   $('rec-ler').disabled=!REC.pasta||REC.lendo;
-  $('rec-estado').textContent=[pend?`${pend} documento(s) à espera de validação`:'',dup?`${dup} já na pasta com os mesmos dados (não gravo)`:''].filter(Boolean).join(' · ');
+  setTimeout(recMiniaturas,0);
+  $('rec-estado').textContent=[pend?`${pend} documento(s) à espera de validação`:'',dup?`${dup} já na pasta com os mesmos dados (não são gravados)`:''].filter(Boolean).join(' · ');
 }
 const linhaRec=id=>REC.linhas.find(l=>l.id===id);
+/* ── Páginas: miniaturas, ver em grande, juntar e separar à mão ── */
+REC.thumbs={};REC.pdfdocs={};REC.fidx=[];
+const fid=fn=>{let i=REC.fidx.indexOf(fn);if(i<0){REC.fidx.push(fn);i=REC.fidx.length-1;}return i;};
+const paginasLinha=l=>l.pags?l.pags:(l.ext==='.pdf'&&NPAGS[l.ficheiro]?Array.from({length:NPAGS[l.ficheiro]},(_,i)=>i+1):(/\.(jpe?g|png)$/.test(l.ext)?[1]:[]));
+async function recImagemPagina(fn,n,altura){
+  const f=REC.files.get(fn);if(!f)return'';
+  if(!/\.pdf$/i.test(fn))return URL.createObjectURL(f);
+  if(!PDFJS){PDFJS=await import(PDFJS_URL);PDFJS.GlobalWorkerOptions.workerSrc=PDFJS_URL.replace('pdf.min.mjs','pdf.worker.min.mjs');}
+  if(!REC.pdfdocs[fn])REC.pdfdocs[fn]=f.arrayBuffer().then(b=>PDFJS.getDocument({data:new Uint8Array(b),verbosity:0,wasmUrl:PDFJS_URL.replace('build/pdf.min.mjs','wasm/')}).promise);
+  const doc=await REC.pdfdocs[fn];const pg=await doc.getPage(n);const v1=pg.getViewport({scale:1});const vp=pg.getViewport({scale:altura/v1.height});
+  const cv=document.createElement('canvas');cv.width=Math.ceil(vp.width);cv.height=Math.ceil(vp.height);
+  const ctx=cv.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,cv.width,cv.height);
+  await pg.render({canvasContext:ctx,canvas:cv,viewport:vp}).promise;return cv.toDataURL('image/jpeg',.75);
+}
+let recMiniOcup=false;
+async function recMiniaturas(){
+  if(recMiniOcup)return;recMiniOcup=true;
+  try{for(let i=0;i<400;i++){const img=document.querySelector('img.mini-p:not([src])');if(!img)break;
+    const fn=img.dataset.f,n=+img.dataset.p,k=fn+'|'+n;
+    try{if(!REC.thumbs[k])REC.thumbs[k]=await recImagemPagina(fn,n,120);}catch(_){REC.thumbs[k]='data:image/gif;base64,R0lGODlhAQABAAAAACw=';}
+    document.querySelectorAll(`img.mini-p[data-p="${n}"]`).forEach(e=>{if(e.dataset.f===fn)e.src=REC.thumbs[k];});}}
+  finally{recMiniOcup=false;}
+}
+window.recVer=async(fi,n)=>{
+  const fn=REC.fidx[fi];const ov=$('rec-ver');ov.style.display='flex';ov.innerHTML='<div class="nota" style="color:#fff">A abrir…</div>';
+  try{const tot=/\.pdf$/i.test(fn)?(NPAGS[fn]||1):1;const src=await recImagemPagina(fn,n,1400);
+    ov.innerHTML=`<div class="ver-cab">${esc(fn)} · pág. ${n} de ${tot}
+      ${n>1?`<button class="btn" onclick="event.stopPropagation();recVer(${fi},${n-1})">‹ anterior</button>`:''}${n<tot?`<button class="btn" onclick="event.stopPropagation();recVer(${fi},${n+1})">seguinte ›</button>`:''}
+      <button class="btn" onclick="$('rec-ver').style.display='none'">Fechar</button></div><img src="${src}" onclick="event.stopPropagation()">`;}
+  catch(e){ov.innerHTML=`<div class="nota" style="color:#fff">Não foi possível mostrar a página: ${esc(e.message)}</div>`;}
+};
+const novaLinha=(base,extra)=>({id:++REC.seq,ficheiro:base.ficheiro,ext:base.ext,pags:null,r:null,siglaAuto:'',sigla:'',ident:'',estado:'nr',confirmado:false,manual:'',livre:false,gravado:'',erro:'',...extra});
+/* Juntar: as páginas desta linha passam para a linha de cima (fica o documento reconhecido, se só um o for). */
+window.recJuntar=id=>{const l=linhaRec(id);if(!l)return;const i=REC.linhas.indexOf(l),a=REC.linhas[i-1];if(!a||a.ficheiro!==l.ficheiro||a.gravado)return;
+  const todas=[...new Set([...paginasLinha(a),...paginasLinha(l)])].sort((x,y)=>x-y);
+  const fica=(a.estado==='nr'&&l.estado!=='nr')?l:a;
+  Object.assign(a,{...fica,id:a.id,pags:todas});
+  REC.linhas.splice(i,1);recComparar();recNomes();pintarRececao();};
+/* Separar: a partir da página indicada fica um documento novo, por classificar (escolha a sigla). */
+window.recSeparar=id=>{const l=linhaRec(id);if(!l)return;const pags=paginasLinha(l);if(pags.length<2)return;
+  const r=prompt(`Separar a partir de que página? (este bloco tem as págs. ${pags[0]}–${pags[pags.length-1]})`,String(pags[1]));if(r===null)return;
+  const n=parseInt(r,10);if(!pags.includes(n)||n===pags[0]){alert('Indique uma página deste bloco, a seguir à primeira.');return;}
+  l.pags=pags.filter(p=>p<n);
+  REC.linhas.splice(REC.linhas.indexOf(l)+1,0,novaLinha(l,{pags:pags.filter(p=>p>=n)}));
+  recComparar();recNomes();pintarRececao();};
 window.recSigla=(id,v)=>{const l=linhaRec(id);if(!l)return;
   if(v==='*'){l.livre=true;l.manual=l.manual||l.final.slice(0,-l.ext.length);l.sigla='';}
   else{l.livre=false;l.manual='';l.sigla=v;}
@@ -2054,7 +2306,7 @@ async function recInicio(){
   const [drv,id]=q.split('|');if(!drv||!id)return;
   try{const it=await gq(`${GRAPH}/drives/${drv}/items/${id}?$select=id,name`);REC.drive=drv;REC.doPortal=true;
     if(!REC.pastas.some(x=>x.id===it.id))REC.pastas.push({id:it.id,nome:it.name});await recEscolher(it.id);}
-  catch(e){REC.msg='Não consegui abrir a pasta indicada pelo Portal: '+esc(e.message);pintarRececao();}
+  catch(e){REC.msg='Não foi possível abrir a pasta indicada pelo Portal: '+esc(e.message);pintarRececao();}
 }
 window.recEscolher=async id=>{
   const p=REC.pastas.find(x=>x.id===id);if(!p)return;
@@ -2062,7 +2314,7 @@ window.recEscolher=async id=>{
   /* A pasta começa pela data do DPA (AAAAMMDD): passa para a data do ato, se estiver vazia. */
   const m=p.nome.match(/^(\d{4})(\d{2})(\d{2})\b/);if(m&&!$('data-ato').dataset.tocada){$('data-ato').value=`${m[1]}-${m[2]}-${m[3]}`;if(DOC)analisar();}
   REC.matriz=null;
-  try{await recListar();REC.matriz=await recLerMatriz();}catch(e){REC.msg='Não consegui ler a pasta: '+esc(e.message);}
+  try{await recListar();REC.matriz=await recLerMatriz();}catch(e){REC.msg='Não foi possível ler a pasta: '+esc(e.message);}
   recComparar();recNomes();pintarRececao();
 };
 async function recSubpasta(nome){
@@ -2070,18 +2322,19 @@ async function recSubpasta(nome){
   const r=await gq(`${GRAPH}/drives/${REC.drive}/items/${REC.pasta.id}/children`,{method:'POST',body:JSON.stringify({name:nome,folder:{},'@microsoft.graph.conflictBehavior':'fail'})});
   (REC.filhos=REC.filhos||[]).push({id:r.id,name:r.name,folder:{}});return r.id;
 }
+const erroGraph=async r=>{try{const t=await r.text();try{const j=JSON.parse(t);return(j.error&&(j.error.message||j.error.code))||t.slice(0,200);}catch(_){return t.slice(0,200);}}catch(_){return'';}};
 /* Envia um ficheiro sem nunca substituir (conflictBehavior=fail), salvo a matriz (replace). */
 async function recEnviar(pai,nome,bytes,tipo,substituir=false){
   const cb=substituir?'replace':'fail';const base=`${GRAPH}/drives/${REC.drive}/items/${pai}:/${encodeURIComponent(nome)}:`;
   const len=bytes.byteLength;
   if(len<=4*1024*1024){
     const r=await gRaw(`${base}/content?@microsoft.graph.conflictBehavior=${cb}`,{method:'PUT',headers:{'Content-Type':tipo},body:bytes});
-    if(!r.ok)throw new Error(r.status===409?`já existe «${nome}»`:`erro ${r.status}`);return r.json();}
+    if(!r.ok)throw new Error(r.status===409?`já existe «${nome}»`:`erro ${r.status} — ${await erroGraph(r)}`);return r.json();}
   const s=await gRaw(`${base}/createUploadSession`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({item:{'@microsoft.graph.conflictBehavior':cb}})});
-  if(!s.ok)throw new Error(`erro ${s.status}`);const {uploadUrl}=await s.json();const C=320*1024*20;let fim=null;
+  if(!s.ok)throw new Error(`erro ${s.status} — ${await erroGraph(s)}`);const {uploadUrl}=await s.json();const C=320*1024*20;let fim=null;
   for(let i=0;i<len;i+=C){const e=Math.min(len,i+C);
     const r=await fetch(uploadUrl,{method:'PUT',headers:{'Content-Range':`bytes ${i}-${e-1}/${len}`},body:bytes.slice(i,e)});
-    if(!r.ok)throw new Error(r.status===409?`já existe «${nome}»`:`erro ${r.status} no envio`);fim=r;}
+    if(!r.ok)throw new Error(r.status===409?`já existe «${nome}»`:`erro ${r.status} no envio — ${await erroGraph(r)}`);fim=r;}
   return fim.json();
 }
 const tipoMIME=ext=>({'.pdf':'application/pdf','.jpg':'image/jpeg','.jpeg':'image/jpeg','.png':'image/png','.docx':'application/vnd.openxmlformats-officedocument.wordprocessingml.document','.json':'application/json'})[ext]||'application/octet-stream';
@@ -2096,7 +2349,7 @@ async function recBytes(l){
 async function recLerMatriz(){
   if(!REC.existentes.includes(MATRIZ_NOME))return null;
   const r=await gRaw(`${GRAPH}/drives/${REC.drive}/items/${REC.pasta.id}:/${MATRIZ_NOME}:/content`);
-  if(!r.ok)throw new Error('não consegui ler a matriz existente (erro '+r.status+')');
+  if(!r.ok)throw new Error('não foi possível ler a matriz existente (erro '+r.status+')');
   return r.json();
 }
 const limparDados=d=>d?JSON.parse(JSON.stringify(d)):null;
@@ -2110,6 +2363,7 @@ function chaveMatriz(d){
   case'N_SCE':return x.artigo||x.descricao||'';
   case'N_CP':return x.pedido||'';
   case'N_TOP':return x.artigo||'';
+  case'CRC':return x.nipc||'';
   case'BC':return x.emprestimo||'';case'DC':return x.contrato||'';
   case'N_ISM1':return x.numero||'';case'N_HAB':return x.falecido||'';
   }
@@ -2161,7 +2415,7 @@ window.recGravar=async()=>{
               avisos.push(`⚠ ${doc.ficheiro}: doc com dados novos face a ${ant.ficheiro} — atualizar gerador (${dif.map(d=>`${d.campo}: ${curto(d.antes)} → ${curto(d.depois)}`).join('; ')}).`);}
             else avisos.push(`${doc.ficheiro}: igual a ${ant.ficheiro} (sem dados novos).`);}}
         mat.documentos.push(doc);
-      }catch(e){l.erro='Não gravei: '+e.message;}
+      }catch(e){l.erro='Não foi gravado: '+e.message;}
     }
     /* 3) Matriz atualizada (resumo do imóvel incluído, para o gerador). */
     mat.atualizado=agora;mat.pasta=REC.pasta.nome;
@@ -2171,7 +2425,7 @@ window.recGravar=async()=>{
     REC.matriz=mat;
     const ok=prontas.filter(l=>l.gravado).length;
     REC.msg=esc(`Gravados ${ok} de ${prontas.length} documento(s) na pasta; originais em _originais; matriz atualizada.`)+(avisos.length?'\n'+avisos.map(esc).join('\n'):'');
-  }catch(e){REC.msg=`<span style="color:var(--red)">Não consegui gravar: ${esc(e.message)}</span>`;}
+  }catch(e){REC.msg=`<span style="color:var(--red)">Não foi possível gravar: ${esc(e.message)}</span>`;}
   recComparar();recNomes();pintarRececao();
 };
 /* ── Ler para verificação os documentos que já estão na pasta principal ── */
@@ -2197,7 +2451,7 @@ window.recLerPasta=async()=>{
     else{pintarApoio();if(DOC)analisar();}
     REC.msg=esc(`Para verificação: ${daMatriz} documento(s) com os dados da matriz${ler.length?` e ${ler.length} lido(s) agora`:''} — veja os documentos de apoio (3).`)
       +(semTipo.length?'\n'+esc(`Sem dados para cruzar (gravados sem tipo reconhecido): ${semTipo.join(', ')} — Verificar documento.`):'');
-  }catch(e){REC.msg='Não consegui ler a pasta: '+esc(e.message);}
+  }catch(e){REC.msg='Não foi possível ler a pasta: '+esc(e.message);}
   REC.lendo=false;pintarRececao();
 };
 /* ── Receber ficheiros ── */
