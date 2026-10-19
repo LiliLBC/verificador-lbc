@@ -49,7 +49,7 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
 </head>
 <body>
 <div class="topbar">
-  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-19.15</span></div>
+  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-19.16</span></div>
   <div style="display:flex;gap:.6rem;align-items:center"><span id="login-info" style="font-size:11px;color:var(--text-faint)"></span>
     <button class="btn" id="btn-entrar" onclick="entrar()">Entrar</button>
     <button class="btn btn-p" id="btn-desc" onclick="descarregar()" disabled>Descarregar Word revisto</button></div>
@@ -492,7 +492,8 @@ function estadoDocs(extra){
   const n=APOIO.filter(r=>r.tipo).length,nr=APOIO.filter(r=>!r.tipo&&!/A ler a imagem/.test(r.nota||'')).length;
   $('estado-docs').innerHTML=[DOC?`Word: <b>${esc(NOME)}</b>`:'Ainda sem o Word do DPA',
     APOIO.length?`${n} documento(s) lido(s)${nr?` · <span style="color:var(--red)">${nr} por reconhecer</span>`:''}`:'',
-    REC.pasta?`pasta: ${esc(REC.pasta.nome)}`:'',extra||''].filter(Boolean).join(' · ');
+    REC.pasta?`pasta: ${esc(REC.pasta.nome)}`:'',
+    (REC.versoes||[]).some(v=>v.antigos.length)?`<span style="color:var(--amber);font-weight:600">⚠ há documentos com versão mais recente — ver «Ficheiros na pasta»</span>`:'',extra||''].filter(Boolean).join(' · ');
 }
 $('fich').addEventListener('change',e=>{largar([...e.target.files]);e.target.value='';});
 const dr=$('drop');
@@ -745,7 +746,7 @@ function apoioCRP(L){
     conservatoria,descricao:dm?dm[1]:'',descDuvida:descLidas.length>1?descLidas:null,descData:dm?dm[2]:'',fracao:dm&&dm[3]?dm[3]:'',
     fregDesc,fregMatriz:g(/FREGUESIA:\s*([^\n]+?)\.?\s*$/m),
     freguesia:fregDesc||g(/FREGUESIA:\s*([^\n]+?)\.?\s*$/m),
-    codigo:(t.match(COD_CRP)||[''])[0].replace(/\s/g,''),simplificada:/^IS-/i.test(g(/\b([A-Z]{2}-\s?\d{4})/))||/Informa\S{1,3}o\s+(?:Predial\s+)?Simplificada/i.test(t),validade:val?`${val[3]}-${val[2]}-${val[1]}`:'',
+    codigo:(t.match(COD_CRP)||[''])[0].replace(/\s/g,''),emitida:(t.match(/disponibilizada\s+em\s+(\d{2})-(\d{2})-(\d{4})/i)||[]).slice(1).reverse().join('-'),simplificada:/^IS-/i.test(g(/\b([A-Z]{2}-\s?\d{4})/))||/Informa\S{1,3}o\s+(?:Predial\s+)?Simplificada/i.test(t),validade:val?`${val[3]}-${val[2]}-${val[1]}`:'',
     matriz:g(/MATRIZ n[ºo°]:\s*(\d+)/),
     ac:area(/(?:a\.c\.\s*de|S\.c\.)\s*([\d,]+)\s*m/i),ad:(comp.match(/(?:a\.d\.\s*de|S\.d\.)\s*[\d,]+\s*m/gi)||[]).length===1?area(/(?:a\.d\.\s*de|S\.d\.)\s*([\d,]+)\s*m/i):'',
     areaTotal:g(/[ÁA]REA TOTAL:\s*([\d.,]+)/),areaCob:g(/[ÁA]REA COBERTA:\s*([\d.,]+)/),areaDesc:g(/[ÁA]REA DESCOBERTA:\s*([\d.,]+)/),
@@ -2293,8 +2294,13 @@ function pintarFicheirosPasta(){
   const ds=(REC.filhos||[]).filter(x=>x.folder).map(x=>x.name);
   const conhecidos=new Set(((REC.matriz&&REC.matriz.documentos)||[]).map(d=>d.ficheiro));
   const aberto=el.querySelector('details')?.open;
-  el.innerHTML=`<details style="margin:.3rem 0"${aberto?' open':''}><summary style="cursor:pointer;font-size:12.5px;font-weight:600">Ficheiros na pasta «${esc(REC.pasta.nome)}» (${fs.length})</summary>
-    <div style="font-size:12px;margin:.4rem 0 0 .2rem;line-height:1.7">${fs.map(x=>`<a href="${esc(x.webUrl||'#')}" target="_blank" rel="noopener" style="color:var(--accent-dark);text-decoration:none;font-family:'DM Mono',monospace">${esc(x.name)}</a>${/\.(pdf|jpe?g|png)$/i.test(x.name)&&REC.matriz&&!conhecidos.has(x.name)?' <span class="tag" style="background:var(--amber-light);color:var(--amber)">não passou pelo verificador</span>':''}`).join('<br>')||'—'}
+  const vers=(REC.versoes||[]).filter(v=>v.antigos.length);
+  const subst={};((REC.matriz&&REC.matriz.documentos)||[]).forEach(d=>{if(d.substituido_por)subst[d.ficheiro]=d.substituido_por;});
+  el.innerHTML=(vers.length?`<div class="item" style="border-left-color:var(--amber);margin:.4rem 0"><div class="cab">⚠ Documentos com versão mais recente — na verificação e no gerador conta só a mais recente</div>
+      <div class="nota" style="white-space:pre-wrap;margin:0">${vers.map(v=>`${esc(ROT_TIPO(v.tipo))} (${esc(v.chave)}): mais recente ${esc(v.novo)} (${esc(v.data)}); anterior(es): ${v.antigos.map(a=>`${esc(a.ficheiro)} (${esc(a.data)}${a.igual?', mesmos dados':''})`).join(', ')}`).join('\n')}</div></div>`:'')
+    +`<details style="margin:.3rem 0"${aberto?' open':''}><summary style="cursor:pointer;font-size:12.5px;font-weight:600">Ficheiros na pasta «${esc(REC.pasta.nome)}» (${fs.length})</summary>
+    <div style="margin:.4rem 0"><button class="btn" style="padding:2px 10px" onclick="recLerPasta(true)" ${REC.lendo?'disabled':''}>🔄 Voltar a ler todos os documentos da pasta</button></div>
+    <div style="font-size:12px;margin:.4rem 0 0 .2rem;line-height:1.7">${fs.map(x=>`<a href="${esc(x.webUrl||'#')}" target="_blank" rel="noopener" style="color:var(--accent-dark);text-decoration:none;font-family:'DM Mono',monospace">${esc(x.name)}</a>${/\.(pdf|jpe?g|png)$/i.test(x.name)&&REC.matriz&&!conhecidos.has(x.name)?' <span class="tag" style="background:var(--amber-light);color:var(--amber)">não passou pelo verificador</span>':''}${subst[x.name]?` <span class="tag">versão anterior — a mais recente é ${esc(subst[x.name])}</span>`:''}`).join('<br>')||'—'}
     ${ds.length?`<div style="color:var(--text-faint);margin-top:.3rem">Subpastas: ${ds.map(esc).join(', ')}</div>`:''}</div></details>`;
 }
 const novaLinha=(base,extra)=>({id:++REC.seq,ficheiro:base.ficheiro,ext:base.ext,pags:null,r:null,siglaAuto:'',sigla:'',ident:'',estado:'nr',confirmado:false,manual:'',livre:false,gravado:'',erro:'',...extra});
@@ -2422,10 +2428,31 @@ function chaveMatriz(d){
   case'N_CP':return x.pedido||'';
   case'N_TOP':return x.artigo||'';
   case'CRC':return x.nipc||'';
+  case'N_DIST':return (x.descricao||'')+'|'+(x.credor||'');
   case'BC':return x.emprestimo||'';case'DC':return x.contrato||'';
   case'N_ISM1':return x.numero||'';case'N_HAB':return x.falecido||'';
   }
   return'';
+}
+/* Data que diz qual de duas versões do mesmo documento é a mais recente. */
+function dataDoc(d){const x=d.dados||{};
+  const v={CAD:x.emitida,CRP:x.emitida||x.validade,CRC:x.subscrita||x.validade,N_SCE:x.emissao||x.validade,N_CP:x.impresso||(x.disponivel||'').split('-').reverse().join('-'),
+    CC:x.validade,N_IMT:x.data,N_ISV:x.data,N_HAB:x.data,N_PROC:x.data,N_TOP:x.data,N_DIST:x.data}[d.tipoLido];
+  return(/^\d{4}-\d{2}-\d{2}/.test(v||'')?v.slice(0,10):'')||'';}
+const ROT_TIPO=t=>t&&t.startsWith('N_')?ROT_NOVOS[t.slice(2)]:ROT_APOIO[t]||t||'documento';
+/* Vários ficheiros do mesmo documento (mesmo prédio, mesma pessoa…): fica ativo o mais recente;
+   os outros ficam marcados como substituídos e é dado o alerta, com as datas. */
+function ordenarVersoes(mat){
+  const grupos={};const alertas=[];let mudou=false;
+  (mat.documentos||[]).forEach(d=>{if(!d.dados||!d.tipoLido)return;const ch=chaveMatriz(d);if(!ch)return;(grupos[d.tipoLido+'|'+ch]=grupos[d.tipoLido+'|'+ch]||[]).push(d);});
+  Object.values(grupos).forEach(g=>{
+    const ord=[...g].sort((a,b)=>(dataDoc(b)||'').localeCompare(dataDoc(a)||'')||String(b.gravado||'').localeCompare(String(a.gravado||'')));
+    const novo=ord[0];
+    ord.forEach((d,i)=>{const alvo=i===0?undefined:novo.ficheiro;if(d.substituido_por!==alvo){if(alvo)d.substituido_por=alvo;else delete d.substituido_por;mudou=true;}});
+    if(g.length>1){const dt=d=>dataDoc(d)?isoPT(dataDoc(d)):'sem data';
+      alertas.push({tipo:novo.tipoLido,chave:chaveMatriz(novo),novo:novo.ficheiro,data:dt(novo),antigos:ord.slice(1).map(d=>({ficheiro:d.ficheiro,data:dt(d),igual:!diferencas(d.dados,novo.dados).length}))});}
+  });
+  mat.versoes=alertas;return{alertas,mudou};
 }
 const IGNORAR_DIF=new Set(['texto','pags']);
 function diferencas(a,b){
@@ -2485,11 +2512,13 @@ window.recGravar=async()=>{
         if(!r.ok)throw new Error(`erro ${r.status} — ${await erroGraph(r)}`);nomesOrig.push(nome.toLowerCase());delete REC.naPasta[fn];REC.existentes=REC.existentes.filter(n=>n!==fn);}
       catch(e){avisos.push(`«${fn}» não passou para _originais: ${e.message}`);}}
     /* 3) Matriz atualizada (resumo do imóvel incluído, para o gerador). */
+    {const {alertas}=ordenarVersoes(mat);REC.versoes=alertas;
+     alertas.forEach(v=>{if(v.antigos.some(a=>prontas.some(l=>l.gravado===a.ficheiro)))avisos.push(`⚠ ${v.antigos.filter(a=>prontas.some(l=>l.gravado===a.ficheiro)).map(a=>a.ficheiro).join(', ')}: é mais antigo do que ${v.novo} (${v.data}) — fica como versão anterior.`);});}
     mat.atualizado=agora;mat.pasta=REC.pasta.nome;
     try{const ativos=mat.documentos.filter(d=>!d.substituido_por&&d.dados).map(d=>({tipo:d.tipoLido,dados:d.dados}));mat.imovel=limparDados(apoioImovel(ativos));}catch(_){}
     await recEnviar(REC.pasta.id,MATRIZ_NOME,new TextEncoder().encode(JSON.stringify(mat,null,1)),'application/json',true);
     if(!REC.existentes.includes(MATRIZ_NOME))REC.existentes.push(MATRIZ_NOME);
-    REC.matriz=mat;
+    REC.matriz=mat;pintarFicheirosPasta();
     const ok=prontas.filter(l=>l.gravado).length;
     const falhas=prontas.filter(l=>!l.gravado);
     REC.msg=(falhas.length?`<div style="color:var(--red);font-weight:600">${falhas.length} documento(s) NÃO foram gravados:\n${falhas.map(l=>esc(l.final+' — '+l.erro)).join('\n')}</div>`:'')
@@ -2500,10 +2529,11 @@ window.recGravar=async()=>{
   recComparar();recNomes();pintarRececao();
 };
 /* ── Ler para verificação os documentos que já estão na pasta principal ── */
-window.recLerPasta=async()=>{
+window.recLerPasta=async(tudo)=>{
   if(!REC.pasta)return;
   try{
     await recListar();REC.matriz=await recLerMatriz();
+    if(!REC.matriz)REC.matriz={versao:1,pasta:REC.pasta.nome,documentos:[],novidades:[]};
     const mdocs=(REC.matriz&&REC.matriz.documentos)||[];
     const sel=REC.filhos.filter(x=>!x.folder&&x.name!==MATRIZ_NOME&&(/\.(pdf|jpe?g|png)$/i.test(x.name)||/^DC_.*\.docx$/i.test(x.name)));
     if(!sel.length){REC.msg='Não há documentos (PDF/imagem) na pasta principal.';pintarRececao();return;}
@@ -2511,11 +2541,11 @@ window.recLerPasta=async()=>{
        só se leem os ficheiros que a matriz não conhece (ex.: postos na pasta à mão). */
     let daMatriz=0;const ler=[],reler=[];
     sel.forEach(x=>{const d=mdocs.find(m=>m.ficheiro===x.name);
-      if(d&&d.tipoLido&&d.dados){APOIO=APOIO.filter(r=>r.ficheiro!==x.name);
+      if(d&&d.tipoLido&&d.dados&&!tudo){APOIO=APOIO.filter(r=>r.ficheiro!==x.name);
         APOIO.push({ficheiro:x.name,nome:x.name,pags:null,tipo:d.tipoLido,dados:d.dados,texto:d.texto||'',ocr:d.leitura==='imagem',nota:d.nota||'',daMatriz:true});daMatriz++;}
       else if(!d)ler.push(x);
       else reler.push(x);});
-    const semTipo=[];
+    const semTipo=[];if(tudo)reler.push(...sel.filter(x=>mdocs.some(m=>m.ficheiro===x.name)&&!reler.includes(x)));
     REC.lendo=true;REC.msg=`${daMatriz} documento(s) da matriz${ler.length?` · a ler ${ler.length} que a matriz não tem…`:''}`;pintarRececao();
     /* Documentos gravados antes de o verificador os saber ler (na matriz sem dados): lê-se outra
        vez e, se agora forem reconhecidos, a matriz é atualizada (o ficheiro não muda de nome nem de sítio). */
@@ -2526,15 +2556,23 @@ window.recLerPasta=async()=>{
       files.forEach(f=>{const rec=APOIO.find(r=>r.ficheiro===f.name&&r.tipo);const d=mdocs.find(m=>m.ficheiro===f.name);
         if(rec&&d){Object.assign(d,{tipoLido:rec.tipo,dados:limparDados(rec.dados),texto:rec.texto||'',leitura:rec.ocr?'imagem':'texto',certeza:rec.ocr?'imagem':'texto',nota:rec.nota||'',relido:new Date().toISOString()});mudou++;}
         else semTipo.push(f.name);});
-      if(mudou){try{REC.matriz.atualizado=new Date().toISOString();
+      REC.relidos=mudou;daMatriz+=mudou;}
+    /* Versões do mesmo documento: a mais recente fica ativa; as anteriores saem da verificação. */
+    const {alertas,mudou:mv}=ordenarVersoes(REC.matriz);REC.versoes=alertas;
+    if(REC.relidos||mv){try{REC.matriz.atualizado=new Date().toISOString();
         const ativos=REC.matriz.documentos.filter(d=>!d.substituido_por&&d.dados).map(d=>({tipo:d.tipoLido,dados:d.dados}));try{REC.matriz.imovel=limparDados(apoioImovel(ativos));}catch(_){}
-        await recEnviar(REC.pasta.id,MATRIZ_NOME,new TextEncoder().encode(JSON.stringify(REC.matriz,null,1)),'application/json',true);daMatriz+=mudou;}
-        catch(e){REC.msg='Não foi possível atualizar a matriz: '+esc(e.message);}}}
+        await recEnviar(REC.pasta.id,MATRIZ_NOME,new TextEncoder().encode(JSON.stringify(REC.matriz,null,1)),'application/json',true);}
+      catch(e){REC.msg='Não foi possível atualizar a matriz: '+esc(e.message);}}
+    REC.relidos=0;
+    const subst=new Set(REC.matriz.documentos.filter(d=>d.substituido_por).map(d=>d.ficheiro));
+    APOIO=APOIO.filter(r=>!subst.has(r.ficheiro));
     if(ler.length){const files=[];
       for(const x of ler){const r=await gRaw(`${GRAPH}/drives/${REC.drive}/items/${x.id}/content`);if(r.ok){const f=new File([await r.blob()],x.name);files.push(f);REC.files.set(x.name,f);REC.naPasta[x.name]=x.id;}}
       await juntarApoio(files);montarLinhas(files.map(f=>f.name));if(files.length)$('rec-det').open=true;}
     else{pintarApoio();if(DOC)analisar();}
-    estadoDocs(ler.length?`<span style="color:var(--amber)">${ler.length} ficheiro(s) na pasta não passaram pelo verificador — confirme-os em «Guardar na pasta» (4)</span>`:'');REC.msg=esc(`Para verificação: ${daMatriz} documento(s) com os dados da matriz${ler.length?` e ${ler.length} que entraram na pasta sem passar pelo verificador (estão abaixo, para confirmar o nome e gravar; o ficheiro de origem passa para _originais)`:''}.`)
+    const vers=(REC.versoes||[]).filter(v=>v.antigos.length);
+    estadoDocs([ler.length?`<span style="color:var(--amber)">${ler.length} ficheiro(s) na pasta não passaram pelo verificador — confirme-os em «Guardar na pasta» (4)</span>`:'',
+      ].filter(Boolean).join(' · '));pintarFicheirosPasta();REC.msg=esc(`Para verificação: ${daMatriz} documento(s) com os dados da matriz${ler.length?` e ${ler.length} que entraram na pasta sem passar pelo verificador (estão abaixo, para confirmar o nome e gravar; o ficheiro de origem passa para _originais)`:''}.`)
       +(semTipo.length?'\n'+esc(`Sem dados para cruzar (gravados sem tipo reconhecido): ${semTipo.join(', ')} — Verificar documento.`):'');
   }catch(e){REC.msg='Não foi possível ler a pasta: '+esc(e.message);}
   REC.lendo=false;pintarRececao();
