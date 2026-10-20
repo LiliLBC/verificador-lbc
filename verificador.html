@@ -54,7 +54,7 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
 </head>
 <body>
 <div class="topbar">
-  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-20.7</span></div>
+  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-20.9</span></div>
   <div style="display:flex;gap:.6rem;align-items:center"><span id="login-info" style="font-size:11px;color:var(--text-faint)"></span>
     <button class="btn" id="btn-entrar" onclick="entrar()">Entrar</button>
     <button class="btn btn-p" id="btn-desc" onclick="descarregar()" disabled>Descarregar Word revisto</button></div>
@@ -2240,7 +2240,7 @@ function pintarRececao(){
   $('rec-login').innerHTML=lig?'':'Abra a receção a partir da pasta do cliente no Portal, ou entre com a conta da LBC (botão «Entrar», em cima).';
   $('rec-pasta').disabled=!lig||!REC.pastas.length;
   $('rec-escolha').style.display=REC.doPortal?'none':'';
-  $('rec-sel').innerHTML=REC.pasta?`Pasta: <b>${esc(REC.pasta.nome)}</b>${REC.doPortal?' (aberta a partir do Portal)':''} · ${REC.existentes.length} ficheiro(s) na pasta principal · ${(REC.catFilhos||[]).filter(x=>!x.folder&&x.name!==MATRIZ_NOME).length} catalogado(s)`:'';
+  $('rec-sel').innerHTML=REC.pasta?`Pasta: <b>${esc(REC.pasta.nome)}</b>${REC.doPortal?' (aberta a partir do Portal)':''} · ${REC.existentes.length} ficheiro(s) na pasta principal · ${(REC.catFilhos||[]).filter(x=>!x.folder&&x.name!==MATRIZ_NOME&&x.name!==MATRIZ_PDF).length} catalogado(s)`:'';
   const pg=a=>{if(!a)return'ficheiro inteiro';const f=[];a.forEach(n=>{const u=f[f.length-1];if(u&&n===u[1]+1)u[1]=n;else f.push([n,n]);});
     return(a.length>1?'págs. ':'pág. ')+f.map(([x,y])=>x===y?x:`${x}–${y}`).join(', ');};
   const opc=l=>`<option value="">— escolher —</option>`+SIGLAS.map(([s,t])=>`<option value="${s}"${l.sigla===s&&!l.livre?' selected':''}>${s} · ${esc(t)}</option>`).join('')+`<option value="*"${l.livre?' selected':''}>✎ Forçar nome</option>`;
@@ -2258,6 +2258,7 @@ function pintarRececao(){
     const descr=l.pg?`${l.pg.length} pág.${fontesLinha(l).length>1?' de '+fontesLinha(l).length+' ficheiros':''}${l.pg.some(p=>p.rot||p.crop)?' · editado':''}`:pg(l.pags);
     return`<div class="item" style="border-left-color:${corL(l)}">
       <div class="cab">${etq(l)}${REC.naPasta[l.ficheiro]&&!REC.origGravados.has(l.ficheiro)?'<span class="tag" style="background:var(--amber-light);color:var(--amber)">da pasta</span>':''}${tipo?esc(tipo):''}<span style="margin-left:auto;font-weight:400;color:var(--text-faint)">${esc(fontesLinha(l).join(' + '))} · ${descr}</span>
+        <button class="btn" style="padding:1px 8px" title="Gerar já o PDF deste documento (com as rotações, cortes e junções) e descarregá-lo para o computador" onclick="recBaixarPdf(${l.id})">⬇ PDF</button>
         ${outros?`<button class="btn" style="padding:1px 8px" title="Juntar a este as páginas de outro documento da lista (pode ser de outro ficheiro)" onclick="recJuntarCom(${l.id})">⧉ Juntar com…</button>`:''}
         ${podeJuntar?`<button class="btn" style="padding:1px 8px" title="Estas páginas fazem parte do documento de cima" onclick="recJuntar(${l.id})">⤒ Juntar ao de cima</button>`:''}
         ${(l.pg?l.pg.length>1:l.ext==='.pdf'&&pags.length>1)?`<button class="btn" style="padding:1px 8px" title="Este bloco tem mais do que um documento" onclick="recSeparar(${l.id})">✂ Separar</button>`:''}</div>
@@ -2322,7 +2323,8 @@ function pintarFicheirosPasta(){
   const el=$('pasta-ficheiros');if(!el||!REC.pasta)return;
   const m=REC.matriz||{};const mdocs=m.documentos||[];const cats=m.catalogados||{};
   const fs=(REC.filhos||[]).filter(x=>!x.folder&&x.name!==MATRIZ_NOME).sort((a,b)=>a.name.localeCompare(b.name,'pt'));
-  const cs=(REC.catFilhos||[]).filter(x=>!x.folder&&x.name!==MATRIZ_NOME).sort((a,b)=>a.name.localeCompare(b.name,'pt'));
+  const cs=(REC.catFilhos||[]).filter(x=>!x.folder&&x.name!==MATRIZ_NOME&&x.name!==MATRIZ_PDF).sort((a,b)=>a.name.localeCompare(b.name,'pt'));
+  const mpdf=(REC.catFilhos||[]).find(x=>!x.folder&&x.name===MATRIZ_PDF);
   const outras=(REC.filhos||[]).filter(x=>x.folder&&x.name.toLowerCase()!==CAT_NOME.toLowerCase()).sort((a,b)=>a.name.localeCompare(b.name,'pt'));
   const dt=el.querySelector('details');const aberto=dt?dt.open:undefined;
   const subAbertas=new Set([...el.querySelectorAll('details.subp[open]')].map(d=>d.dataset.id));
@@ -2340,7 +2342,7 @@ function pintarFicheirosPasta(){
     <div style="margin:.4rem 0"><button class="btn" style="padding:2px 10px" onclick="recLerPasta(true)" ${REC.lendo?'disabled':''}>🔄 Voltar a ler os documentos catalogados</button></div>
     <div style="font-size:11px;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:.04em;margin-top:.4rem">Recebidos (pasta principal — ficam como vieram)</div>
     <div style="font-size:12px;margin:.2rem 0 0 .2rem;line-height:1.7">${fs.map(x=>lnk(x)+estado(x)).join('<br>')||'—'}</div>
-    <div style="font-size:11px;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:.04em;margin-top:.6rem">📁 ${esc(CAT_NOME)} (com a matriz)</div>
+    <div style="font-size:11px;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:.04em;margin-top:.6rem">📁 ${esc(CAT_NOME)} (com a matriz)${mpdf?` · <a href="${esc(embedSP(mpdf.webUrl)||'#')}" target="_blank" rel="noopener" style="text-transform:none;letter-spacing:0;color:var(--accent-dark)">abrir a MATRIZ.pdf ↗</a>`:''}</div>
     <div style="font-size:12px;margin:.2rem 0 0 .2rem;line-height:1.7">${cs.map(x=>lnk(x)+(subst[x.name]?` <span class="tag">versão anterior — a mais recente é ${esc(subst[x.name])}</span>`:'')).join('<br>')||'— ainda nada catalogado'}</div>
     ${outras.length?`<div style="margin-top:.6rem">${outras.map(x=>`<details class="subp" data-id="${esc(x.id)}" ontoggle="recSubpastaAbrir(this)" style="margin:.15rem 0"><summary style="cursor:pointer;font-size:12px">📁 ${esc(x.name)}</summary><div class="subp-lista" style="margin:.2rem 0 .3rem 1.2rem;color:var(--text-faint);font-size:12px">…</div></details>`).join('')}</div>`:''}</details>`;
   el.querySelectorAll('details.subp').forEach(d=>{if(subAbertas.has(d.dataset.id))d.open=true;});
@@ -2457,6 +2459,18 @@ window.recJuntarCom=id=>{
     if(l.estado==='nr'&&o.estado!=='nr'){const pg=l.pg.concat(o.pg);Object.assign(l,{...o,id:l.id,pg});}
     else l.pg=l.pg.concat(o.pg);
     REC.linhas.splice(REC.linhas.indexOf(o),1);recEditado(l);};
+};
+/* Gerar o PDF e descarregá-lo já, sem gravar na pasta (20/10/2026). */
+window.recBaixarPdf=async id=>{
+  const l=linhaRec(id);if(!l)return;
+  const bt=[...document.querySelectorAll('button')].find(b=>b.getAttribute('onclick')===`recBaixarPdf(${id})`);
+  if(bt){bt.disabled=true;bt.textContent='A gerar…';}
+  try{const bytes=await recBytes(l);
+    const nome=(l.final||'documento.pdf').replace(/\.[^.]+$/,'')+'.pdf';
+    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}));a.download=nome;document.body.appendChild(a);a.click();
+    setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},2000);}
+  catch(e){alert('Não foi possível gerar o PDF: '+e.message);}
+  finally{if(bt){bt.disabled=false;bt.textContent='⬇ PDF';}}
 };
 /* PDF final de uma linha editada. */
 async function bytesEditados(l){
@@ -2600,12 +2614,79 @@ async function recLerMatriz(){
   if(!r.ok)throw new Error('não foi possível ler a matriz existente (erro '+r.status+')');
   const m=await r.json();if(!naCat&&naPrinc)m.legadoId=naPrinc.id;return m;
 }
+/* ═══════════ MATRIZ LEGÍVEL DENTRO DA PASTA (20/10/2026) ═══════════
+   Ao lado da MATRIZ_VERIFICADOR.json (que é para o gerador e o Portal), grava-se em
+   «Catalogados» a MATRIZ.pdf: os mesmos dados, arrumados por setores, para abrir com um
+   clique dentro da pasta. Em PDF porque o SharePoint mostra o PDF no visualizador; uma
+   página HTML não a abre — descarrega-a ou mostra o código. Refaz-se a cada gravação. */
+const MATRIZ_PDF='MATRIZ.pdf';
+const MP_ROT={CC:'Cartão de cidadão',CRC:'Certidão comercial',CRP:'Certidão predial',CAD:'Caderneta predial',BC:'Boletim de contrato CGD',DC:'Documento complementar CGD',
+  N_DIST:'Distrate',N_SCE:'Certificado energético',N_CP:'Casa Pronta (preferências)',N_IMT:'Guia de IMT',N_ISV:'Guia de Imposto do Selo',N_ISM1:'Participação de Imposto do Selo',
+  N_RCC:'NIF da herança',N_PROC:'Procuração',N_HAB:'Habilitação de herdeiros',N_TOP:'Certidão de toponímia',N_TRF:'Transferência',N_CHQ:'Cheque'};
+const MP_SETOR={CC:'int',CRC:'int',N_PROC:'int',N_HAB:'int',N_RCC:'int',CRP:'imo',CAD:'imo',N_SCE:'imo',N_CP:'imo',N_TOP:'imo',BC:'mut',DC:'mut',N_DIST:'mut',N_IMT:'imp',N_ISV:'imp',N_ISM1:'imp',N_TRF:'imp',N_CHQ:'imp'};
+const MP_SETORES=[['int','INTERVENIENTES'],['imo','IMÓVEL'],['mut','MÚTUO E HIPOTECA'],['imp','IMPOSTOS E PAGAMENTOS'],['out','OUTROS DOCUMENTOS']];
+const MP_CAMPO={nome:'Nome',nif:'NIF',numero:'Número',validade:'Validade',nascimento:'Nascimento',firma:'Firma',nipc:'NIPC',sede:'Sede',sedePostal:'Código postal',capital:'Capital social',
+  codigo:'Código da certidão',subscrita:'Subscrita em',formaObrigar:'Forma de obrigar',mandato:'Mandato',objeto:'Objeto social',natureza:'Natureza',constituicao:'Constituição',
+  conservatoria:'Conservatória',descricao:'N.º da descrição',fracao:'Fração',freguesia:'Freguesia',fregDesc:'Freguesia (descrição)',fregMatriz:'Freguesia (matriz)',concelho:'Concelho',
+  matriz:'Artigo matricial',artigo:'Artigo matricial',vpt:'VPT',abp:'Área bruta privativa',ati:'Área total do terreno',emitida:'Emitida em',origem:'Teve origem no(s) artigo(s)',
+  titulares:'Titulares',inscricoes:'Inscrições',orgaos:'Órgãos',socios:'Sócios',pedido:'N.º do pedido',preco:'Preço',anuncio:'Anúncio',vendedores:'Vendedores (NIF)',compradores:'Compradores (NIF)',
+  entidades:'Pronúncias',emprestimo:'Empréstimo n.º',contaDO:'Conta DO',aquisicao:'Montante de aquisição',prazo:'Prazo (meses)',prestacao:'1.ª prestação',tan:'Taxa nominal (%)',
+  juroAte:'Juro até (%)',sobretaxa:'Sobretaxa de mora (%)',despesas:'Despesas',maximo:'Montante máximo da hipoteca',avaliacao:'Valor de avaliação (Valor Total)',mutuarios:'Mutuários',
+  encargos:'Encargos',credor:'Credor',valor:'Valor',data:'Data',classe:'Classe energética',emissao:'Emissão',alienanteNif:'NIF do alienante',ap:'Apresentação',n:'Entidade',intencao:'Intenção',cargo:'Cargo',quota:'Quota',tipo:'Tipo',pessoas:'Pessoas'};
+const MP_OCULTA=new Set(['tipo','texto','ocr','partes','localidade','postal','arruamento','anonima','quotas','imoveis','caeImoveis','movQuotas','contas','encerramento','sedeLocal','pago','disponivel','previsivel','impresso','simplificada','descDuvida','avisos']);
+async function matrizPdf(mat){
+  const L=await pdfLib();const doc=await L.PDFDocument.create();
+  const F=await doc.embedFont(L.StandardFonts.Helvetica),B=await doc.embedFont(L.StandardFonts.HelveticaBold);
+  const ok=t=>String(t??'').replace(/[→←]/g,'->').replace(/[✓✔]/g,'v').replace(/[^\x20-\x7E -ÿ€–—‘’“”•…]/g,'');
+  const dt=v=>/^\d{4}-\d{2}-\d{2}/.test(v)?v.slice(0,10).split('-').reverse().join('/'):v;
+  const val=v=>{if(v==null||v==='')return'';
+    if(Array.isArray(v))return v.map(x=>x&&typeof x==='object'?Object.entries(x).filter(([,y])=>y!=null&&y!==''&&typeof y!=='object').map(([k,y])=>`${MP_CAMPO[k]||k}: ${dt(String(y))}`).join(' · ')
+      +(Array.isArray(x.pessoas)&&x.pessoas.length?' · '+x.pessoas.map(p=>[p.nome,p.nif].filter(Boolean).join(' ')).join('; '):''):dt(String(x))).join('\n');
+    if(typeof v==='object')return Object.entries(v).filter(([,y])=>y!=null&&y!==''&&typeof y!=='object').map(([k,y])=>`${MP_CAMPO[k]||k}: ${dt(String(y))}`).join(' · ');
+    if(typeof v==='number')return v.toLocaleString('pt-PT',{minimumFractionDigits:Number.isInteger(v)?0:2,maximumFractionDigits:2});
+    return dt(String(v));};
+  const W=595.28,H=841.89,M=48;let pg=null,y=0;
+  const nova=()=>{pg=doc.addPage([W,H]);y=H-M;};
+  const parte=(t,f,sz,larg)=>{const out=[];String(t).split('\n').forEach(par=>{let lin='';par.split(/\s+/).forEach(w=>{const tst=lin?lin+' '+w:w;
+      if(f.widthOfTextAtSize(tst,sz)>larg&&lin){out.push(lin);lin=w;}else lin=tst;});out.push(lin);});return out;};
+  const linha=(t,{f=F,sz=9.5,x=M,larg=W-2*M,cor=[0.13,0.13,0.13],antes=0}={})=>{
+    const ls=parte(ok(t),f,sz,larg);y-=antes;
+    ls.forEach(s=>{if(y<M+sz){nova();}pg.drawText(s,{x,y:y-sz,size:sz,font:f,color:L.rgb(...cor)});y-=sz*1.35;});};
+  const regua=()=>{if(y<M+12)nova();pg.drawLine({start:{x:M,y:y-3},end:{x:W-M,y:y-3},thickness:.6,color:L.rgb(.76,.62,.55)});y-=10;};
+  nova();
+  linha('MATRIZ DE DADOS DA PASTA',{f:B,sz:15});
+  linha(mat.pasta||'',{sz:11,antes:2});
+  linha(`Compilada pelo verificador · atualizada em ${new Date(mat.atualizado||Date.now()).toLocaleString('pt-PT',{dateStyle:'short',timeStyle:'short'})}. Documento informativo: em caso de dúvida prevalece o documento original.`,{sz:8,cor:[.45,.45,.45],antes:4});
+  const docs=(mat.documentos||[]).filter(d=>!d.substituido_por);
+  const pend=(mat.novidades||[]).filter(n=>!n.tratado);
+  if(pend.length){y-=6;linha('Novidades por tratar no gerador:',{f:B,sz:9,cor:[.6,.4,.05]});pend.forEach(n=>linha(`${n.ficheiro} (face a ${n.anterior}): ${(n.campos||[]).map(c=>c.campo).join(', ')}`,{sz:8.5,cor:[.6,.4,.05],x:M+10,larg:W-2*M-10}));}
+  MP_SETORES.forEach(([k,tit])=>{
+    const lista=docs.filter(d=>k==='out'?(!d.dados||!MP_SETOR[d.tipoLido]):MP_SETOR[d.tipoLido]===k&&d.dados);if(!lista.length)return;
+    y-=10;linha(tit,{f:B,sz:11.5,cor:[.42,.3,.22]});regua();
+    lista.forEach(d=>{
+      const img=d.leitura==='imagem'||d.certeza==='imagem';
+      if(y<M+60)nova();
+      linha(`${MP_ROT[d.tipoLido]||d.sigla||'Documento'} — ${d.ficheiro}`,{f:B,sz:10,antes:4});
+      linha(img?'Lido de imagem (OCR): confirmar no documento.':'Lido do texto do documento.',{sz:8,cor:img?[.7,.4,0]:[.3,.5,.3]});
+      const CT={BC:{capital:'Montante do mútuo (Valor Contratado)'},CRP:{matriz:'Artigo matricial (na certidão)'}}[d.tipoLido]||{};
+      const pares=Object.entries(d.dados||{}).filter(([kk,v])=>!MP_OCULTA.has(kk)&&v!=null&&v!==''&&!(Array.isArray(v)&&!v.length)).map(([kk,v])=>[CT[kk]||MP_CAMPO[kk]||kk,val(v)]).filter(([,v])=>v);
+      if(!pares.length)linha('Sem dados lidos — Verificar documento.',{sz:9,cor:[.5,.5,.5],x:M+10});
+      pares.forEach(([r,v])=>{
+        const ls=parte(ok(v),F,9,W-2*M-170);if(y<M+12*Math.min(ls.length,4))nova();
+        pg.drawText(ok(r),{x:M+10,y:y-9,size:8.5,font:F,color:L.rgb(.42,.42,.42)});
+        ls.forEach((s,i)=>{if(y<M+9){nova();}pg.drawText(s,{x:M+170,y:y-9,size:9,font:F,color:L.rgb(.1,.1,.1)});y-=12.2;});});
+      y-=4;});
+  });
+  const n=doc.getPageCount();doc.getPages().forEach((p,i)=>p.drawText(ok(`${mat.pasta||''} · página ${i+1} de ${n}`),{x:M,y:24,size:7.5,font:F,color:L.rgb(.55,.55,.55)}));
+  return doc.save();
+}
 async function gravarMatriz(mat){
   const cat=await recSubpasta(CAT_NOME);
   const leg=mat.legadoId;delete mat.legadoId;
   mat.versao=2;mat.atualizado=new Date().toISOString();mat.pasta=REC.pasta.nome;
   try{const ativos=mat.documentos.filter(d=>!d.substituido_por&&d.dados).map(d=>({tipo:d.tipoLido,dados:d.dados}));mat.imovel=limparDados(apoioImovel(ativos));}catch(_){}
   await recEnviar(cat,MATRIZ_NOME,new TextEncoder().encode(JSON.stringify(mat,null,1)),'application/json',true);
+  try{await recEnviar(cat,MATRIZ_PDF,await matrizPdf(mat),'application/pdf',true);}catch(e){console.warn('MATRIZ.pdf não foi gravada',e);}
   if(leg){try{await gRaw(`${GRAPH}/drives/${REC.drive}/items/${leg}`,{method:'DELETE'});}catch(_){}}
   await recListarCat(cat);
 }
@@ -2756,6 +2837,9 @@ window.recLerPasta=async(tudo)=>{
     const {alertas,mudou:mv}=ordenarVersoes(REC.matriz);REC.versoes=alertas;
     if(REC.relidos||mv){try{await gravarMatriz(REC.matriz);}catch(e){REC.msg='Não foi possível atualizar a matriz: '+esc(e.message);}}
     REC.relidos=0;
+    /* Pastas já catalogadas antes da MATRIZ.pdf existir: cria-a agora. */
+    if(REC.catId&&!REC.matriz.legadoId&&(REC.matriz.documentos||[]).length&&!(REC.catFilhos||[]).some(x=>!x.folder&&x.name===MATRIZ_PDF)){
+      try{await recEnviar(REC.catId,MATRIZ_PDF,await matrizPdf(REC.matriz),'application/pdf',true);await recListarCat(REC.catId);}catch(e){console.warn('MATRIZ.pdf',e);}}
     const subst=new Set(REC.matriz.documentos.filter(d=>d.substituido_por).map(d=>d.ficheiro));
     APOIO=APOIO.filter(r=>!subst.has(r.ficheiro));
     if(ler.length){const files=[];
