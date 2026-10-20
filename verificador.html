@@ -49,7 +49,7 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
 </head>
 <body>
 <div class="topbar">
-  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-20.5</span></div>
+  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-20.6</span></div>
   <div style="display:flex;gap:.6rem;align-items:center"><span id="login-info" style="font-size:11px;color:var(--text-faint)"></span>
     <button class="btn" id="btn-entrar" onclick="entrar()">Entrar</button>
     <button class="btn btn-p" id="btn-desc" onclick="descarregar()" disabled>Descarregar Word revisto</button></div>
@@ -58,7 +58,7 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
 
   <div class="card">
     <div class="card-h"><div class="num">1</div><div><div class="card-t">Documentos do DPA</div><div class="card-d">Arraste para aqui o Word do DPA e os documentos (PDF, fotografias), tudo junto ou aos poucos. O Word é reconhecido sozinho; os documentos são lidos e cruzados com o DPA. Tudo fica neste computador.</div></div></div>
-    <div class="drop" id="drop" onclick="document.getElementById('fich').click()">Arraste para aqui o Word do DPA e os documentos — ou clique para escolher<div style="font-size:11.5px;color:var(--text-faint);margin-top:.3rem">Com a pasta do cliente aberta, os documentos são lidos e ficam prontos a gravar nela (cartão 4). Para arrumar a pasta ou carregar outros ficheiros, use «📂 Pasta» no Portal.</div></div>
+    <div class="drop" id="drop" onclick="document.getElementById('fich').click()">Arraste para aqui o Word do DPA e os documentos — ou clique para escolher<div style="font-size:11.5px;color:var(--text-faint);margin-top:.3rem">Com a pasta do cliente aberta, os documentos são lidos e ficam prontos a catalogar (cartão 4): vão para «Catalogados», com a matriz, e o ficheiro recebido fica na pasta principal.</div></div>
     <input type="file" id="fich" multiple style="display:none">
     <div class="nota" id="estado-docs" style="margin:.5rem 0 .2rem"></div>
     <div id="rec-atalho" style="display:none;margin:.4rem 0;padding:.5rem .7rem;border:1px solid var(--accent);background:var(--accent-light);border-radius:8px;font-size:13px"></div>
@@ -91,7 +91,7 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
   </div>
 
   <div class="card" id="card-rec"><details id="rec-det"><summary style="cursor:pointer;list-style:none">
-    <div class="card-h"><div class="num">4</div><div><div class="card-t">Guardar os documentos na pasta do cliente <span class="tag">opcional</span></div><div class="card-d">Para arquivar: os documentos largados em cima ficam aqui separados e com nome proposto (sigla da lista). Só ao carregar em «Gravar na pasta» são gravados na pasta principal (cópia dos ficheiros recebidos em «_originais»). Nenhum ficheiro é substituído.</div></div></div></summary>
+    <div class="card-h"><div class="num">4</div><div><div class="card-t">Catalogar os documentos <span class="tag">opcional</span></div><div class="card-d">Os documentos (largados em cima ou postos na pasta) ficam aqui separados e com nome proposto (sigla da lista). Ao carregar em «Gravar» vão para a subpasta «Catalogados», com a matriz; os ficheiros recebidos ficam na pasta principal tal como vieram. Nenhum ficheiro é substituído.</div></div></div></summary>
     <div class="nota" id="rec-login"></div>
     <div id="rec-escolha" style="position:relative;max-width:560px"><label class="l">Pasta do cliente (ESCRITURAS)</label><input class="inp" id="rec-pasta" placeholder="Entre com a conta da LBC" disabled oninput="recPesquisar()" onfocus="recPesquisar()" autocomplete="off"><div id="rec-dd" class="dd"></div></div>
     <div class="nota" id="rec-sel" style="margin:.5rem 0"></div>
@@ -112,7 +112,7 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
   <div class="card">
     <div class="card-h"><div class="num">?</div><div><div class="card-t">O que verifica nesta versão</div><div class="card-d">Regras fixas. As de negritos e redação entram depois dos primeiros DPA revistos.</div></div></div>
     <div class="nota">
-      <b>Receção de documentos</b> — abre-se a partir da pasta do cliente no Portal (as pastas criam-se no Portal); cada documento é separado e nomeado (SIGLA_identificação_data); os lidos de imagem pedem confirmação do nome; os não reconhecidos ficam com o nome original até escolher uma sigla (OUTROS_1, OUTROS_2…) ou forçar um nome. Grava na pasta principal sem nunca substituir ficheiros, com cópia dos originais em «_originais», e atualiza a MATRIZ_VERIFICADOR.json. Documento que já está na pasta com os mesmos dados não se grava outra vez; com dados diferentes, surge o aviso «doc com dados novos, atualizar gerador».<br>
+      <b>Receção de documentos</b> — abre-se a partir da pasta do cliente no Portal (as pastas criam-se no Portal); cada documento é separado e nomeado (SIGLA_identificação_data); os lidos de imagem pedem confirmação do nome; os não reconhecidos ficam com o nome original até escolher uma sigla (OUTROS_1, OUTROS_2…) ou forçar um nome. Grava os documentos catalogados na subpasta «Catalogados», sem nunca substituir ficheiros, e atualiza lá a MATRIZ_VERIFICADOR.json; os ficheiros recebidos ficam na pasta principal tal como vieram. Documento que já está na pasta com os mesmos dados não se grava outra vez; com dados diferentes, surge o aviso «doc com dados novos, atualizar gerador».<br>
       <b>Juntar e separar à mão</b> — na receção cada documento mostra as miniaturas das páginas (clique para ver em grande). «⤒ Juntar ao de cima» junta páginas que pertencem ao documento anterior; «✂ Separar» divide um bloco a partir da página indicada.<br>
       <b>Distrate (cancelamento de hipoteca)</b> — o distrate, o termo de autenticação e a folha do registo online do ato formam um só documento. Validade de uso face à data do ato, termo de autenticação, descrição igual à da certidão predial e hipotecas em vigor na certidão iguais às inscrições a cancelar.<br>
       <b>Sociedades (certidão comercial)</b> — todas as páginas da certidão formam um só documento. Conferidos com o DPA: código de acesso e validade, firma e NIPC, sede, capital social, objeto (compra e venda de imóveis), órgãos atuais e forma de obrigar (quem tem de intervir), mandato, sócios e quotas, e o depósito das contas do último exercício cujo prazo já terminou (até ao 15.º dia do 7.º mês após o fim do exercício ⚠).<br>
@@ -2020,7 +2020,7 @@ const ehCRP=t=>COD_CRP.test(t)&&(/(?:Certid\S{1,2}o\s+Permanente|Informa\S{1,3}o
 const embedSP=url=>!url?url:/[?&]env=/.test(url)?url:url+(url.includes('?')?'&':'?')+'env=WebView';
 /* Documento que está na pasta do cliente: o nome abre o ficheiro (ver/imprimir). */
 function linkPasta(fn,rot){
-  const f=typeof REC!=='undefined'&&(REC.filhos||[]).find(x=>!x.folder&&x.name===fn);
+  const f=typeof REC!=='undefined'&&((REC.catFilhos||[]).find(x=>!x.folder&&x.name===fn)||(REC.filhos||[]).find(x=>!x.folder&&x.name===fn));
   return f&&f.webUrl?`<a href="${esc(embedSP(f.webUrl))}" target="_blank" rel="noopener" title="Abrir o documento" style="color:var(--accent-dark)">${esc(rot)} ↗</a>`:esc(rot);
 }
 const ROT_APOIO={CAD:'Caderneta predial',CRP:'Certidão predial',CRC:'Certidão comercial',CC:'Cartão de cidadão',BC:'Boletim CGD',DC:'Complementar CGD'};
@@ -2109,9 +2109,9 @@ $('fich-apoio').addEventListener('change',e=>juntarApoio([...e.target.files]));
    (biblioteca ESCRITURAS, «AAAAMMDD NOME»), largam-se aqui e o verificador
    lê-os (no computador), separa os documentos, propõe o nome
    SIGLA_identificação_data e, só depois de carregar em «Gravar na pasta»:
-   – grava cada documento na pasta principal (nunca nas subpastas, nunca por cima de outro ficheiro);
-   – guarda uma cópia de cada ficheiro recebido em «_originais» (a Liliana apaga-a depois do DPA);
-   – atualiza a matriz de dados (MATRIZ_VERIFICADOR.json), que o gerador vai comparar com o rascunho.
+   – (20/10/2026) grava cada documento na subpasta «Catalogados» (nunca por cima de outro ficheiro);
+   – o ficheiro recebido fica na pasta principal tal como veio (os largados aqui são lá postos);
+   – atualiza a matriz de dados (MATRIZ_VERIFICADOR.json, em «Catalogados»), que o gerador e o Portal leem.
    Documento não reconhecido: fica com o nome original e só se grava depois de escolher
    uma sigla da lista (OUTROS numera-se OUTROS_1, OUTROS_2…) ou de forçar um nome. */
 const REC={drive:null,pasta:null,pastas:[],files:new Map(),linhas:[],existentes:[],lendo:false,seq:0,origGravados:new Set(),msg:'',naPasta:{}};
@@ -2122,6 +2122,13 @@ const SIGLAS=[['CC','Cartão de cidadão'],['CRP','Certidão permanente predial'
   ['RCC','NIF da herança'],['OUTROS','Outros']];
 const ROT_SIGLA=Object.fromEntries(SIGLAS);
 const MATRIZ_NOME='MATRIZ_VERIFICADOR.json';
+/* Pasta onde ficam os documentos catalogados e a matriz (20/10/2026). Substitui «_originais»:
+   os ficheiros recebidos ficam na pasta principal tal como vieram. */
+const CAT_NOME='Catalogados';
+async function recListarCat(id){
+  const r=await gq(`${GRAPH}/drives/${REC.drive}/items/${id}/children?$top=999&$select=id,name,folder,file,size,webUrl,lastModifiedDateTime`);
+  REC.catId=id;REC.catFilhos=r.value||[];
+}
 const PDFLIB_URL='https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js';
 async function pdfLib(){
   if(!window.PDFLib)await new Promise((ok,ko)=>{const s=document.createElement('script');s.src=PDFLIB_URL;s.onload=ok;s.onerror=()=>ko(new Error('não foi possível carregar o separador de PDF'));document.head.appendChild(s);});
@@ -2207,7 +2214,7 @@ function recComparar(){
 }
 /* Nome final de cada linha: numeração SIGLA_n e «_2» quando o nome já existe na pasta. */
 function recNomes(){
-  const ocup=new Set(REC.existentes.map(n=>n.toLowerCase()));
+  const ocup=new Set((REC.catFilhos||[]).filter(x=>!x.folder).map(x=>x.name.toLowerCase()));
   REC.linhas.filter(l=>l.gravado).forEach(l=>ocup.add(l.gravado.toLowerCase()));
   const maxN=s=>{let m=0;const re=new RegExp('^'+s.replace(/[-.]/g,'\\$&')+'_(\\d+)(?:[_.]|$)','i');ocup.forEach(n=>{const x=n.match(re);if(x)m=Math.max(m,+x[1]);});return m;};
   REC.linhas.filter(l=>!l.gravado).forEach(l=>{
@@ -2215,8 +2222,8 @@ function recNomes(){
     if(l.manual)base=l.livre?nomeLivre(l.manual):parteNome(l.manual);
     else if(l.sigla)base=l.sigla+'_'+(l.sigla===l.siglaAuto&&l.ident?l.ident:String(maxN(l.sigla)+1));
     else base=baseOriginal(l.ficheiro);
-    let nome=base+l.ext,k=2;const proprio=REC.naPasta[l.ficheiro]&&!l.pags?l.ficheiro.toLowerCase():null;
-    while(ocup.has(nome.toLowerCase())&&nome.toLowerCase()!==proprio)nome=`${base}_${k++}${l.ext}`;
+    let nome=base+l.ext,k=2;
+    while(ocup.has(nome.toLowerCase()))nome=`${base}_${k++}${l.ext}`;
     ocup.add(nome.toLowerCase());l.final=nome;
   });
 }
@@ -2227,7 +2234,7 @@ function pintarRececao(){
   $('rec-login').innerHTML=lig?'':'Abra a receção a partir da pasta do cliente no Portal, ou entre com a conta da LBC (botão «Entrar», em cima).';
   $('rec-pasta').disabled=!lig||!REC.pastas.length;
   $('rec-escolha').style.display=REC.doPortal?'none':'';
-  $('rec-sel').innerHTML=REC.pasta?`Pasta: <b>${esc(REC.pasta.nome)}</b>${REC.doPortal?' (aberta a partir do Portal)':''} · ${REC.existentes.length} ficheiro(s) na pasta principal`:'';
+  $('rec-sel').innerHTML=REC.pasta?`Pasta: <b>${esc(REC.pasta.nome)}</b>${REC.doPortal?' (aberta a partir do Portal)':''} · ${REC.existentes.length} ficheiro(s) na pasta principal · ${(REC.catFilhos||[]).filter(x=>!x.folder&&x.name!==MATRIZ_NOME).length} catalogado(s)`:'';
   const pg=a=>{if(!a)return'ficheiro inteiro';const f=[];a.forEach(n=>{const u=f[f.length-1];if(u&&n===u[1]+1)u[1]=n;else f.push([n,n]);});
     return(a.length>1?'págs. ':'pág. ')+f.map(([x,y])=>x===y?x:`${x}–${y}`).join(', ');};
   const opc=l=>`<option value="">— escolher —</option>`+SIGLAS.map(([s,t])=>`<option value="${s}"${l.sigla===s&&!l.livre?' selected':''}>${s} · ${esc(t)}</option>`).join('')+`<option value="*"${l.livre?' selected':''}>✎ Forçar nome</option>`;
@@ -2243,7 +2250,7 @@ function pintarRececao(){
     const ant=REC.linhas[REC.linhas.indexOf(l)-1];const podeJuntar=ant&&!ant.gravado&&ant.ficheiro===l.ficheiro;
     const pags=paginasLinha(l);
     return`<div class="item" style="border-left-color:${corL(l)}">
-      <div class="cab">${etq(l)}${REC.naPasta[l.ficheiro]?'<span class="tag" style="background:var(--amber-light);color:var(--amber)">já estava na pasta</span>':''}${tipo?esc(tipo):''}<span style="margin-left:auto;font-weight:400;color:var(--text-faint)">${esc(l.ficheiro)} · ${pg(l.pags)}</span>
+      <div class="cab">${etq(l)}${REC.naPasta[l.ficheiro]&&!REC.origGravados.has(l.ficheiro)?'<span class="tag" style="background:var(--amber-light);color:var(--amber)">da pasta</span>':''}${tipo?esc(tipo):''}<span style="margin-left:auto;font-weight:400;color:var(--text-faint)">${esc(l.ficheiro)} · ${pg(l.pags)}</span>
         ${podeJuntar?`<button class="btn" style="padding:1px 8px" title="Estas páginas fazem parte do documento de cima" onclick="recJuntar(${l.id})">⤒ Juntar ao de cima</button>`:''}
         ${l.ext==='.pdf'&&pags.length>1?`<button class="btn" style="padding:1px 8px" title="Este bloco tem mais do que um documento" onclick="recSeparar(${l.id})">✂ Separar</button>`:''}</div>
       ${pags.length?`<div class="minis">${pags.slice(0,12).map(n=>{const k=l.ficheiro+'|'+n;return`<img class="mini-p" id="mi-${fid(l.ficheiro)}-${n}" data-f="${esc(l.ficheiro)}" data-p="${n}" ${REC.thumbs[k]?`src="${REC.thumbs[k]}"`:''} title="pág. ${n} — clique para ver" onclick="recVer(${fid(l.ficheiro)},${n})">`;}).join('')}${pags.length>12?`<span class="nota" style="margin:0">+${pags.length-12} págs.</span>`:''}</div>`:''}
@@ -2259,14 +2266,14 @@ function pintarRececao(){
     +(REC.msg?`<div class="nota" style="margin-top:.4rem;white-space:pre-wrap">${REC.msg}</div>`:'');
   const n=REC.linhas.filter(pronta).length,pend=REC.linhas.filter(l=>!l.gravado&&!l.dup&&!pronta(l)).length,dup=REC.linhas.filter(l=>!l.gravado&&l.dup&&!l.gravarDup).length;
   $('rec-gravar').disabled=!REC.pasta||!n||REC.lendo;
-  $('rec-gravar').textContent=n?`Gravar na pasta (${n})`:'Gravar na pasta';
+  $('rec-gravar').textContent=n?`Gravar em «Catalogados» (${n})`:'Gravar em «Catalogados»';
   $('rec-ler').disabled=!REC.pasta||REC.lendo;
   setTimeout(recMiniaturas,0);
   if(REC.pasta&&REC.linhas.some(l=>!l.gravado)&&$('rec-det'))$('rec-det').open=true;
   /* Atalho no cartão 1: os documentos largados ficam a aguardar gravação no cartão 4, lá em baixo. */
   {const a=$('rec-atalho'),porGravar=REC.linhas.filter(l=>!l.gravado&&!l.dup).length;
     if(a){a.style.display=REC.pasta&&porGravar?'block':'none';
-      a.innerHTML=REC.pasta&&porGravar?`📥 ${porGravar} documento(s) por gravar na pasta «${esc(REC.pasta.nome)}». <button class="btn btn-p" style="padding:2px 10px;margin-left:.4rem" onclick="$('rec-det').open=true;$('card-rec').scrollIntoView({behavior:'smooth'})">Rever nomes e gravar ↓</button>`:'';}}
+      a.innerHTML=REC.pasta&&porGravar?`📥 ${porGravar} documento(s) por catalogar na pasta «${esc(REC.pasta.nome)}». <button class="btn btn-p" style="padding:2px 10px;margin-left:.4rem" onclick="$('rec-det').open=true;$('card-rec').scrollIntoView({behavior:'smooth'})">Rever nomes e gravar ↓</button>`:'';}}
   $('rec-estado').textContent=[pend?`${pend} documento(s) à espera de validação`:'',dup?`${dup} já na pasta com os mesmos dados (não são gravados)`:''].filter(Boolean).join(' · ');
 }
 const linhaRec=id=>REC.linhas.find(l=>l.id===id);
@@ -2304,19 +2311,29 @@ window.recVer=async(fi,n)=>{
 /* Ficheiros da pasta do cliente: ver aqui (cada um abre-se no navegador), sem abrir a pasta no SharePoint. */
 function pintarFicheirosPasta(){
   const el=$('pasta-ficheiros');if(!el||!REC.pasta)return;
+  const m=REC.matriz||{};const mdocs=m.documentos||[];const cats=m.catalogados||{};
   const fs=(REC.filhos||[]).filter(x=>!x.folder&&x.name!==MATRIZ_NOME).sort((a,b)=>a.name.localeCompare(b.name,'pt'));
-  const ds=(REC.filhos||[]).filter(x=>x.folder).map(x=>x.name);
-  const conhecidos=new Set(((REC.matriz&&REC.matriz.documentos)||[]).map(d=>d.ficheiro));
+  const cs=(REC.catFilhos||[]).filter(x=>!x.folder&&x.name!==MATRIZ_NOME).sort((a,b)=>a.name.localeCompare(b.name,'pt'));
+  const outras=(REC.filhos||[]).filter(x=>x.folder&&x.name.toLowerCase()!==CAT_NOME.toLowerCase()).sort((a,b)=>a.name.localeCompare(b.name,'pt'));
   const dt=el.querySelector('details');const aberto=dt?dt.open:undefined;
   const subAbertas=new Set([...el.querySelectorAll('details.subp[open]')].map(d=>d.dataset.id));
   const vers=(REC.versoes||[]).filter(v=>v.antigos.length);
-  const subst={};((REC.matriz&&REC.matriz.documentos)||[]).forEach(d=>{if(d.substituido_por)subst[d.ficheiro]=d.substituido_por;});
+  const subst={};mdocs.forEach(d=>{if(d.substituido_por)subst[d.ficheiro]=d.substituido_por;});
+  const lnk=x=>`<a href="${esc(embedSP(x.webUrl)||'#')}" target="_blank" rel="noopener" style="color:var(--accent-dark);text-decoration:none;font-family:'DM Mono',monospace">${esc(x.name)}</a>`;
+  const doc=/\.(pdf|jpe?g|png)$/i;
+  const estado=x=>{if(!doc.test(x.name)&&!/^DC_.*\.docx$/i.test(x.name))return'';
+    const c=cats[x.id];if(c)return` <span class="tag" style="background:#e7f3e9;color:#2e6b3a">✓ catalogado${c.documentos&&c.documentos.length?' → '+esc(c.documentos.join(', ')):''}</span>`;
+    if(mdocs.some(d=>!d.cat&&d.ficheiro===x.name))return` <span class="tag" style="background:#e7f3e9;color:#2e6b3a">✓ na matriz</span>`;
+    return' <span class="tag" style="background:var(--amber-light);color:var(--amber)">por catalogar</span>';};
   el.innerHTML=(vers.length?`<div class="item" style="border-left-color:var(--amber);margin:.4rem 0"><div class="cab">⚠ Documentos com versão mais recente — na verificação e no gerador conta só a mais recente</div>
       <div class="nota" style="white-space:pre-wrap;margin:0">${vers.map(v=>`${esc(ROT_TIPO(v.tipo))} (${esc(v.chave)}): mais recente ${esc(v.novo)} (${esc(v.data)}); anterior(es): ${v.antigos.map(a=>`${esc(a.ficheiro)} (${esc(a.data)}${a.igual?', mesmos dados':''})`).join(', ')}`).join('\n')}</div></div>`:'')
-    +`<details style="margin:.5rem 0;border:1px solid var(--border);border-radius:8px;padding:.5rem .7rem;background:var(--surface2)"${aberto===false?'':' open'}><summary style="cursor:pointer;font-size:13px;font-weight:600">📁 Documentos na pasta «${esc(REC.pasta.nome)}» (${fs.length}) — clique no nome para abrir</summary>
-    <div style="margin:.4rem 0"><button class="btn" style="padding:2px 10px" onclick="recLerPasta(true)" ${REC.lendo?'disabled':''}>🔄 Voltar a ler todos os documentos da pasta</button></div>
-    <div style="font-size:12px;margin:.4rem 0 0 .2rem;line-height:1.7">${fs.map(x=>`<a href="${esc(embedSP(x.webUrl)||'#')}" target="_blank" rel="noopener" style="color:var(--accent-dark);text-decoration:none;font-family:'DM Mono',monospace">${esc(x.name)}</a>${/\.(pdf|jpe?g|png)$/i.test(x.name)&&REC.matriz&&!conhecidos.has(x.name)?' <span class="tag" style="background:var(--amber-light);color:var(--amber)">não passou pelo verificador</span>':''}${subst[x.name]?` <span class="tag">versão anterior — a mais recente é ${esc(subst[x.name])}</span>`:''}`).join('<br>')||'—'}
-    ${ds.length?`<div style="margin-top:.5rem">${(REC.filhos||[]).filter(x=>x.folder).sort((a,b)=>a.name.localeCompare(b.name,'pt')).map(x=>`<details class="subp" data-id="${esc(x.id)}" ontoggle="recSubpastaAbrir(this)" style="margin:.15rem 0"><summary style="cursor:pointer">📁 ${esc(x.name)}</summary><div class="subp-lista" style="margin:.2rem 0 .3rem 1.2rem;color:var(--text-faint)">…</div></details>`).join('')}</div>`:''}</div></details>`;
+    +`<details style="margin:.5rem 0;border:1px solid var(--border);border-radius:8px;padding:.5rem .7rem;background:var(--surface2)"${aberto===false?'':' open'}><summary style="cursor:pointer;font-size:13px;font-weight:600">📁 Pasta «${esc(REC.pasta.nome)}» — ${fs.length} ficheiro(s) recebido(s) · ${cs.length} catalogado(s)</summary>
+    <div style="margin:.4rem 0"><button class="btn" style="padding:2px 10px" onclick="recLerPasta(true)" ${REC.lendo?'disabled':''}>🔄 Voltar a ler os documentos catalogados</button></div>
+    <div style="font-size:11px;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:.04em;margin-top:.4rem">Recebidos (pasta principal — ficam como vieram)</div>
+    <div style="font-size:12px;margin:.2rem 0 0 .2rem;line-height:1.7">${fs.map(x=>lnk(x)+estado(x)).join('<br>')||'—'}</div>
+    <div style="font-size:11px;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:.04em;margin-top:.6rem">📁 ${esc(CAT_NOME)} (com a matriz)</div>
+    <div style="font-size:12px;margin:.2rem 0 0 .2rem;line-height:1.7">${cs.map(x=>lnk(x)+(subst[x.name]?` <span class="tag">versão anterior — a mais recente é ${esc(subst[x.name])}</span>`:'')).join('<br>')||'— ainda nada catalogado'}</div>
+    ${outras.length?`<div style="margin-top:.6rem">${outras.map(x=>`<details class="subp" data-id="${esc(x.id)}" ontoggle="recSubpastaAbrir(this)" style="margin:.15rem 0"><summary style="cursor:pointer;font-size:12px">📁 ${esc(x.name)}</summary><div class="subp-lista" style="margin:.2rem 0 .3rem 1.2rem;color:var(--text-faint);font-size:12px">…</div></details>`).join('')}</div>`:''}</details>`;
   el.querySelectorAll('details.subp').forEach(d=>{if(subAbertas.has(d.dataset.id))d.open=true;});
 }
 
@@ -2377,6 +2394,8 @@ async function recListar(){
   const r=await gq(`${GRAPH}/drives/${REC.drive}/items/${REC.pasta.id}/children?$top=999&$select=id,name,folder,file,size,webUrl,lastModifiedDateTime`);
   REC.filhos=r.value||[];REC.existentes=REC.filhos.filter(x=>!x.folder).map(x=>x.name);
   (REC.caminho=REC.caminho||{})[REC.pasta.id]=REC.pasta.nome;
+  const c=REC.filhos.find(x=>x.folder&&x.name.toLowerCase()===CAT_NOME.toLowerCase());
+  if(c){REC.caminho[c.id]=REC.pasta.nome+'/'+c.name;await recListarCat(c.id);}else REC.catFilhos=[];
   setTimeout(pintarFicheirosPasta,0);
 }
 /* O Portal abre o verificador com ?pasta=<biblioteca>|<pasta>: a receção fica logo nessa pasta. */
@@ -2385,7 +2404,7 @@ async function recInicio(){
   const [drv,id]=q.split('|');if(!drv||!id)return;
   try{const it=await gq(`${GRAPH}/drives/${drv}/items/${id}?$select=id,name`);REC.drive=drv;REC.doPortal=true;
     if(!REC.pastas.some(x=>x.id===it.id))REC.pastas.push({id:it.id,nome:it.name});await recEscolher(it.id);
-    if(REC.existentes.some(n=>/\.(pdf|jpe?g|png)$/i.test(n)))await recLerPasta();estadoDocs();}
+    if(REC.existentes.some(n=>/\.(pdf|jpe?g|png)$/i.test(n))||(REC.catFilhos||[]).length)await recLerPasta();estadoDocs();}
   catch(e){REC.msg='Não foi possível abrir a pasta indicada pelo Portal: '+esc(e.message);pintarRececao();}
 }
 window.recEscolher=async id=>{
@@ -2435,11 +2454,24 @@ async function recBytes(l){
   return out.save();
 }
 /* ── Matriz de dados ── */
+/* A matriz vive em «Catalogados». As pastas antigas tinham-na na pasta principal: lê-se de lá
+   e, na próxima gravação, passa para «Catalogados» (a antiga vai para a reciclagem). */
 async function recLerMatriz(){
-  if(!REC.existentes.includes(MATRIZ_NOME))return null;
-  const r=await gRaw(`${GRAPH}/drives/${REC.drive}/items/${REC.pasta.id}:/${MATRIZ_NOME}:/content`);
+  const naCat=(REC.catFilhos||[]).find(x=>!x.folder&&x.name===MATRIZ_NOME);
+  const naPrinc=(REC.filhos||[]).find(x=>!x.folder&&x.name===MATRIZ_NOME);
+  const f=naCat||naPrinc;if(!f)return null;
+  const r=await gRaw(`${GRAPH}/drives/${REC.drive}/items/${f.id}/content`);
   if(!r.ok)throw new Error('não foi possível ler a matriz existente (erro '+r.status+')');
-  return r.json();
+  const m=await r.json();if(!naCat&&naPrinc)m.legadoId=naPrinc.id;return m;
+}
+async function gravarMatriz(mat){
+  const cat=await recSubpasta(CAT_NOME);
+  const leg=mat.legadoId;delete mat.legadoId;
+  mat.versao=2;mat.atualizado=new Date().toISOString();mat.pasta=REC.pasta.nome;
+  try{const ativos=mat.documentos.filter(d=>!d.substituido_por&&d.dados).map(d=>({tipo:d.tipoLido,dados:d.dados}));mat.imovel=limparDados(apoioImovel(ativos));}catch(_){}
+  await recEnviar(cat,MATRIZ_NOME,new TextEncoder().encode(JSON.stringify(mat,null,1)),'application/json',true);
+  if(leg){try{await gRaw(`${GRAPH}/drives/${REC.drive}/items/${leg}`,{method:'DELETE'});}catch(_){}}
+  await recListarCat(cat);
 }
 const limparDados=d=>d?JSON.parse(JSON.stringify(d)):null;
 /* Mesmo documento, versão nova: CC pelo NIF/número, certidão pela descrição, caderneta pelo artigo… */
@@ -2495,30 +2527,35 @@ window.recGravar=async()=>{
   const btn=$('rec-gravar');btn.disabled=true;btn.textContent='A gravar…';REC.msg='';
   const avisos=[];
   try{
-    await recListar();recNomes();
+    await recListar();
+    const cat=await recSubpasta(CAT_NOME);
+    await recListarCat(cat);recNomes();
     const prontas=REC.linhas.filter(pronta);
     let mat=await recLerMatriz();
-    if(!mat)mat={versao:1,pasta:REC.pasta.nome,documentos:[],novidades:[]};
-    /* 1) Originais: uma cópia de cada ficheiro recebido em «_originais». */
-    const orig=await recSubpasta('_originais');
-    let nomesOrig=[];try{nomesOrig=((await gq(`${GRAPH}/drives/${REC.drive}/items/${orig}/children?$top=999&$select=name`)).value||[]).map(x=>x.name.toLowerCase());}catch(_){}
-    for(const fn of new Set(prontas.map(l=>l.ficheiro))){
-      if(REC.origGravados.has(fn)||REC.naPasta[fn])continue;
-      let nome=fn,k=2;while(nomesOrig.includes(nome.toLowerCase()))nome=`${baseOriginal(fn)}_${k++}${extDe(fn)}`;
-      try{await recEnviar(orig,nome,new Uint8Array(await REC.files.get(fn).arrayBuffer()),tipoMIME(extDe(fn)));nomesOrig.push(nome.toLowerCase());REC.origGravados.add(fn);}
-      catch(e){avisos.push(`Original «${fn}» não ficou em _originais: ${e.message}`);}
-    }
-    /* 2) Cada documento na pasta principal, com o nome validado. */
+    if(!mat)mat={versao:2,pasta:REC.pasta.nome,documentos:[],novidades:[],catalogados:{}};
+    mat.catalogados=mat.catalogados||{};
     const agora=new Date().toISOString();
+    /* 1) Ficheiros recebidos de fora (largados aqui): entram na pasta principal tal como vieram.
+       Os que já estavam na pasta ficam onde estão. */
+    const nomesPrinc=new Set((REC.filhos||[]).filter(x=>!x.folder).map(x=>x.name.toLowerCase()));
+    const origem={};
+    for(const fn of new Set(REC.linhas.filter(l=>pronta(l)||(l.dup&&!l.gravado)).map(l=>l.ficheiro))){
+      if(REC.naPasta[fn]){origem[fn]={id:REC.naPasta[fn],nome:fn};continue;}
+      const f=REC.files.get(fn);if(!f)continue;
+      let nome=fn,k=2;while(nomesPrinc.has(nome.toLowerCase()))nome=`${baseOriginal(fn)}_${k++}${extDe(fn)}`;
+      try{const r=await recEnviar(REC.pasta.id,nome,new Uint8Array(await f.arrayBuffer()),tipoMIME(extDe(fn)));
+        nomesPrinc.add(nome.toLowerCase());REC.naPasta[fn]=r&&r.id;origem[fn]={id:r&&r.id,nome};REC.origGravados.add(fn);}
+      catch(e){avisos.push(`O ficheiro recebido «${fn}» não ficou na pasta principal: ${e.message}`);origem[fn]={id:'',nome:fn};}
+    }
+    /* 2) Cada documento, com o nome validado, em «Catalogados». */
     for(const l of prontas){
       try{
-        /* Ficheiro que já estava na pasta, inteiro e com o nome certo: fica onde está. */
-        const fica=REC.naPasta[l.ficheiro]&&!l.pags&&l.final===l.ficheiro;
-        if(!fica){const bytes=await recBytes(l);await recEnviar(REC.pasta.id,l.final,bytes,tipoMIME(l.ext));REC.existentes.push(l.final);}
-        l.gravado=l.final;l.erro='';l.ficou=fica;
-        const doc={ficheiro:l.final,original:l.ficheiro,paginas:l.pags||'todas',sigla:l.sigla||(l.livre?'':''),tipoLido:l.r&&l.r.tipo||'',
+        const bytes=await recBytes(l);await recEnviar(cat,l.final,bytes,tipoMIME(l.ext));
+        (REC.catFilhos=REC.catFilhos||[]).push({name:l.final,file:{}});
+        l.gravado=l.final;l.erro='';
+        const o=origem[l.ficheiro]||{id:'',nome:l.ficheiro};
+        const doc={ficheiro:l.final,cat:true,original:o.nome,origemId:o.id||'',paginas:l.pags||'todas',sigla:l.sigla||'',tipoLido:l.r&&l.r.tipo||'',
           leitura:l.r?(l.r.ocr?'imagem':'texto'):'',certeza:!l.r||!l.r.tipo?'manual':l.r.ocr?'imagem':'texto',confirmado:l.estado!=='ok'||!!l.manual,gravado:agora,nota:l.r&&l.r.nota||'',dados:limparDados(l.r&&l.r.dados),texto:l.r&&l.r.texto||''};
-        /* Documento novo de algo que já estava na matriz (ex.: caderneta nova): regista o que mudou. */
         const ch=chaveMatriz(doc);
         if(ch){const ant=mat.documentos.filter(d=>!d.substituido_por&&d.tipoLido===doc.tipoLido&&chaveMatriz(d)===ch).pop();
           if(ant){const dif=diferencas(ant.dados,doc.dados);ant.substituido_por=doc.ficheiro;
@@ -2526,71 +2563,62 @@ window.recGravar=async()=>{
               avisos.push(`⚠ ${doc.ficheiro}: doc com dados novos face a ${ant.ficheiro} — atualizar gerador (${dif.map(d=>`${d.campo}: ${curto(d.antes)} → ${curto(d.depois)}`).join('; ')}).`);}
             else avisos.push(`${doc.ficheiro}: igual a ${ant.ficheiro} (sem dados novos).`);}}
         mat.documentos.push(doc);
+        if(o.id){const c=mat.catalogados[o.id]=mat.catalogados[o.id]||{nome:o.nome,quando:agora,documentos:[]};c.documentos.push(doc.ficheiro);}
       }catch(e){l.erro='Não foi gravado: '+e.message;}
     }
-    /* 2b) Ficheiros que entraram na pasta sem passar pelo verificador: depois de gravados os
-       documentos com o nome certo, o ficheiro de origem passa para «_originais». */
-    for(const fn of new Set(prontas.map(l=>l.ficheiro))){const id=REC.naPasta[fn];if(!id)continue;
-      const dele=REC.linhas.filter(l=>l.ficheiro===fn);if(dele.some(l=>!l.gravado)||dele.every(l=>l.ficou))continue;
-      let nome=fn,k=2;while(nomesOrig.includes(nome.toLowerCase()))nome=`${baseOriginal(fn)}_${k++}${extDe(fn)}`;
-      try{const r=await gRaw(`${GRAPH}/drives/${REC.drive}/items/${id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({parentReference:{id:orig},name:nome})});
-        if(!r.ok)throw new Error(`erro ${r.status} — ${await erroGraph(r)}`);nomesOrig.push(nome.toLowerCase());delete REC.naPasta[fn];REC.existentes=REC.existentes.filter(n=>n!==fn);}
-      catch(e){avisos.push(`«${fn}» não passou para _originais: ${e.message}`);}}
-    /* 3) Matriz atualizada (resumo do imóvel incluído, para o gerador). */
+    /* Ficheiro da pasta só com documentos repetidos (mesmos dados): fica marcado como catalogado, para não voltar a ser lido. */
+    Object.entries(origem).forEach(([fn,o])=>{if(!o.id||mat.catalogados[o.id])return;
+      const dele=REC.linhas.filter(l=>l.ficheiro===fn);if(dele.length&&dele.every(l=>l.gravado||l.dup))mat.catalogados[o.id]={nome:o.nome,quando:agora,documentos:dele.map(l=>l.gravado||l.dup)};});
+    /* 3) Matriz atualizada, dentro de «Catalogados». */
     {const {alertas}=ordenarVersoes(mat);REC.versoes=alertas;
      alertas.forEach(v=>{if(v.antigos.some(a=>prontas.some(l=>l.gravado===a.ficheiro)))avisos.push(`⚠ ${v.antigos.filter(a=>prontas.some(l=>l.gravado===a.ficheiro)).map(a=>a.ficheiro).join(', ')}: é mais antigo do que ${v.novo} (${v.data}) — fica como versão anterior.`);});}
-    mat.atualizado=agora;mat.pasta=REC.pasta.nome;
-    try{const ativos=mat.documentos.filter(d=>!d.substituido_por&&d.dados).map(d=>({tipo:d.tipoLido,dados:d.dados}));mat.imovel=limparDados(apoioImovel(ativos));}catch(_){}
-    await recEnviar(REC.pasta.id,MATRIZ_NOME,new TextEncoder().encode(JSON.stringify(mat,null,1)),'application/json',true);
-    if(!REC.existentes.includes(MATRIZ_NOME))REC.existentes.push(MATRIZ_NOME);
-    REC.matriz=mat;pintarFicheirosPasta();
+    mat.pasta=REC.pasta.nome;
+    await gravarMatriz(mat);
+    REC.matriz=mat;await recListar();pintarFicheirosPasta();
     const ok=prontas.filter(l=>l.gravado).length;
     const falhas=prontas.filter(l=>!l.gravado);
     REC.msg=(falhas.length?`<div style="color:var(--red);font-weight:600">${falhas.length} documento(s) NÃO foram gravados:\n${falhas.map(l=>esc(l.final+' — '+l.erro)).join('\n')}</div>`:'')
-      +esc(`Gravados ${ok} de ${prontas.length} documento(s) na pasta; matriz atualizada.`)+(avisos.length?'\n'+avisos.map(a=>/não ficou|não passou/.test(a)?`<span style="color:var(--red)">${esc(a)}</span>`:esc(a)).join('\n'):'');
-    estadoDocs(falhas.length||avisos.some(a=>/não ficou|não passou/.test(a))?'<span style="color:var(--red);font-weight:600">gravação com falhas — ver «Guardar na pasta» (4)</span>':`gravados ${ok} documento(s) na pasta`);
-  }catch(e){REC.msg=`<span style="color:var(--red);font-weight:600">Não foi possível gravar: ${esc(e.message)}</span>`;estadoDocs('<span style="color:var(--red);font-weight:600">gravação falhou — ver «Guardar na pasta» (4)</span>');}
+      +esc(`Catalogados ${ok} de ${prontas.length} documento(s) em «${CAT_NOME}»; matriz atualizada.`)+(avisos.length?'\n'+avisos.map(a=>/não ficou/.test(a)?`<span style="color:var(--red)">${esc(a)}</span>`:esc(a)).join('\n'):'');
+    estadoDocs(falhas.length||avisos.some(a=>/não ficou/.test(a))?'<span style="color:var(--red);font-weight:600">gravação com falhas — ver «Catalogar» (4)</span>':`${ok} documento(s) catalogado(s)`);
+  }catch(e){REC.msg=`<span style="color:var(--red);font-weight:600">Não foi possível gravar: ${esc(e.message)}</span>`;estadoDocs('<span style="color:var(--red);font-weight:600">gravação falhou — ver «Catalogar» (4)</span>');}
   $('rec-det').open=true;
   recComparar();recNomes();pintarRececao();
 };
-/* ── Ler para verificação os documentos que já estão na pasta principal ── */
+/* ── Ler a pasta: o que já está catalogado entra com os dados da matriz; o que foi posto
+   na pasta e ainda não foi catalogado é lido e fica abaixo, para confirmar o nome e gravar
+   em «Catalogados». Os ficheiros da pasta principal nunca são movidos nem renomeados. ── */
 window.recLerPasta=async(tudo)=>{
   if(!REC.pasta)return;
   try{
     await recListar();REC.matriz=await recLerMatriz();
-    if(!REC.matriz)REC.matriz={versao:1,pasta:REC.pasta.nome,documentos:[],novidades:[]};
-    const mdocs=(REC.matriz&&REC.matriz.documentos)||[];
+    if(!REC.matriz)REC.matriz={versao:2,pasta:REC.pasta.nome,documentos:[],novidades:[],catalogados:{}};
+    REC.matriz.catalogados=REC.matriz.catalogados||{};
+    const mdocs=REC.matriz.documentos||[];
+    const docFich=d=>d.cat?(REC.catFilhos||[]).find(x=>!x.folder&&x.name===d.ficheiro):(REC.filhos||[]).find(x=>!x.folder&&x.name===d.ficheiro);
     const sel=REC.filhos.filter(x=>!x.folder&&x.name!==MATRIZ_NOME&&(/\.(pdf|jpe?g|png)$/i.test(x.name)||/^DC_.*\.docx$/i.test(x.name)));
-    if(!sel.length){REC.msg='Não há documentos (PDF/imagem) na pasta principal.';pintarRececao();return;}
-    /* Os que já estão na matriz entram com os dados lá guardados (sem nova leitura nem OCR);
-       só se leem os ficheiros que a matriz não conhece (ex.: postos na pasta à mão). */
-    let daMatriz=0;const ler=[],reler=[];
-    sel.forEach(x=>{const d=mdocs.find(m=>m.ficheiro===x.name);
-      if(d&&d.tipoLido&&d.dados&&!tudo){APOIO=APOIO.filter(r=>r.ficheiro!==x.name);
-        APOIO.push({ficheiro:x.name,nome:x.name,pags:null,tipo:d.tipoLido,dados:d.dados,texto:d.texto||'',ocr:d.leitura==='imagem',nota:d.nota||'',daMatriz:true});daMatriz++;}
-      else if(!d)ler.push(x);
-      else reler.push(x);});
-    /* Documentos arrumados numa subpasta (20/10/2026): continuam a contar, com os dados da matriz. */
-    mdocs.filter(d=>d.local&&d.tipoLido&&d.dados&&!d.substituido_por).forEach(d=>{APOIO=APOIO.filter(r=>r.ficheiro!==d.ficheiro);
-      APOIO.push({ficheiro:d.ficheiro,nome:`${d.local}/${d.ficheiro}`,pags:null,tipo:d.tipoLido,dados:d.dados,texto:d.texto||'',ocr:d.leitura==='imagem',nota:d.nota||'',daMatriz:true});daMatriz++;});
-    const semTipo=[];if(tudo)reler.push(...sel.filter(x=>mdocs.some(m=>m.ficheiro===x.name)&&!reler.includes(x)));
-    REC.lendo=true;REC.msg=`${daMatriz} documento(s) da matriz${ler.length?` · a ler ${ler.length} que a matriz não tem…`:''}`;pintarRececao();
-    /* Documentos gravados antes de o verificador os saber ler (na matriz sem dados): lê-se outra
-       vez e, se agora forem reconhecidos, a matriz é atualizada (o ficheiro não muda de nome nem de sítio). */
+    /* Já catalogado: pelo id do ficheiro de origem, ou (matriz antiga) por ser ele próprio um documento da matriz. */
+    const catalogado=x=>!!REC.matriz.catalogados[x.id]||mdocs.some(d=>!d.cat&&d.ficheiro===x.name);
+    const ler=tudo?[]:sel.filter(x=>!catalogado(x));
+    let daMatriz=0;const reler=[],semFich=[];
+    mdocs.filter(d=>!d.substituido_por).forEach(d=>{
+      const f=docFich(d);
+      if(!f){if(d.tipoLido)semFich.push(d.ficheiro);return;}
+      if(d.tipoLido&&d.dados&&!tudo){APOIO=APOIO.filter(r=>r.ficheiro!==d.ficheiro);
+        APOIO.push({ficheiro:d.ficheiro,nome:d.ficheiro,pags:null,tipo:d.tipoLido,dados:d.dados,texto:d.texto||'',ocr:d.leitura==='imagem',nota:d.nota||'',daMatriz:true});daMatriz++;}
+      else reler.push({d,f});});
+    const semTipo=[];
+    REC.lendo=true;REC.msg=`${daMatriz} documento(s) da matriz${ler.length?` · a ler ${ler.length} ainda por catalogar…`:''}`;pintarRececao();
+    /* Documentos catalogados sem dados (ou «Voltar a ler todos»): lê-se outra vez o ficheiro catalogado e a matriz é atualizada. */
     if(reler.length){const files=[];
-      for(const x of reler){const r=await gRaw(`${GRAPH}/drives/${REC.drive}/items/${x.id}/content`);if(r.ok)files.push(new File([await r.blob()],x.name));}
+      for(const {f} of reler){const r=await gRaw(`${GRAPH}/drives/${REC.drive}/items/${f.id}/content`);if(r.ok)files.push(new File([await r.blob()],f.name));}
       APOIO=APOIO.filter(r=>!files.some(f=>f.name===r.ficheiro));await juntarApoio(files);
       let mudou=0;
       files.forEach(f=>{const rec=APOIO.find(r=>r.ficheiro===f.name&&r.tipo);const d=mdocs.find(m=>m.ficheiro===f.name);
         if(rec&&d){Object.assign(d,{tipoLido:rec.tipo,dados:limparDados(rec.dados),texto:rec.texto||'',leitura:rec.ocr?'imagem':'texto',certeza:rec.ocr?'imagem':'texto',nota:rec.nota||'',relido:new Date().toISOString()});mudou++;}
         else semTipo.push(f.name);});
       REC.relidos=mudou;daMatriz+=mudou;}
-    /* Versões do mesmo documento: a mais recente fica ativa; as anteriores saem da verificação. */
     const {alertas,mudou:mv}=ordenarVersoes(REC.matriz);REC.versoes=alertas;
-    if(REC.relidos||mv){try{REC.matriz.atualizado=new Date().toISOString();
-        const ativos=REC.matriz.documentos.filter(d=>!d.substituido_por&&d.dados).map(d=>({tipo:d.tipoLido,dados:d.dados}));try{REC.matriz.imovel=limparDados(apoioImovel(ativos));}catch(_){}
-        await recEnviar(REC.pasta.id,MATRIZ_NOME,new TextEncoder().encode(JSON.stringify(REC.matriz,null,1)),'application/json',true);}
-      catch(e){REC.msg='Não foi possível atualizar a matriz: '+esc(e.message);}}
+    if(REC.relidos||mv){try{await gravarMatriz(REC.matriz);}catch(e){REC.msg='Não foi possível atualizar a matriz: '+esc(e.message);}}
     REC.relidos=0;
     const subst=new Set(REC.matriz.documentos.filter(d=>d.substituido_por).map(d=>d.ficheiro));
     APOIO=APOIO.filter(r=>!subst.has(r.ficheiro));
@@ -2598,10 +2626,11 @@ window.recLerPasta=async(tudo)=>{
       for(const x of ler){const r=await gRaw(`${GRAPH}/drives/${REC.drive}/items/${x.id}/content`);if(r.ok){const f=new File([await r.blob()],x.name);files.push(f);REC.files.set(x.name,f);REC.naPasta[x.name]=x.id;}}
       await juntarApoio(files);montarLinhas(files.map(f=>f.name));if(files.length)$('rec-det').open=true;}
     else{pintarApoio();if(DOC)analisar();}
-    const vers=(REC.versoes||[]).filter(v=>v.antigos.length);
-    estadoDocs([ler.length?`<span style="color:var(--amber)">${ler.length} ficheiro(s) na pasta não passaram pelo verificador — confirme-os em «Guardar na pasta» (4)</span>`:'',
-      ].filter(Boolean).join(' · '));pintarFicheirosPasta();REC.msg=esc(`Para verificação: ${daMatriz} documento(s) com os dados da matriz${ler.length?` e ${ler.length} que entraram na pasta sem passar pelo verificador (estão abaixo, para confirmar o nome e gravar; o ficheiro de origem passa para _originais)`:''}.`)
-      +(semTipo.length?'\n'+esc(`Sem dados para cruzar (gravados sem tipo reconhecido): ${semTipo.join(', ')} — Verificar documento.`):'');
+    estadoDocs([ler.length?`<span style="color:var(--amber)">${ler.length} ficheiro(s) da pasta ainda por catalogar — confirme os nomes e grave em «Catalogados» (4)</span>`:''].filter(Boolean).join(' · '));
+    pintarFicheirosPasta();
+    REC.msg=esc(`Para verificação: ${daMatriz} documento(s) com os dados da matriz${ler.length?` e ${ler.length} da pasta ainda por catalogar (estão abaixo: confirme o nome e grave — vão para «Catalogados»; o ficheiro da pasta fica como está)`:''}.`)
+      +(semTipo.length?'\n'+esc(`Sem dados para cruzar (gravados sem tipo reconhecido): ${semTipo.join(', ')} — Verificar documento.`):'')
+      +(semFich.length?'\n'+esc(`Na matriz mas já não na pasta: ${semFich.join(', ')}.`):'');
   }catch(e){REC.msg='Não foi possível ler a pasta: '+esc(e.message);}
   REC.lendo=false;pintarRececao();
 };
