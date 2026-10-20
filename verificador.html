@@ -49,7 +49,7 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
 </head>
 <body>
 <div class="topbar">
-  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-20.1</span></div>
+  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-20.2</span></div>
   <div style="display:flex;gap:.6rem;align-items:center"><span id="login-info" style="font-size:11px;color:var(--text-faint)"></span>
     <button class="btn" id="btn-entrar" onclick="entrar()">Entrar</button>
     <button class="btn btn-p" id="btn-desc" onclick="descarregar()" disabled>Descarregar Word revisto</button></div>
@@ -969,8 +969,10 @@ function cgdCruzar(P,add,docs){
     confere('Preço (valor de aquisição)',bc.aquisicao,valoresEm(/convencionado o pre[çc]o de\s*([\d\s. ]+,\d{2})/gi),/convencionado o pre[çc]o/i,O);
     confere('Despesas garantidas pela hipoteca',bc.despesas,valoresEm(/encargos contratuais[^.;]*?montante de\s*([\d\s. ]+,\d{2})/gi),/encargos contratuais/i,O);
     confere('Montante máximo da hipoteca',bc.maximo,valoresEm(/montante m[áa]ximo[^.;]*?fixado em\s*([\d\s. ]+,\d{2})/gi),/montante m[áa]ximo/i,O);
+    /* O valor de avaliação é o «Valor Total» da garantia no boletim (Liliana, 20/10/2026). */
     if(bc.avaliacao){const v=valoresEm(/atribuem o valor de\s*([\d\s. ]+,\d{2})/gi);
-      v.filter(x=>Math.abs(x-bc.avaliacao)>0.004).forEach(x=>add(onde(/atribuem o valor/i),'cgd','aviso',`${O}: o valor da garantia é ${fmtEUR(bc.avaliacao)} €; o DPA atribui ${fmtEUR(x)} € — confirme`,0,0));}
+      if(!v.length)add(onde(/avalia|atribu/i),'cgd','aviso',`${O}: valor de avaliação ${fmtEUR(bc.avaliacao)} € (Valor Total da garantia) — não encontrei o valor atribuído no DPA`,0,0);
+      v.filter(x=>Math.abs(x-bc.avaliacao)>0.004).forEach(x=>add(onde(/atribuem o valor/i),'cgd','erro',`${O}: o valor de avaliação é ${fmtEUR(bc.avaliacao)} € (Valor Total da garantia), mas o DPA atribui ${fmtEUR(x)} €`,0,0));}
     if(bc.prazo){const m=[...tudo.matchAll(/pelo prazo de\s*(\d+)/gi)].map(x=>x[1]);
       if(!m.length)add(onde(/prazo/i),'cgd','aviso',`${O}: prazo de ${bc.prazo} meses — não o encontrei`,0,0);
       m.filter(x=>x!==bc.prazo).forEach(x=>add(onde(/pelo prazo de/i),'cgd','erro',`${O}: o prazo é de ${bc.prazo} meses, mas o DPA diz ${x}`,0,0));}
