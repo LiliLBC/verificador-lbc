@@ -45,16 +45,54 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
 .dd{display:none;position:absolute;left:0;right:0;top:100%;z-index:20;background:var(--surface);border:1px solid var(--border-strong);border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.1);max-height:300px;overflow:auto}
 .dd div{padding:.45rem .7rem;font-size:13px;cursor:pointer}.dd div:hover{background:var(--accent-light)}
 .vazio{font-size:12px;color:var(--text-faint);padding:.6rem 0}
+.modos{display:none;gap:.5rem;max-width:1080px;margin:1rem auto -1rem;padding:0 1.5rem;box-sizing:border-box}
+body.com-pasta .modos{display:flex}
+.modo{flex:1;text-align:left;border:1px solid var(--border);background:var(--surface);border-radius:10px;padding:.55rem .8rem;cursor:pointer;font-size:13.5px;font-weight:600;color:var(--text)}
+.modo span{display:block;font-size:11px;font-weight:400;color:var(--text-faint);margin-top:2px}
+.modo.ativo{border-color:var(--accent);background:var(--accent-light);box-shadow:inset 0 0 0 1px var(--accent)}
+#card-explorador{display:none}
+body.modo-pasta #card-explorador{display:block}
+body.modo-pasta .container>.card:not(#card-explorador){display:none!important}
+body.modo-pasta #btn-desc{display:none}
+.exp-drop{border:1px solid var(--border);border-radius:8px;min-height:120px;background:var(--surface)}
+.exp-drop.sobre{border:2px dashed var(--accent);background:var(--accent-light)}
+.exp-l{display:grid;grid-template-columns:26px 1fr 90px 120px auto;gap:.5rem;align-items:center;padding:.35rem .6rem;border-bottom:1px solid var(--border);font-size:13px}
+.exp-l:hover{background:var(--surface2)}
+.exp-l:last-child{border-bottom:none}
+.exp-ic{text-align:center}
+.exp-n{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.exp-n a{color:var(--accent-dark);text-decoration:none}
+.exp-m{font-size:11px;color:var(--text-faint);white-space:nowrap}
+.exp-a{white-space:nowrap}
+.exp-b{padding:0 6px!important;font-size:12px;margin-left:2px}
+@media(max-width:640px){.exp-l{grid-template-columns:24px 1fr auto}.exp-m{display:none}.modos{flex-direction:column}}
 </style>
 </head>
 <body>
 <div class="topbar">
-  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-20.2</span></div>
+  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-20.3</span></div>
   <div style="display:flex;gap:.6rem;align-items:center"><span id="login-info" style="font-size:11px;color:var(--text-faint)"></span>
     <button class="btn" id="btn-entrar" onclick="entrar()">Entrar</button>
     <button class="btn btn-p" id="btn-desc" onclick="descarregar()" disabled>Descarregar Word revisto</button></div>
 </div>
+<div class="modos" id="modos">
+  <button class="modo ativo" id="modo-ver" onclick="modoPasta(false)">📥 Verificar e catalogar<span>ler, separar, nomear, matriz e verificar o DPA</span></button>
+  <button class="modo" id="modo-pas" onclick="modoPasta(true)">📂 Trabalhar na pasta<span>abrir, carregar, criar pastas, mudar o nome, mover e apagar</span></button>
+</div>
 <div class="container">
+
+  <div class="card" id="card-explorador">
+    <div class="card-h"><div class="num">📂</div><div><div class="card-t">Pasta do cliente</div><div class="card-d">Trabalho livre na pasta: o que se carrega aqui entra tal como está, sem passar pelo verificador. Para ler e catalogar documentos, use «Verificar e catalogar».</div></div></div>
+    <div style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:center;margin-bottom:.5rem">
+      <div id="exp-migalhas" style="font-size:12.5px;flex:1;min-width:200px"></div>
+      <button class="btn btn-p" onclick="$('exp-fich').click()">⬆ Carregar ficheiros</button>
+      <button class="btn" onclick="expNovaPasta()">＋ Nova pasta</button>
+      <button class="btn" onclick="expListar()" title="Voltar a ler a pasta">🔄</button>
+      <input type="file" id="exp-fich" multiple style="display:none" onchange="expCarregar(this.files);this.value=''">
+    </div>
+    <div id="exp-drop" class="exp-drop"><div id="exp-lista"><div class="vazio">A abrir…</div></div></div>
+    <div class="nota" id="exp-estado" style="margin-top:.4rem"></div>
+  </div>
 
   <div class="card">
     <div class="card-h"><div class="num">1</div><div><div class="card-t">Documentos do DPA</div><div class="card-d">Arraste para aqui o Word do DPA e os documentos (PDF, fotografias), tudo junto ou aos poucos. O Word é reconhecido sozinho; os documentos são lidos e cruzados com o DPA. Tudo fica neste computador.</div></div></div>
@@ -2309,124 +2347,190 @@ function pintarFicheirosPasta(){
   el.innerHTML=(vers.length?`<div class="item" style="border-left-color:var(--amber);margin:.4rem 0"><div class="cab">⚠ Documentos com versão mais recente — na verificação e no gerador conta só a mais recente</div>
       <div class="nota" style="white-space:pre-wrap;margin:0">${vers.map(v=>`${esc(ROT_TIPO(v.tipo))} (${esc(v.chave)}): mais recente ${esc(v.novo)} (${esc(v.data)}); anterior(es): ${v.antigos.map(a=>`${esc(a.ficheiro)} (${esc(a.data)}${a.igual?', mesmos dados':''})`).join(', ')}`).join('\n')}</div></div>`:'')
     +`<details style="margin:.5rem 0;border:1px solid var(--border);border-radius:8px;padding:.5rem .7rem;background:var(--surface2)"${aberto===false?'':' open'}><summary style="cursor:pointer;font-size:13px;font-weight:600">📁 Documentos na pasta «${esc(REC.pasta.nome)}» (${fs.length}) — clique no nome para abrir</summary>
-    <div style="margin:.4rem 0"><button class="btn" style="padding:2px 10px" onclick="recLerPasta(true)" ${REC.lendo?'disabled':''}>🔄 Voltar a ler todos os documentos da pasta</button> <button class="btn" style="padding:2px 10px" onclick="gestNovaSubpasta()">＋ Nova subpasta</button></div>
-    <div style="font-size:12px;margin:.4rem 0 0 .2rem;line-height:1.7">${fs.map(x=>`<a href="${esc(embedSP(x.webUrl)||'#')}" target="_blank" rel="noopener" style="color:var(--accent-dark);text-decoration:none;font-family:'DM Mono',monospace">${esc(x.name)}</a>${/\.(pdf|jpe?g|png)$/i.test(x.name)&&REC.matriz&&!conhecidos.has(x.name)?' <span class="tag" style="background:var(--amber-light);color:var(--amber)">não passou pelo verificador</span>':''}${subst[x.name]?` <span class="tag">versão anterior — a mais recente é ${esc(subst[x.name])}</span>`:''}${gestAcoes(x,REC.pasta.id)}`).join('<br>')||'—'}
-    ${ds.length?`<div style="margin-top:.5rem">${(REC.filhos||[]).filter(x=>x.folder).sort((a,b)=>a.name.localeCompare(b.name,'pt')).map(x=>`<details class="subp" data-id="${esc(x.id)}" ontoggle="recSubpastaAbrir(this)" style="margin:.15rem 0"><summary style="cursor:pointer">📁 ${esc(x.name)}${x.webUrl?` <a href="${esc(embedSP(x.webUrl))}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="font-size:11px;color:var(--text-faint)">abrir no SharePoint ↗</a>`:''}${gestAcoes(x,REC.pasta.id,true)}</summary><div class="subp-lista" style="margin:.2rem 0 .3rem 1.2rem;color:var(--text-faint)">…</div></details>`).join('')}</div>`:''}</div></details>`;
+    <div style="margin:.4rem 0"><button class="btn" style="padding:2px 10px" onclick="recLerPasta(true)" ${REC.lendo?'disabled':''}>🔄 Voltar a ler todos os documentos da pasta</button> <button class="btn" style="padding:2px 10px" onclick="modoPasta(true)">📂 Trabalhar na pasta (renomear, carregar, mover, apagar)</button></div>
+    <div style="font-size:12px;margin:.4rem 0 0 .2rem;line-height:1.7">${fs.map(x=>`<a href="${esc(embedSP(x.webUrl)||'#')}" target="_blank" rel="noopener" style="color:var(--accent-dark);text-decoration:none;font-family:'DM Mono',monospace">${esc(x.name)}</a>${/\.(pdf|jpe?g|png)$/i.test(x.name)&&REC.matriz&&!conhecidos.has(x.name)?' <span class="tag" style="background:var(--amber-light);color:var(--amber)">não passou pelo verificador</span>':''}${subst[x.name]?` <span class="tag">versão anterior — a mais recente é ${esc(subst[x.name])}</span>`:''}`).join('<br>')||'—'}
+    ${ds.length?`<div style="margin-top:.5rem">${(REC.filhos||[]).filter(x=>x.folder).sort((a,b)=>a.name.localeCompare(b.name,'pt')).map(x=>`<details class="subp" data-id="${esc(x.id)}" ontoggle="recSubpastaAbrir(this)" style="margin:.15rem 0"><summary style="cursor:pointer">📁 ${esc(x.name)}</summary><div class="subp-lista" style="margin:.2rem 0 .3rem 1.2rem;color:var(--text-faint)">…</div></details>`).join('')}</div>`:''}</div></details>`;
   el.querySelectorAll('details.subp').forEach(d=>{if(subAbertas.has(d.dataset.id))d.open=true;});
 }
 
-/* ═══════════ ARRUMAR A PASTA DO CLIENTE (20/10/2026) ═══════════
-   Como a pasta já não se abre no SharePoint, é aqui que se criam subpastas e que
-   se renomeiam, movem e apagam documentos. Apagar manda para a reciclagem do
-   SharePoint (recuperável). A MATRIZ_VERIFICADOR.json acompanha: o nome novo
-   passa para a matriz, o documento apagado sai dela, e o que vai para uma
-   subpasta fica com a indicação de onde está. */
-const gestNomeSub=id=>{const f=(REC.filhos||[]).find(x=>x.id===id);return f?f.name:'';};
-function gestAcoes(x,pai,ehPasta){
-  const a=`'${esc(x.id)}','${esc(pai)}'`;
-  const b=(t,ic,fn)=>`<button class="btn" title="${t}" style="padding:0 5px;font-size:11px;line-height:1.5;margin-left:3px" onclick="event.preventDefault();event.stopPropagation();${fn}(${a}${ehPasta?',true':''})">${ic}</button>`;
-  return`<span class="gest" style="white-space:nowrap;margin-left:6px">${b(ehPasta?'Mudar o nome da subpasta':'Mudar o nome','✏️','gestRenomear')}${ehPasta?'':b('Mover para outra pasta','↪','gestMover')}${b(ehPasta?'Apagar a subpasta':'Apagar','🗑','gestApagar')}</span>`;
-}
-async function gestItem(id){return gq(`${GRAPH}/drives/${REC.drive}/items/${id}?$select=id,name,folder,parentReference`);}
-/* Grava a matriz depois de uma arrumação, se mudou alguma coisa. */
-async function gestGravarMatriz(){
-  if(!REC.matriz)return;
-  try{const {alertas}=ordenarVersoes(REC.matriz);REC.versoes=alertas;
-    await recEnviar(REC.pasta.id,MATRIZ_NOME,new TextEncoder().encode(JSON.stringify(REC.matriz,null,1)),'application/json',true);}
-  catch(e){REC.msg='A arrumação foi feita, mas a matriz não foi atualizada: '+esc(e.message);}
-}
-async function gestRefrescar(msg){
-  try{await recListar();}catch(e){REC.msg='Não foi possível reler a pasta: '+esc(e.message);}
-  if(msg)REC.msg=msg;pintarRececao();estadoDocs();
-}
+/* ═══════════ VERIFICADOR HÍBRIDO · TRABALHAR NA PASTA (20/10/2026) ═══════════
+   Dois modos sobre a mesma pasta do cliente:
+     📥 Verificar e catalogar — o que já fazia: lê, separa, nomeia, matriz, verifica o DPA;
+     📂 Trabalhar na pasta   — explorador livre: abrir, carregar, criar pastas, mudar o
+                               nome, mover e apagar, sem passar pelo verificador e sem
+                               mostrar o ambiente do SharePoint (os ficheiros abrem em
+                               vista limpa, env=WebView).
+   O que se carrega aqui entra tal como está; no modo «verificar» aparece como «não
+   passou pelo verificador». A MATRIZ_VERIFICADOR.json acompanha as mudanças de nome,
+   as mudanças de sítio (campo «local») e o que se apaga, e não aparece na lista. */
+const EXP={pilha:[],itens:[],lendo:false,lidaVerif:false};
 function gestDialogo(titulo,corpo,botoes){
   return new Promise(ok=>{
     const ov=document.createElement('div');ov.className='gest-ov';
     ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:9999';
-    ov.innerHTML=`<div style="background:#fff;border-radius:10px;padding:1.1rem 1.2rem;max-width:460px;width:92%;box-shadow:0 12px 40px rgba(0,0,0,.25);font-size:13px">
+    ov.innerHTML=`<div style="background:#fff;border-radius:10px;padding:1.1rem 1.2rem;max-width:480px;width:92%;box-shadow:0 12px 40px rgba(0,0,0,.25);font-size:13px">
       <div style="font-weight:600;margin-bottom:.6rem">${titulo}</div><div>${corpo}</div>
-      <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem">${botoes.map((b,i)=>`<button class="btn${b.primario?' btn-primary':''}" data-i="${i}">${b.t}</button>`).join('')}</div></div>`;
-    ov.addEventListener('click',e=>{const bt=e.target.closest('button[data-i]');if(!bt)return;const v=botoes[+bt.dataset.i].v;const sel=ov.querySelector('select,input');const val=sel?sel.value:'';ov.remove();ok(v?{v,val}:null);});
+      <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem;flex-wrap:wrap">${botoes.map((b,i)=>`<button class="btn${b.primario?' btn-p':''}" data-i="${i}">${b.t}</button>`).join('')}</div></div>`;
+    ov.addEventListener('click',e=>{const bt=e.target.closest('button[data-i]');if(!bt)return;const v=botoes[+bt.dataset.i].v;const f=ov.querySelector('select,input');const val=f?f.value:'';ov.remove();ok(v?{v,val}:null);});
+    ov.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.tagName==='INPUT'){const b=ov.querySelector('button.btn-p');if(b)b.click();}if(e.key==='Escape'){ov.remove();ok(null);}});
     document.body.appendChild(ov);const f=ov.querySelector('input,select');if(f)setTimeout(()=>{f.focus();if(f.select)f.select();},30);
   });
 }
-window.gestNovaSubpasta=async()=>{
-  if(!REC.pasta)return;
-  const r=await gestDialogo('Nova subpasta',`<input class="inp" id="gest-in" style="width:100%" placeholder="Ex: DPA, Distrate, Correspondência">`,[{t:'Cancelar'},{t:'Criar',v:'ok',primario:true}]);
-  const nome=r&&r.val.trim().replace(/[\\/:*?"<>|#%]/g,'').trim();if(!nome)return;
-  if((REC.filhos||[]).some(x=>x.folder&&x.name.toLowerCase()===nome.toLowerCase())){alert(`Já existe a subpasta «${nome}».`);return;}
-  try{await recSubpasta(nome);await gestRefrescar(`Subpasta «${esc(nome)}» criada.`);}catch(e){alert('Não foi possível criar a subpasta: '+e.message);}
+const limpaNome=t=>String(t||'').replace(/[\\/:*?"<>|#%]/g,'').replace(/\s+/g,' ').trim();
+const expAtual=()=>EXP.pilha[EXP.pilha.length-1];
+/* Caminho relativo à pasta do cliente: '' na principal, 'DPA' ou 'DPA/Antigos' nas subpastas. */
+const expLocal=()=>EXP.pilha.slice(1).map(p=>p.nome).join('/');
+const fmtTam=n=>n==null?'':n<1024?n+' B':n<1048576?(n/1024).toFixed(0)+' KB':(n/1048576).toFixed(1).replace('.',',')+' MB';
+const fmtQuando=d=>d?new Date(d).toLocaleString('pt-PT',{dateStyle:'short',timeStyle:'short'}):'';
+const icone=x=>x.folder?'📁':/\.pdf$/i.test(x.name)?'📄':/\.(jpe?g|png|heic|webp)$/i.test(x.name)?'🖼':/\.docx?$/i.test(x.name)?'📝':/\.xlsx?$/i.test(x.name)?'📊':'📎';
+window.modoPasta=async on=>{
+  document.body.classList.toggle('modo-pasta',!!on);
+  $('modo-ver')?.classList.toggle('ativo',!on);$('modo-pas')?.classList.toggle('ativo',!!on);
+  const u=new URL(location.href);if(on)u.searchParams.set('modo','pasta');else u.searchParams.delete('modo');history.replaceState(null,'',u);
+  if(on){if(!REC.pasta){$('exp-lista').innerHTML='<div class="vazio">Escolha primeiro a pasta do cliente (no Portal, em «Pastas / clientes»).</div>';return;}
+    if(!EXP.pilha.length||EXP.pilha[0].id!==REC.pasta.id)EXP.pilha=[{id:REC.pasta.id,nome:REC.pasta.nome}];
+    await expListar();}
+  else if(REC.pasta){
+    /* De volta ao modo «verificar»: relê a pasta, que pode ter mudado. A primeira vez lê os documentos. */
+    try{if(!EXP.lidaVerif&&REC.existentes&&REC.existentes.some(n=>/\.(pdf|jpe?g|png)$/i.test(n))){EXP.lidaVerif=true;await recLerPasta();}
+      else{await recListar();REC.matriz=await recLerMatriz();}}catch(e){REC.msg='Não foi possível reler a pasta: '+esc(e.message);}
+    pintarRececao();estadoDocs();}
 };
-window.gestRenomear=async(id,pai,ehPasta)=>{
-  let it;try{it=await gestItem(id);}catch(e){alert(e.message);return;}
-  const ext=ehPasta?'':(it.name.match(/\.[^.]+$/)||[''])[0];
-  const base=ehPasta?it.name:it.name.slice(0,it.name.length-ext.length);
-  const r=await gestDialogo(ehPasta?'Mudar o nome da subpasta':'Mudar o nome do documento',`<input class="inp" id="gest-in" style="width:100%" value="${esc(base)}">${ext?`<div style="font-size:11px;color:var(--text-faint);margin-top:4px">A extensão ${esc(ext)} mantém-se.</div>`:''}`,[{t:'Cancelar'},{t:'Gravar',v:'ok',primario:true}]);
-  if(!r)return;let novo=r.val.trim().replace(/[\\/:*?"<>|#%]/g,'').trim();if(!novo||novo===base)return;
+async function expListar(){
+  const at=expAtual();if(!at)return;EXP.lendo=true;expPintar();
+  try{const r=await gq(`${GRAPH}/drives/${REC.drive}/items/${at.id}/children?$top=999&$select=id,name,folder,file,size,webUrl,lastModifiedDateTime`);
+    EXP.itens=(r.value||[]).filter(x=>!(EXP.pilha.length===1&&x.name===MATRIZ_NOME)).sort((a,b)=>(!!b.folder-!!a.folder)||a.name.localeCompare(b.name,'pt'));
+    EXP.erro='';}
+  catch(e){EXP.itens=[];EXP.erro='Não foi possível abrir a pasta: '+e.message;}
+  EXP.lendo=false;expPintar();
+  /* A pasta principal também alimenta o modo «verificar». */
+  if(EXP.pilha.length===1){try{await recListar();}catch(_){}}
+}
+function expPintar(){
+  const el=$('exp-lista');if(!el)return;
+  $('exp-migalhas').innerHTML=EXP.pilha.map((p,i)=>i===EXP.pilha.length-1?`<b>${esc(i?p.nome:'Pasta do cliente — '+p.nome)}</b>`
+    :`<a href="#" onclick="event.preventDefault();expSubir(${i})">${esc(i?p.nome:'Pasta do cliente')}</a>`).join(' <span style="color:var(--text-faint)">›</span> ');
+  if(EXP.lendo){el.innerHTML='<div class="vazio">A abrir…</div>';return;}
+  if(EXP.erro){el.innerHTML=`<div class="vazio" style="color:var(--red)">${esc(EXP.erro)}</div>`;return;}
+  const b=(t,ic,fn,id)=>`<button class="btn exp-b" title="${t}" onclick="event.stopPropagation();${fn}('${esc(id)}')">${ic}</button>`;
+  el.innerHTML=(EXP.pilha.length>1?`<div class="exp-l" onclick="expSubir(${EXP.pilha.length-2})" style="cursor:pointer"><span class="exp-ic">↩</span><span class="exp-n">voltar</span></div>`:'')
+    +(EXP.itens.length?EXP.itens.map(x=>`<div class="exp-l"${x.folder?` onclick="expEntrar('${esc(x.id)}')" style="cursor:pointer"`:''}>
+      <span class="exp-ic">${icone(x)}</span>
+      <span class="exp-n">${x.folder?esc(x.name):`<a href="${esc(embedSP(x.webUrl)||'#')}" target="_blank" rel="noopener">${esc(x.name)}</a>`}</span>
+      <span class="exp-m">${x.folder?(x.folder.childCount!=null?x.folder.childCount+' item(s)':''):fmtTam(x.size)}</span>
+      <span class="exp-m">${fmtQuando(x.lastModifiedDateTime)}</span>
+      <span class="exp-a">${b('Mudar o nome','✏️','expRenomear',x.id)}${b('Mover para outra pasta','↪','expMover',x.id)}${b('Apagar','🗑','expApagar',x.id)}</span></div>`).join('')
+      :'<div class="vazio">Pasta vazia. Arraste ficheiros para aqui ou use «Carregar ficheiros».</div>');
+}
+window.expEntrar=id=>{const x=EXP.itens.find(i=>i.id===id);if(!x||!x.folder)return;EXP.pilha.push({id:x.id,nome:x.name});expListar();};
+window.expSubir=i=>{EXP.pilha=EXP.pilha.slice(0,i+1);expListar();};
+/* ── MATRIZ ── acompanha o que se faz aqui. */
+async function expMatriz(fn){
+  if(!REC.matriz){try{REC.matriz=await recLerMatriz();}catch(_){}}
+  if(!REC.matriz||!REC.matriz.documentos)return;
+  if(!fn(REC.matriz.documentos))return;
+  try{const {alertas}=ordenarVersoes(REC.matriz);REC.versoes=alertas;REC.matriz.atualizado=new Date().toISOString();
+    await recEnviar(REC.pasta.id,MATRIZ_NOME,new TextEncoder().encode(JSON.stringify(REC.matriz,null,1)),'application/json',true);}
+  catch(e){alert('A alteração foi feita, mas a matriz não foi atualizada: '+e.message);}
+}
+const doLocal=(d,loc)=>(d.local||'')===loc;
+/* ── CARREGAR ── sem passar pelo verificador; nunca substitui sem perguntar. */
+window.expCarregar=async files=>{
+  files=[...(files||[])];if(!files.length||!expAtual())return;
+  const at=expAtual();const existentes=new Set(EXP.itens.map(x=>x.name.toLowerCase()));let ok=0;const erros=[];
+  for(const f of files){
+    let nome=limpaNome(f.name)||'ficheiro',subst=false;
+    if(existentes.has(nome.toLowerCase())){
+      const r=await gestDialogo('Já existe um ficheiro com este nome',`«${esc(nome)}» já está nesta pasta.`,[{t:'Saltar'},{t:'Guardar com outro nome',v:'novo'},{t:'Substituir',v:'subst',primario:true}]);
+      if(!r)continue;
+      if(r.v==='subst')subst=true;
+      else{const ext=(nome.match(/\.[^.]+$/)||[''])[0],base=nome.slice(0,nome.length-ext.length);let k=2;while(existentes.has(`${base} (${k})${ext}`.toLowerCase()))k++;nome=`${base} (${k})${ext}`;}
+    }
+    $('exp-estado').textContent=`A carregar ${nome}…`;
+    try{await recEnviar(at.id,nome,await f.arrayBuffer(),f.type||tipoMIME((nome.match(/\.[^.]+$/)||[''])[0].toLowerCase())||'application/octet-stream',subst);existentes.add(nome.toLowerCase());ok++;}
+    catch(e){erros.push(`${nome}: ${e.message}`);}
+  }
+  $('exp-estado').textContent=(ok?`${ok} ficheiro(s) carregado(s).`:'')+(erros.length?` Não carregados — ${erros.join('; ')}`:'');
+  await expListar();
+};
+window.expNovaPasta=async()=>{
+  const at=expAtual();if(!at)return;
+  const r=await gestDialogo('Nova pasta',`<input class="inp" style="width:100%" placeholder="Ex: DPA, Distrate, Correspondência">`,[{t:'Cancelar'},{t:'Criar',v:'ok',primario:true}]);
+  const nome=r&&limpaNome(r.val);if(!nome)return;
+  if(EXP.itens.some(x=>x.name.toLowerCase()===nome.toLowerCase())){alert(`Já existe «${nome}» nesta pasta.`);return;}
+  try{await gq(`${GRAPH}/drives/${REC.drive}/items/${at.id}/children`,{method:'POST',body:JSON.stringify({name:nome,folder:{},'@microsoft.graph.conflictBehavior':'fail'})});
+    $('exp-estado').textContent=`Pasta «${nome}» criada.`;await expListar();}
+  catch(e){alert('Não foi possível criar a pasta: '+e.message);}
+};
+window.expRenomear=async id=>{
+  const x=EXP.itens.find(i=>i.id===id);if(!x)return;
+  const ext=x.folder?'':(x.name.match(/\.[^.]+$/)||[''])[0],base=x.name.slice(0,x.name.length-ext.length);
+  const r=await gestDialogo(x.folder?'Mudar o nome da pasta':'Mudar o nome do ficheiro',`<input class="inp" style="width:100%" value="${esc(base)}">${ext?`<div style="font-size:11px;color:var(--text-faint);margin-top:4px">A extensão ${esc(ext)} mantém-se.</div>`:''}`,[{t:'Cancelar'},{t:'Gravar',v:'ok',primario:true}]);
+  if(!r)return;let novo=limpaNome(r.val);if(!novo||novo===base)return;
   if(ext&&!novo.toLowerCase().endsWith(ext.toLowerCase()))novo+=ext;
-  try{
-    const resp=await gRaw(`${GRAPH}/drives/${REC.drive}/items/${id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:novo,'@microsoft.graph.conflictBehavior':'fail'})});
-    if(resp.status===409){alert(`Já existe «${novo}» nesta pasta.`);return;}
-    if(!resp.ok)throw new Error(`erro ${resp.status} — ${await erroGraph(resp)}`);
-    if(!ehPasta&&REC.matriz){
-      const naPrincipal=pai===REC.pasta.id,sub=naPrincipal?'':gestNomeSub(pai);
-      (REC.matriz.documentos||[]).forEach(d=>{
-        if(d.ficheiro===it.name&&(d.local||'')===sub){d.ficheiro=novo;d.renomeado_de=d.renomeado_de||it.name;}
-        if(d.substituido_por===it.name)d.substituido_por=novo;});
-      APOIO.forEach(d=>{if(d.ficheiro===it.name)d.ficheiro=novo;});
-      await gestGravarMatriz();pintarApoio();
-    }
-    if(ehPasta)REC.caminho&&delete REC.caminho[id];
-    await gestRefrescar(`«${esc(it.name)}» passou a «${esc(novo)}».`);
-  }catch(e){alert('Não foi possível mudar o nome: '+e.message);}
+  const resp=await gRaw(`${GRAPH}/drives/${REC.drive}/items/${id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:novo,'@microsoft.graph.conflictBehavior':'fail'})});
+  if(resp.status===409){alert(`Já existe «${novo}» nesta pasta.`);return;}
+  if(!resp.ok){alert(`Não foi possível mudar o nome: erro ${resp.status} — ${await erroGraph(resp)}`);return;}
+  const loc=expLocal();
+  if(x.folder){const de=(loc?loc+'/':'')+x.name,para=(loc?loc+'/':'')+novo;
+    await expMatriz(D=>{let m=0;D.forEach(d=>{const l=d.local||'';if(l===de||l.startsWith(de+'/')){d.local=para+l.slice(de.length);m++;}});return m;});}
+  else{await expMatriz(D=>{let m=0;D.forEach(d=>{if(d.ficheiro===x.name&&doLocal(d,loc)){d.renomeado_de=d.renomeado_de||x.name;d.ficheiro=novo;m++;}if(d.substituido_por===x.name){d.substituido_por=novo;m++;}});return m;});
+    if(!loc)APOIO.forEach(d=>{if(d.ficheiro===x.name)d.ficheiro=novo;});}
+  $('exp-estado').textContent=`«${x.name}» passou a «${novo}».`;await expListar();
 };
-window.gestMover=async(id,pai)=>{
-  let it;try{it=await gestItem(id);}catch(e){alert(e.message);return;}
-  const destinos=[{id:REC.pasta.id,n:`Pasta principal — ${REC.pasta.nome}`},...(REC.filhos||[]).filter(x=>x.folder).sort((a,b)=>a.name.localeCompare(b.name,'pt')).map(x=>({id:x.id,n:'📁 '+x.name}))].filter(d=>d.id!==pai);
-  if(!destinos.length){alert('Não há outra pasta para onde mover. Crie primeiro uma subpasta.');return;}
-  const r=await gestDialogo(`Mover «${esc(it.name)}»`,`<select class="inp" style="width:100%">${destinos.map(d=>`<option value="${esc(d.id)}">${esc(d.n)}</option>`).join('')}</select>`,[{t:'Cancelar'},{t:'Mover',v:'ok',primario:true}]);
-  if(!r||!r.val)return;
-  try{
-    const resp=await gRaw(`${GRAPH}/drives/${REC.drive}/items/${id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({parentReference:{id:r.val},'@microsoft.graph.conflictBehavior':'fail'})});
-    if(resp.status===409){alert(`Já existe um documento com o nome «${it.name}» na pasta de destino.`);return;}
-    if(!resp.ok)throw new Error(`erro ${resp.status} — ${await erroGraph(resp)}`);
-    if(REC.matriz){
-      const de=pai===REC.pasta.id?'':gestNomeSub(pai),para=r.val===REC.pasta.id?'':gestNomeSub(r.val);
-      (REC.matriz.documentos||[]).forEach(d=>{if(d.ficheiro===it.name&&(d.local||'')===de){if(para)d.local=para;else delete d.local;}});
-      await gestGravarMatriz();
-    }
-    const dest=destinos.find(d=>d.id===r.val);
-    await gestRefrescar(`«${esc(it.name)}» movido para ${esc(dest?dest.n.replace(/^📁 /,'«')+(dest.n.startsWith('📁')?'»':''):'')}.`);
-  }catch(e){alert('Não foi possível mover: '+e.message);}
+/* Todas as pastas dentro da pasta do cliente (até 4 níveis), para escolher o destino. */
+async function expArvore(){
+  const out=[{id:REC.pasta.id,cam:'',rot:'Pasta do cliente (principal)'}];
+  const desce=async(id,cam,nivel)=>{if(nivel>4)return;
+    const r=await gq(`${GRAPH}/drives/${REC.drive}/items/${id}/children?$top=999&$select=id,name,folder`);
+    for(const f of (r.value||[]).filter(x=>x.folder).sort((a,b)=>a.name.localeCompare(b.name,'pt'))){
+      const c=cam?cam+'/'+f.name:f.name;out.push({id:f.id,cam:c,rot:'📁 '+c});await desce(f.id,c,nivel+1);}};
+  await desce(REC.pasta.id,'',1);return out;
+}
+window.expMover=async id=>{
+  const x=EXP.itens.find(i=>i.id===id);if(!x)return;
+  let arv;try{arv=await expArvore();}catch(e){alert(e.message);return;}
+  const loc=expLocal(),eu=(loc?loc+'/':'')+x.name;
+  const dest=arv.filter(d=>d.id!==expAtual().id&&!(x.folder&&(d.cam===eu||d.cam.startsWith(eu+'/'))));
+  if(!dest.length){alert('Não há outra pasta para onde mover. Crie primeiro uma pasta.');return;}
+  const r=await gestDialogo(`Mover «${esc(x.name)}»`,`<select class="inp" style="width:100%">${dest.map(d=>`<option value="${esc(d.id)}">${esc(d.rot)}</option>`).join('')}</select>`,[{t:'Cancelar'},{t:'Mover',v:'ok',primario:true}]);
+  if(!r||!r.val)return;const d=dest.find(z=>z.id===r.val);
+  const resp=await gRaw(`${GRAPH}/drives/${REC.drive}/items/${id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({parentReference:{id:r.val},'@microsoft.graph.conflictBehavior':'fail'})});
+  if(resp.status===409){alert(`Já existe «${x.name}» na pasta de destino.`);return;}
+  if(!resp.ok){alert(`Não foi possível mover: erro ${resp.status} — ${await erroGraph(resp)}`);return;}
+  if(x.folder){const para=(d.cam?d.cam+'/':'')+x.name;
+    await expMatriz(D=>{let m=0;D.forEach(z=>{const l=z.local||'';if(l===eu||l.startsWith(eu+'/')){z.local=para+l.slice(eu.length);m++;}});return m;});}
+  else await expMatriz(D=>{let m=0;D.forEach(z=>{if(z.ficheiro===x.name&&doLocal(z,loc)){if(d.cam)z.local=d.cam;else delete z.local;m++;}});return m;});
+  $('exp-estado').textContent=`«${x.name}» movido para ${d.cam?'«'+d.cam+'»':'a pasta principal'}.`;await expListar();
 };
-window.gestApagar=async(id,pai,ehPasta)=>{
-  let it;try{it=await gestItem(id);}catch(e){alert(e.message);return;}
+window.expApagar=async id=>{
+  const x=EXP.itens.find(i=>i.id===id);if(!x)return;
   let aviso='';
-  if(ehPasta){try{const c=await gq(`${GRAPH}/drives/${REC.drive}/items/${id}/children?$top=999&$select=id`);const n=(c.value||[]).length;aviso=n?`<div style="color:var(--red);margin-top:.4rem">A subpasta tem ${n} ficheiro(s), que também são apagados.</div>`:'';}catch(_){}}
-  const r=await gestDialogo(ehPasta?'Apagar a subpasta':'Apagar o documento',`Apagar «${esc(it.name)}»?${aviso}<div style="font-size:11px;color:var(--text-faint);margin-top:.5rem">Vai para a reciclagem do SharePoint, de onde pode ser recuperado.</div>`,[{t:'Cancelar'},{t:'Apagar',v:'ok',primario:true}]);
+  if(x.folder){try{const c=await gq(`${GRAPH}/drives/${REC.drive}/items/${id}/children?$top=999&$select=id`);const n=(c.value||[]).length;
+    if(n)aviso=`<div style="color:var(--red);margin-top:.4rem">A pasta tem ${n} item(s), que também são apagados.</div>`;}catch(_){}}
+  const r=await gestDialogo(x.folder?'Apagar a pasta':'Apagar o ficheiro',`Apagar «${esc(x.name)}»?${aviso}<div style="font-size:11px;color:var(--text-faint);margin-top:.5rem">Vai para a reciclagem do SharePoint, de onde pode ser recuperado.</div>`,[{t:'Cancelar'},{t:'Apagar',v:'ok',primario:true}]);
   if(!r)return;
-  try{
-    const resp=await gRaw(`${GRAPH}/drives/${REC.drive}/items/${id}`,{method:'DELETE'});
-    if(!resp.ok&&resp.status!==204)throw new Error(`erro ${resp.status} — ${await erroGraph(resp)}`);
-    if(!ehPasta&&REC.matriz){
-      const sub=pai===REC.pasta.id?'':gestNomeSub(pai);
-      const antes=(REC.matriz.documentos||[]).length;
-      REC.matriz.documentos=(REC.matriz.documentos||[]).filter(d=>!(d.ficheiro===it.name&&(d.local||'')===sub));
-      REC.matriz.documentos.forEach(d=>{if(d.substituido_por===it.name)delete d.substituido_por;});
-      if(REC.matriz.documentos.length!==antes){
-        const i=APOIO.findIndex(d=>d.ficheiro===it.name);if(i>=0){APOIO.splice(i,1);pintarApoio();if(DOC)analisar();}
-        await gestGravarMatriz();}
-    }
-    if(!ehPasta)delete REC.naPasta[it.name];
-    await gestRefrescar(`«${esc(it.name)}» apagado (está na reciclagem do SharePoint).`);
-  }catch(e){alert('Não foi possível apagar: '+e.message);}
+  const resp=await gRaw(`${GRAPH}/drives/${REC.drive}/items/${id}`,{method:'DELETE'});
+  if(!resp.ok&&resp.status!==204){alert(`Não foi possível apagar: erro ${resp.status} — ${await erroGraph(resp)}`);return;}
+  const loc=expLocal(),eu=(loc?loc+'/':'')+x.name;
+  let saiu=[];
+  await expMatriz(D=>{const antes=D.length;
+    const fica=D.filter(d=>{const l=d.local||'';const vai=x.folder?(l===eu||l.startsWith(eu+'/')):(d.ficheiro===x.name&&l===loc);if(vai)saiu.push(d.ficheiro);return!vai;});
+    D.splice(0,D.length,...fica);D.forEach(d=>{if(saiu.includes(d.substituido_por))delete d.substituido_por;});return antes-D.length;});
+  if(saiu.length){APOIO=APOIO.filter(d=>!saiu.includes(d.ficheiro));pintarApoio();if(DOC)analisar();}
+  if(!x.folder&&!loc)delete REC.naPasta[x.name];
+  $('exp-estado').textContent=`«${x.name}» apagado (está na reciclagem do SharePoint).`;await expListar();
 };
+(()=>{const z=document.getElementById('exp-drop');if(!z)return;
+  ['dragenter','dragover'].forEach(e=>z.addEventListener(e,ev=>{ev.preventDefault();ev.stopPropagation();z.classList.add('sobre');}));
+  ['dragleave','drop'].forEach(e=>z.addEventListener(e,ev=>{ev.preventDefault();ev.stopPropagation();z.classList.remove('sobre');}));
+  z.addEventListener('drop',ev=>expCarregar(ev.dataTransfer.files));})();
 /* Subpasta (DPA, _originais…): mostra os ficheiros quando se abre. */
 window.recSubpastaAbrir=async el=>{
   if(!el.open||el.dataset.lida)return;el.dataset.lida='1';const box=el.querySelector('.subp-lista');
   try{const r=await gq(`${GRAPH}/drives/${REC.drive}/items/${el.dataset.id}/children?$top=999&$select=id,name,folder,webUrl`);
     const xs=(r.value||[]).sort((a,b)=>(!!b.folder-!!a.folder)||a.name.localeCompare(b.name,'pt'));
-    box.innerHTML=xs.length?xs.map(x=>`${x.folder?'📁 ':''}<a href="${esc(embedSP(x.webUrl)||'#')}" target="_blank" rel="noopener" style="color:var(--accent-dark);text-decoration:none;font-family:'DM Mono',monospace">${esc(x.name)}</a>${x.folder?'':gestAcoes(x,el.dataset.id)}`).join('<br>'):'(vazia)';}
+    box.innerHTML=xs.length?xs.map(x=>`${x.folder?'📁 ':''}<a href="${esc(embedSP(x.webUrl)||'#')}" target="_blank" rel="noopener" style="color:var(--accent-dark);text-decoration:none;font-family:'DM Mono',monospace">${esc(x.name)}</a>`).join('<br>'):'(vazia)';}
   catch(e){box.textContent='Não foi possível abrir: '+e.message;el.dataset.lida='';}
 };
 const novaLinha=(base,extra)=>({id:++REC.seq,ficheiro:base.ficheiro,ext:base.ext,pags:null,r:null,siglaAuto:'',sigla:'',ident:'',estado:'nr',confirmado:false,manual:'',livre:false,gravado:'',erro:'',...extra});
@@ -2486,12 +2590,16 @@ async function recInicio(){
   const [drv,id]=q.split('|');if(!drv||!id)return;
   try{const it=await gq(`${GRAPH}/drives/${drv}/items/${id}?$select=id,name`);REC.drive=drv;REC.doPortal=true;
     if(!REC.pastas.some(x=>x.id===it.id))REC.pastas.push({id:it.id,nome:it.name});await recEscolher(it.id);
+    /* Modo «trabalhar na pasta»: abre o explorador e não lê os documentos (só quando se passar a «verificar»). */
+    if(new URLSearchParams(location.search).get('modo')==='pasta'){await modoPasta(true);return;}
+    EXP.lidaVerif=true;
     if(REC.existentes.some(n=>/\.(pdf|jpe?g|png)$/i.test(n)))await recLerPasta();estadoDocs();}
   catch(e){REC.msg='Não foi possível abrir a pasta indicada pelo Portal: '+esc(e.message);pintarRececao();}
 }
 window.recEscolher=async id=>{
   const p=REC.pastas.find(x=>x.id===id);if(!p)return;
-  REC.pasta=p;$('rec-pasta').value=p.nome;$('rec-dd').style.display='none';
+  REC.pasta=p;$('rec-pasta').value=p.nome;$('rec-dd').style.display='none';document.body.classList.add('com-pasta');
+  if(EXP.pilha.length&&EXP.pilha[0].id!==p.id){EXP.pilha=[];EXP.lidaVerif=false;}
   /* A pasta começa pela data do DPA (AAAAMMDD): passa para a data do ato, se estiver vazia. */
   const m=p.nome.match(/^(\d{4})(\d{2})(\d{2})\b/);if(m&&!$('data-ato').dataset.tocada){$('data-ato').value=`${m[1]}-${m[2]}-${m[3]}`;if(DOC)analisar();}
   REC.matriz=null;
