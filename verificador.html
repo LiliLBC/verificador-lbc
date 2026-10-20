@@ -38,6 +38,11 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
 .item mark{background:#FFE08A;padding:0 1px;border-radius:2px}
 .nota{font-size:11.5px;color:var(--text-muted)}
 .minis{display:flex;gap:4px;flex-wrap:wrap;align-items:center;margin:.35rem 0}
+.pgbox{display:flex;flex-direction:column;align-items:center;gap:2px}
+.pgbar{display:flex;gap:2px}
+.pgbar button{border:1px solid var(--border);background:var(--surface);border-radius:4px;font-size:11px;padding:0 5px;cursor:pointer;line-height:1.6;color:var(--text)}
+.pgbar button:hover{background:var(--accent-light);border-color:var(--accent)}
+.mini-x{height:84px;min-width:60px;border:1px solid var(--border-strong);border-radius:3px;background:var(--surface2);cursor:zoom-in;object-fit:contain}
 .mini-p{height:84px;min-width:60px;border:1px solid var(--border-strong);border-radius:3px;background:var(--surface2);cursor:zoom-in;object-fit:contain}
 #rec-ver{display:none;position:fixed;inset:0;z-index:1000;background:rgba(20,20,20,.82);flex-direction:column;align-items:center;justify-content:flex-start;padding:1rem;overflow:auto}
 #rec-ver img{max-width:min(96vw,1000px);background:#fff;box-shadow:0 4px 24px rgba(0,0,0,.4)}
@@ -49,7 +54,7 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
 </head>
 <body>
 <div class="topbar">
-  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-20.6</span></div>
+  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-20.7</span></div>
   <div style="display:flex;gap:.6rem;align-items:center"><span id="login-info" style="font-size:11px;color:var(--text-faint)"></span>
     <button class="btn" id="btn-entrar" onclick="entrar()">Entrar</button>
     <button class="btn btn-p" id="btn-desc" onclick="descarregar()" disabled>Descarregar Word revisto</button></div>
@@ -2214,6 +2219,7 @@ function recComparar(){
 }
 /* Nome final de cada linha: numeração SIGLA_n e «_2» quando o nome já existe na pasta. */
 function recNomes(){
+  REC.linhas.forEach(l=>{if(!l.gravado&&!l.pg&&ehImg(l.ficheiro))garantirPg(l);});
   const ocup=new Set((REC.catFilhos||[]).filter(x=>!x.folder).map(x=>x.name.toLowerCase()));
   REC.linhas.filter(l=>l.gravado).forEach(l=>ocup.add(l.gravado.toLowerCase()));
   const maxN=s=>{let m=0;const re=new RegExp('^'+s.replace(/[-.]/g,'\\$&')+'_(\\d+)(?:[_.]|$)','i');ocup.forEach(n=>{const x=n.match(re);if(x)m=Math.max(m,+x[1]);});return m;};
@@ -2248,12 +2254,15 @@ function pintarRececao(){
     const tipo=l.r&&l.r.tipo?(l.r.tipo.startsWith('N_')?ROT_NOVOS[l.r.tipo.slice(2)]:(l.r.tipo==='CRP'&&l.r.dados&&l.r.dados.simplificada?'Informação predial simplificada':ROT_APOIO[l.r.tipo])+(l.r.tipo==='CRP'&&l.r.dados?(l.r.dados.fracao?` — fração ${l.r.dados.fracao}`:(l.r.dados.fracoes||[]).length?` — prédio em propriedade horizontal (frações ${l.r.dados.fracoes.join(', ')})`:' — prédio'):'')):'';
     if(l.gravado)return`<div class="item" style="border-left-color:var(--border-strong)"><div class="cab">${etq(l)}<span style="font-family:'DM Mono',monospace">${esc(l.gravado)}</span><span style="margin-left:auto;font-weight:400;color:var(--text-faint)">${esc(l.ficheiro)} · ${pg(l.pags)}</span></div></div>`;
     const ant=REC.linhas[REC.linhas.indexOf(l)-1];const podeJuntar=ant&&!ant.gravado&&ant.ficheiro===l.ficheiro;
-    const pags=paginasLinha(l);
+    const pags=paginasLinha(l);const outros=REC.linhas.some(o=>o!==l&&!o.gravado);
+    const descr=l.pg?`${l.pg.length} pág.${fontesLinha(l).length>1?' de '+fontesLinha(l).length+' ficheiros':''}${l.pg.some(p=>p.rot||p.crop)?' · editado':''}`:pg(l.pags);
     return`<div class="item" style="border-left-color:${corL(l)}">
-      <div class="cab">${etq(l)}${REC.naPasta[l.ficheiro]&&!REC.origGravados.has(l.ficheiro)?'<span class="tag" style="background:var(--amber-light);color:var(--amber)">da pasta</span>':''}${tipo?esc(tipo):''}<span style="margin-left:auto;font-weight:400;color:var(--text-faint)">${esc(l.ficheiro)} · ${pg(l.pags)}</span>
+      <div class="cab">${etq(l)}${REC.naPasta[l.ficheiro]&&!REC.origGravados.has(l.ficheiro)?'<span class="tag" style="background:var(--amber-light);color:var(--amber)">da pasta</span>':''}${tipo?esc(tipo):''}<span style="margin-left:auto;font-weight:400;color:var(--text-faint)">${esc(fontesLinha(l).join(' + '))} · ${descr}</span>
+        ${outros?`<button class="btn" style="padding:1px 8px" title="Juntar a este as páginas de outro documento da lista (pode ser de outro ficheiro)" onclick="recJuntarCom(${l.id})">⧉ Juntar com…</button>`:''}
         ${podeJuntar?`<button class="btn" style="padding:1px 8px" title="Estas páginas fazem parte do documento de cima" onclick="recJuntar(${l.id})">⤒ Juntar ao de cima</button>`:''}
-        ${l.ext==='.pdf'&&pags.length>1?`<button class="btn" style="padding:1px 8px" title="Este bloco tem mais do que um documento" onclick="recSeparar(${l.id})">✂ Separar</button>`:''}</div>
-      ${pags.length?`<div class="minis">${pags.slice(0,12).map(n=>{const k=l.ficheiro+'|'+n;return`<img class="mini-p" id="mi-${fid(l.ficheiro)}-${n}" data-f="${esc(l.ficheiro)}" data-p="${n}" ${REC.thumbs[k]?`src="${REC.thumbs[k]}"`:''} title="pág. ${n} — clique para ver" onclick="recVer(${fid(l.ficheiro)},${n})">`;}).join('')}${pags.length>12?`<span class="nota" style="margin:0">+${pags.length-12} págs.</span>`:''}</div>`:''}
+        ${(l.pg?l.pg.length>1:l.ext==='.pdf'&&pags.length>1)?`<button class="btn" style="padding:1px 8px" title="Este bloco tem mais do que um documento" onclick="recSeparar(${l.id})">✂ Separar</button>`:''}</div>
+      ${l.pg?minisEditaveis(l):pags.length?`<div class="minis">${pags.slice(0,24).map((n,i)=>{const k=l.ficheiro+'|'+n;return`<div class="pgbox"><img class="mini-p" id="mi-${fid(l.ficheiro)}-${n}" data-f="${esc(l.ficheiro)}" data-p="${n}" ${REC.thumbs[k]?`src="${REC.thumbs[k]}"`:''} title="pág. ${n} — clique para ver" onclick="recVer(${fid(l.ficheiro)},${n})">
+          <div class="pgbar">${i?`<button title="Passar para antes" onclick="recPgMover(${l.id},${i})">◀</button>`:''}<button title="Rodar 90°" onclick="recPgRodar(${l.id},${i})">↻</button><button title="Cortar" onclick="recPgCortar(${l.id},${i})">✂</button>${pags.length>1?`<button title="Tirar esta página" onclick="recPgTirar(${l.id},${i})">✕</button>`:''}</div></div>`;}).join('')}${pags.length>24?`<span class="nota" style="margin:0">+${pags.length-24} págs.</span>`:''}</div>`:''}
       <div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap">
         <select class="inp" style="width:auto;max-width:260px" onchange="recSigla(${l.id},this.value)">${opc(l)}</select>
         <input class="inp" style="flex:1;min-width:220px;font-family:'DM Mono',monospace" value="${esc(l.final.slice(0,-l.ext.length))}" ${l.estado==='nr'&&!l.sigla&&!l.livre?'disabled':''} onchange="recEditar(${l.id},this.value)"><span style="font-size:12px;color:var(--text-muted)">${esc(l.ext)}</span>
@@ -2268,7 +2277,7 @@ function pintarRececao(){
   $('rec-gravar').disabled=!REC.pasta||!n||REC.lendo;
   $('rec-gravar').textContent=n?`Gravar em «Catalogados» (${n})`:'Gravar em «Catalogados»';
   $('rec-ler').disabled=!REC.pasta||REC.lendo;
-  setTimeout(recMiniaturas,0);
+  setTimeout(recMiniaturas,0);setTimeout(recMiniEditadas,0);
   if(REC.pasta&&REC.linhas.some(l=>!l.gravado)&&$('rec-det'))$('rec-det').open=true;
   /* Atalho no cartão 1: os documentos largados ficam a aguardar gravação no cartão 4, lá em baixo. */
   {const a=$('rec-atalho'),porGravar=REC.linhas.filter(l=>!l.gravado&&!l.dup).length;
@@ -2348,12 +2357,138 @@ window.recSubpastaAbrir=async el=>{
 const novaLinha=(base,extra)=>({id:++REC.seq,ficheiro:base.ficheiro,ext:base.ext,pags:null,r:null,siglaAuto:'',sigla:'',ident:'',estado:'nr',confirmado:false,manual:'',livre:false,gravado:'',erro:'',...extra});
 /* Juntar: as páginas desta linha passam para a linha de cima (fica o documento reconhecido, se só um o for). */
 window.recJuntar=id=>{const l=linhaRec(id);if(!l)return;const i=REC.linhas.indexOf(l),a=REC.linhas[i-1];if(!a||a.ficheiro!==l.ficheiro||a.gravado)return;
+  if(a.pg||l.pg){garantirPg(a);garantirPg(l);const pg=a.pg.concat(l.pg);const fica=(a.estado==='nr'&&l.estado!=='nr')?l:a;Object.assign(a,{...fica,id:a.id,pg});
+    REC.linhas.splice(i,1);recComparar();recNomes();pintarRececao();return;}
   const todas=[...new Set([...paginasLinha(a),...paginasLinha(l)])].sort((x,y)=>x-y);
   const fica=(a.estado==='nr'&&l.estado!=='nr')?l:a;
   Object.assign(a,{...fica,id:a.id,pags:todas});
   REC.linhas.splice(i,1);recComparar();recNomes();pintarRececao();};
+/* ═══════════ TRABALHAR O DOCUMENTO ANTES DE CATALOGAR (20/10/2026) ═══════════
+   Em cada documento da lista: rodar e cortar (retângulo) cada página, mudar a ordem,
+   tirar páginas e juntar documentos vindos de ficheiros diferentes (ex.: frente e verso
+   do cartão de cidadão em duas fotografias). Tudo no computador; só se aplica ao gravar
+   em «Catalogados», sempre em PDF. Os ficheiros recebidos na pasta principal não mudam.
+   Uma linha editada passa a ter l.pg = [{f:ficheiro, n:página, rot:0|90|180|270, crop:{x,y,w,h} em frações}]. */
+const ehImg=fn=>/\.(jpe?g|png)$/i.test(fn);
+function garantirPg(l){if(!l.pg){l.pg=paginasLinha(l).map(n=>({f:l.ficheiro,n,rot:0,crop:null}));l.ext='.pdf';}return l.pg;}
+const fontesLinha=l=>l.pg?[...new Set(l.pg.map(p=>p.f))]:[l.ficheiro];
+const chavePg=p=>`${p.f}|${p.n}|${p.rot||0}|${p.crop?[p.crop.x,p.crop.y,p.crop.w,p.crop.h].map(v=>v.toFixed(3)).join(','):''}`;
+const carregaImg=src=>new Promise((ok,ko)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>ko(new Error('imagem ilegível'));i.src=src;});
+/* Desenha a página rodada e cortada num canvas, com a altura de origem pedida. */
+async function canvasPagina(p,altura,semCorte){
+  const img=await carregaImg(await recImagemPagina(p.f,p.n,altura));
+  const r=((p.rot||0)%360+360)%360,w=img.naturalWidth,h=img.naturalHeight;
+  const c1=document.createElement('canvas');c1.width=r%180?h:w;c1.height=r%180?w:h;
+  const x=c1.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c1.width,c1.height);
+  x.translate(c1.width/2,c1.height/2);x.rotate(r*Math.PI/180);x.drawImage(img,-w/2,-h/2);
+  if(!p.crop||semCorte)return c1;
+  const k=p.crop,c2=document.createElement('canvas');
+  c2.width=Math.max(1,Math.round(k.w*c1.width));c2.height=Math.max(1,Math.round(k.h*c1.height));
+  c2.getContext('2d').drawImage(c1,k.x*c1.width,k.y*c1.height,c2.width,c2.height,0,0,c2.width,c2.height);
+  return c2;
+}
+REC.thumbsE={};
+let recEdOcup=false;
+async function recMiniEditadas(){
+  if(recEdOcup)return;recEdOcup=true;
+  try{for(let i=0;i<400;i++){const img=document.querySelector('img.mini-e:not([src])');if(!img)break;
+    const l=linhaRec(+img.dataset.l),p=l&&l.pg&&l.pg[+img.dataset.i];if(!p){img.src='data:image/gif;base64,R0lGODlhAQABAAAAACw=';continue;}
+    const k=chavePg(p);
+    try{if(!REC.thumbsE[k])REC.thumbsE[k]=(await canvasPagina(p,240)).toDataURL('image/jpeg',.8);}catch(_){REC.thumbsE[k]='data:image/gif;base64,R0lGODlhAQABAAAAACw=';}
+    img.src=REC.thumbsE[k];}}
+  finally{recEdOcup=false;}
+}
+/* Miniaturas com as ferramentas de cada página. */
+function minisEditaveis(l){
+  const pgs=l.pg;
+  return`<div class="minis">${pgs.map((p,i)=>`<div class="pgbox">
+      <img class="mini-x mini-e" data-l="${l.id}" data-i="${i}" ${REC.thumbsE[chavePg(p)]?`src="${REC.thumbsE[chavePg(p)]}"`:''} title="${esc(p.f)}${/\.pdf$/i.test(p.f)?' · pág. '+p.n:''} — clique para ver" onclick="recVerEd(${l.id},${i})">
+      <div class="pgbar">${i?`<button title="Passar para antes" onclick="recPgMover(${l.id},${i})">◀</button>`:''}<button title="Rodar 90°" onclick="recPgRodar(${l.id},${i})">↻</button><button title="Cortar" onclick="recPgCortar(${l.id},${i})">✂</button>${pgs.length>1?`<button title="Tirar esta página" onclick="recPgTirar(${l.id},${i})">✕</button>`:''}</div></div>`).join('')}</div>`;
+}
+function recEditado(l){l.editado=true;recNomes();pintarRececao();}
+window.recPgRodar=(id,i)=>{const l=linhaRec(id);if(!l)return;const p=garantirPg(l)[i];if(!p)return;p.rot=((p.rot||0)+90)%360;
+  /* O corte foi feito na orientação anterior: roda com a página. */
+  if(p.crop){const c=p.crop;p.crop={x:1-c.y-c.h,y:c.x,w:c.h,h:c.w};}recEditado(l);};
+window.recPgTirar=(id,i)=>{const l=linhaRec(id);if(!l)return;const g=garantirPg(l);if(g.length<2)return;g.splice(i,1);recEditado(l);};
+window.recPgMover=(id,i)=>{const l=linhaRec(id);if(!l)return;const g=garantirPg(l);if(i<1)return;[g[i-1],g[i]]=[g[i],g[i-1]];recEditado(l);};
+/* Ver em grande, já rodada e cortada. */
+window.recVerEd=async(id,i)=>{const l=linhaRec(id),g=l&&l.pg;if(!g||!g[i])return;const ov=$('rec-ver');ov.style.display='flex';ov.innerHTML='<div class="nota" style="color:#fff">A abrir…</div>';
+  try{const c=await canvasPagina(g[i],1400);
+    ov.innerHTML=`<div class="ver-cab">${esc(l.final||'')} · página ${i+1} de ${g.length}
+      ${i>0?`<button class="btn" onclick="event.stopPropagation();recVerEd(${id},${i-1})">‹ anterior</button>`:''}${i<g.length-1?`<button class="btn" onclick="event.stopPropagation();recVerEd(${id},${i+1})">seguinte ›</button>`:''}
+      <button class="btn" onclick="$('rec-ver').style.display='none'">Fechar</button></div><img src="${c.toDataURL('image/jpeg',.85)}" onclick="event.stopPropagation()">`;}
+  catch(e){ov.innerHTML=`<div class="nota" style="color:#fff">Não foi possível mostrar a página: ${esc(e.message)}</div>`;}};
+/* Cortar: arrasta-se um retângulo sobre a página (já rodada). */
+window.recPgCortar=async(id,i)=>{
+  const l=linhaRec(id);if(!l)return;const p=garantirPg(l)[i];if(!p)return;
+  const ov=$('rec-ver');ov.style.display='flex';ov.onclick=null;ov.innerHTML='<div class="nota" style="color:#fff">A abrir…</div>';
+  let c;try{c=await canvasPagina(p,1400,true);}catch(e){ov.innerHTML=`<div class="nota" style="color:#fff">${esc(e.message)}</div>`;ov.onclick=()=>{ov.style.display='none';};return;}
+  ov.innerHTML=`<div class="ver-cab">Arraste para marcar a zona a manter
+      <button class="btn" id="crt-tudo">Página inteira</button><button class="btn" id="crt-cancelar">Cancelar</button><button class="btn btn-p" id="crt-ok">Aplicar corte</button></div>
+    <div id="crt-area" style="position:relative;display:inline-block;cursor:crosshair;user-select:none;touch-action:none"><img src="${c.toDataURL('image/jpeg',.85)}" draggable="false" style="display:block;max-width:min(94vw,1000px);max-height:80vh">
+      <div id="crt-ret" style="position:absolute;border:2px dashed #ffcf4a;box-shadow:0 0 0 9999px rgba(0,0,0,.45);display:none;pointer-events:none"></div></div>`;
+  const area=$('crt-area'),ret=$('crt-ret');let sel=p.crop?{...p.crop}:null,ini=null;
+  const desenha=()=>{if(!sel){ret.style.display='none';return;}ret.style.display='block';ret.style.left=sel.x*100+'%';ret.style.top=sel.y*100+'%';ret.style.width=sel.w*100+'%';ret.style.height=sel.h*100+'%';};
+  const pos=e=>{const b=area.getBoundingClientRect();return{x:Math.min(1,Math.max(0,(e.clientX-b.left)/b.width)),y:Math.min(1,Math.max(0,(e.clientY-b.top)/b.height))};};
+  area.onpointerdown=e=>{e.preventDefault();area.setPointerCapture(e.pointerId);ini=pos(e);sel={x:ini.x,y:ini.y,w:0,h:0};desenha();};
+  area.onpointermove=e=>{if(!ini)return;const q=pos(e);sel={x:Math.min(ini.x,q.x),y:Math.min(ini.y,q.y),w:Math.abs(q.x-ini.x),h:Math.abs(q.y-ini.y)};desenha();};
+  area.onpointerup=()=>{ini=null;if(sel&&(sel.w<.02||sel.h<.02))sel=null;desenha();};
+  desenha();
+  const fecha=()=>{ov.style.display='none';ov.onclick=function(){this.style.display='none';};};
+  $('crt-cancelar').onclick=fecha;
+  $('crt-tudo').onclick=()=>{p.crop=null;fecha();recEditado(l);};
+  $('crt-ok').onclick=()=>{p.crop=sel&&sel.w>.02&&sel.h>.02?sel:null;fecha();recEditado(l);};
+};
+/* Juntar com outro documento da lista (pode vir de outro ficheiro): as páginas dele passam para este. */
+window.recJuntarCom=id=>{
+  const l=linhaRec(id);if(!l)return;
+  const outros=REC.linhas.filter(o=>o!==l&&!o.gravado);if(!outros.length)return;
+  const ov=$('rec-ver');ov.style.display='flex';ov.onclick=null;
+  ov.innerHTML=`<div style="background:#fff;border-radius:10px;padding:1rem 1.2rem;max-width:520px;width:94%;margin-top:10vh;font-size:13px">
+    <div style="font-weight:600;margin-bottom:.5rem">Juntar a «${esc(l.final)}» as páginas de:</div>
+    <select class="inp" id="jc-sel" style="width:100%">${outros.map(o=>`<option value="${o.id}">${esc(o.final)} — ${esc(o.ficheiro)}${o.pg?` (${o.pg.length} pág.)`:o.pags?` (${o.pags.length} pág.)`:''}</option>`).join('')}</select>
+    <div style="font-size:11.5px;color:var(--text-faint);margin-top:.4rem">As páginas entram a seguir às deste documento; a ordem acerta-se depois com ◀. Fica um só documento, em PDF.</div>
+    <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:.9rem"><button class="btn" id="jc-nao">Cancelar</button><button class="btn btn-p" id="jc-sim">Juntar</button></div></div>`;
+  const fecha=()=>{ov.style.display='none';ov.onclick=function(){this.style.display='none';};};
+  $('jc-nao').onclick=fecha;
+  $('jc-sim').onclick=()=>{const o=linhaRec(+$('jc-sel').value);fecha();if(!o)return;
+    garantirPg(l);garantirPg(o);
+    /* Fica a identificação do documento reconhecido, se só um o for. */
+    if(l.estado==='nr'&&o.estado!=='nr'){const pg=l.pg.concat(o.pg);Object.assign(l,{...o,id:l.id,pg});}
+    else l.pg=l.pg.concat(o.pg);
+    REC.linhas.splice(REC.linhas.indexOf(o),1);recEditado(l);};
+};
+/* PDF final de uma linha editada. */
+async function bytesEditados(l){
+  const L=await pdfLib();const out=await L.PDFDocument.create();const fontes={};
+  for(const p of l.pg){
+    const pdf=/\.pdf$/i.test(p.f);
+    if(pdf&&!p.crop){
+      if(!fontes[p.f])fontes[p.f]=await L.PDFDocument.load(await REC.files.get(p.f).arrayBuffer(),{ignoreEncryption:true});
+      const [cp]=await out.copyPages(fontes[p.f],[p.n-1]);
+      if(p.rot)cp.setRotation(L.degrees(((cp.getRotation().angle||0)+p.rot)%360));
+      out.addPage(cp);continue;}
+    /* Fotografia, ou página cortada: vai como imagem. A fotografia vai inteira, ajustada a uma A4. */
+    const c=await canvasPagina(p,pdf?2200:0);
+    const jpg=await out.embedJpg(await (await fetch(c.toDataURL('image/jpeg',.88))).arrayBuffer());
+    if(pdf){
+      /* Escala certa: a página de origem foi desenhada com 2200 px de altura (já com a rotação própria do PDF). */
+      if(!fontes[p.f])fontes[p.f]=await L.PDFDocument.load(await REC.files.get(p.f).arrayBuffer(),{ignoreEncryption:true});
+      const pg0=fontes[p.f].getPage(p.n-1),sz=pg0.getSize(),ang=(pg0.getRotation().angle||0)%180;
+      const ptpx=(ang?sz.width:sz.height)/2200;
+      out.addPage([c.width*ptpx,c.height*ptpx]).drawImage(jpg,{x:0,y:0,width:c.width*ptpx,height:c.height*ptpx});}
+    else{const W=595.28,H=841.89,M=28,k=Math.min((W-2*M)/c.width,(H-2*M)/c.height,1);const w=c.width*k,h=c.height*k;
+      out.addPage([W,H]).drawImage(jpg,{x:(W-w)/2,y:H-M-h,width:w,height:h});}
+  }
+  return out.save();
+}
 /* Separar: a partir da página indicada fica um documento novo, por classificar (escolha a sigla). */
-window.recSeparar=id=>{const l=linhaRec(id);if(!l)return;const pags=paginasLinha(l);if(pags.length<2)return;
+window.recSeparar=id=>{const l=linhaRec(id);if(!l)return;
+  if(l.pg){if(l.pg.length<2)return;const r=prompt(`Separar a partir de que página? (este documento tem ${l.pg.length} páginas)`,'2');if(r===null)return;
+    const k=parseInt(r,10);if(!(k>=2&&k<=l.pg.length)){alert(`Indique um número entre 2 e ${l.pg.length}.`);return;}
+    const resto=l.pg.splice(k-1);REC.linhas.splice(REC.linhas.indexOf(l)+1,0,novaLinha(l,{ficheiro:resto[0].f,pg:resto,ext:'.pdf'}));
+    recComparar();recNomes();pintarRececao();return;}
+  const pags=paginasLinha(l);if(pags.length<2)return;
   const r=prompt(`Separar a partir de que página? (este bloco tem as págs. ${pags[0]}–${pags[pags.length-1]})`,String(pags[1]));if(r===null)return;
   const n=parseInt(r,10);if(!pags.includes(n)||n===pags[0]){alert('Indique uma página deste bloco, a seguir à primeira.');return;}
   l.pags=pags.filter(p=>p<n);
@@ -2447,6 +2582,7 @@ async function recEnviar(pai,nome,bytes,tipo,substituir=false){
 }
 const tipoMIME=ext=>({'.pdf':'application/pdf','.jpg':'image/jpeg','.jpeg':'image/jpeg','.png':'image/png','.docx':'application/vnd.openxmlformats-officedocument.wordprocessingml.document','.json':'application/json'})[ext]||'application/octet-stream';
 async function recBytes(l){
+  if(l.pg)return bytesEditados(l);
   const f=REC.files.get(l.ficheiro);const buf=await f.arrayBuffer();
   if(!l.pags)return new Uint8Array(buf);
   const L=await pdfLib();const src=await L.PDFDocument.load(buf,{ignoreEncryption:true});const out=await L.PDFDocument.create();
@@ -2539,7 +2675,7 @@ window.recGravar=async()=>{
        Os que já estavam na pasta ficam onde estão. */
     const nomesPrinc=new Set((REC.filhos||[]).filter(x=>!x.folder).map(x=>x.name.toLowerCase()));
     const origem={};
-    for(const fn of new Set(REC.linhas.filter(l=>pronta(l)||(l.dup&&!l.gravado)).map(l=>l.ficheiro))){
+    for(const fn of new Set(REC.linhas.filter(l=>pronta(l)||(l.dup&&!l.gravado)).flatMap(fontesLinha))){
       if(REC.naPasta[fn]){origem[fn]={id:REC.naPasta[fn],nome:fn};continue;}
       const f=REC.files.get(fn);if(!f)continue;
       let nome=fn,k=2;while(nomesPrinc.has(nome.toLowerCase()))nome=`${baseOriginal(fn)}_${k++}${extDe(fn)}`;
@@ -2553,8 +2689,8 @@ window.recGravar=async()=>{
         const bytes=await recBytes(l);await recEnviar(cat,l.final,bytes,tipoMIME(l.ext));
         (REC.catFilhos=REC.catFilhos||[]).push({name:l.final,file:{}});
         l.gravado=l.final;l.erro='';
-        const o=origem[l.ficheiro]||{id:'',nome:l.ficheiro};
-        const doc={ficheiro:l.final,cat:true,original:o.nome,origemId:o.id||'',paginas:l.pags||'todas',sigla:l.sigla||'',tipoLido:l.r&&l.r.tipo||'',
+        const os=fontesLinha(l).map(f=>origem[f]||{id:'',nome:f});const o=os[0];
+        const doc={ficheiro:l.final,cat:true,original:os.map(x=>x.nome).join(' + '),origemId:os.map(x=>x.id).filter(Boolean).join(','),editado:!!(l.pg&&(l.editado||l.pg.some(p=>p.rot||p.crop))),paginas:l.pg?l.pg.map(p=>p.f+(/\.pdf$/i.test(p.f)?'#'+p.n:'')+(p.rot?' ↻'+p.rot:'')+(p.crop?' ✂':'')):(l.pags||'todas'),sigla:l.sigla||'',tipoLido:l.r&&l.r.tipo||'',
           leitura:l.r?(l.r.ocr?'imagem':'texto'):'',certeza:!l.r||!l.r.tipo?'manual':l.r.ocr?'imagem':'texto',confirmado:l.estado!=='ok'||!!l.manual,gravado:agora,nota:l.r&&l.r.nota||'',dados:limparDados(l.r&&l.r.dados),texto:l.r&&l.r.texto||''};
         const ch=chaveMatriz(doc);
         if(ch){const ant=mat.documentos.filter(d=>!d.substituido_por&&d.tipoLido===doc.tipoLido&&chaveMatriz(d)===ch).pop();
@@ -2563,12 +2699,12 @@ window.recGravar=async()=>{
               avisos.push(`⚠ ${doc.ficheiro}: doc com dados novos face a ${ant.ficheiro} — atualizar gerador (${dif.map(d=>`${d.campo}: ${curto(d.antes)} → ${curto(d.depois)}`).join('; ')}).`);}
             else avisos.push(`${doc.ficheiro}: igual a ${ant.ficheiro} (sem dados novos).`);}}
         mat.documentos.push(doc);
-        if(o.id){const c=mat.catalogados[o.id]=mat.catalogados[o.id]||{nome:o.nome,quando:agora,documentos:[]};c.documentos.push(doc.ficheiro);}
+        os.forEach(o=>{if(o.id){const c=mat.catalogados[o.id]=mat.catalogados[o.id]||{nome:o.nome,quando:agora,documentos:[]};if(!c.documentos.includes(doc.ficheiro))c.documentos.push(doc.ficheiro);}});
       }catch(e){l.erro='Não foi gravado: '+e.message;}
     }
     /* Ficheiro da pasta só com documentos repetidos (mesmos dados): fica marcado como catalogado, para não voltar a ser lido. */
     Object.entries(origem).forEach(([fn,o])=>{if(!o.id||mat.catalogados[o.id])return;
-      const dele=REC.linhas.filter(l=>l.ficheiro===fn);if(dele.length&&dele.every(l=>l.gravado||l.dup))mat.catalogados[o.id]={nome:o.nome,quando:agora,documentos:dele.map(l=>l.gravado||l.dup)};});
+      const dele=REC.linhas.filter(l=>fontesLinha(l).includes(fn));if(dele.length&&dele.every(l=>l.gravado||l.dup))mat.catalogados[o.id]={nome:o.nome,quando:agora,documentos:dele.map(l=>l.gravado||l.dup)};});
     /* 3) Matriz atualizada, dentro de «Catalogados». */
     {const {alertas}=ordenarVersoes(mat);REC.versoes=alertas;
      alertas.forEach(v=>{if(v.antigos.some(a=>prontas.some(l=>l.gravado===a.ficheiro)))avisos.push(`⚠ ${v.antigos.filter(a=>prontas.some(l=>l.gravado===a.ficheiro)).map(a=>a.ficheiro).join(', ')}: é mais antigo do que ${v.novo} (${v.data}) — fica como versão anterior.`);});}
