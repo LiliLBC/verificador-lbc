@@ -49,7 +49,7 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
 </head>
 <body>
 <div class="topbar">
-  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-19.19</span></div>
+  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-20.1</span></div>
   <div style="display:flex;gap:.6rem;align-items:center"><span id="login-info" style="font-size:11px;color:var(--text-faint)"></span>
     <button class="btn" id="btn-entrar" onclick="entrar()">Entrar</button>
     <button class="btn btn-p" id="btn-desc" onclick="descarregar()" disabled>Descarregar Word revisto</button></div>
@@ -2301,21 +2301,130 @@ function pintarFicheirosPasta(){
   const ds=(REC.filhos||[]).filter(x=>x.folder).map(x=>x.name);
   const conhecidos=new Set(((REC.matriz&&REC.matriz.documentos)||[]).map(d=>d.ficheiro));
   const dt=el.querySelector('details');const aberto=dt?dt.open:undefined;
+  const subAbertas=new Set([...el.querySelectorAll('details.subp[open]')].map(d=>d.dataset.id));
   const vers=(REC.versoes||[]).filter(v=>v.antigos.length);
   const subst={};((REC.matriz&&REC.matriz.documentos)||[]).forEach(d=>{if(d.substituido_por)subst[d.ficheiro]=d.substituido_por;});
   el.innerHTML=(vers.length?`<div class="item" style="border-left-color:var(--amber);margin:.4rem 0"><div class="cab">⚠ Documentos com versão mais recente — na verificação e no gerador conta só a mais recente</div>
       <div class="nota" style="white-space:pre-wrap;margin:0">${vers.map(v=>`${esc(ROT_TIPO(v.tipo))} (${esc(v.chave)}): mais recente ${esc(v.novo)} (${esc(v.data)}); anterior(es): ${v.antigos.map(a=>`${esc(a.ficheiro)} (${esc(a.data)}${a.igual?', mesmos dados':''})`).join(', ')}`).join('\n')}</div></div>`:'')
     +`<details style="margin:.5rem 0;border:1px solid var(--border);border-radius:8px;padding:.5rem .7rem;background:var(--surface2)"${aberto===false?'':' open'}><summary style="cursor:pointer;font-size:13px;font-weight:600">📁 Documentos na pasta «${esc(REC.pasta.nome)}» (${fs.length}) — clique no nome para abrir</summary>
-    <div style="margin:.4rem 0"><button class="btn" style="padding:2px 10px" onclick="recLerPasta(true)" ${REC.lendo?'disabled':''}>🔄 Voltar a ler todos os documentos da pasta</button></div>
-    <div style="font-size:12px;margin:.4rem 0 0 .2rem;line-height:1.7">${fs.map(x=>`<a href="${esc(embedSP(x.webUrl)||'#')}" target="_blank" rel="noopener" style="color:var(--accent-dark);text-decoration:none;font-family:'DM Mono',monospace">${esc(x.name)}</a>${/\.(pdf|jpe?g|png)$/i.test(x.name)&&REC.matriz&&!conhecidos.has(x.name)?' <span class="tag" style="background:var(--amber-light);color:var(--amber)">não passou pelo verificador</span>':''}${subst[x.name]?` <span class="tag">versão anterior — a mais recente é ${esc(subst[x.name])}</span>`:''}`).join('<br>')||'—'}
-    ${ds.length?`<div style="margin-top:.5rem">${(REC.filhos||[]).filter(x=>x.folder).sort((a,b)=>a.name.localeCompare(b.name,'pt')).map(x=>`<details class="subp" data-id="${esc(x.id)}" ontoggle="recSubpastaAbrir(this)" style="margin:.15rem 0"><summary style="cursor:pointer">📁 ${esc(x.name)}${x.webUrl?` <a href="${esc(embedSP(x.webUrl))}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="font-size:11px;color:var(--text-faint)">abrir no SharePoint ↗</a>`:''}</summary><div class="subp-lista" style="margin:.2rem 0 .3rem 1.2rem;color:var(--text-faint)">…</div></details>`).join('')}</div>`:''}</div></details>`;
+    <div style="margin:.4rem 0"><button class="btn" style="padding:2px 10px" onclick="recLerPasta(true)" ${REC.lendo?'disabled':''}>🔄 Voltar a ler todos os documentos da pasta</button> <button class="btn" style="padding:2px 10px" onclick="gestNovaSubpasta()">＋ Nova subpasta</button></div>
+    <div style="font-size:12px;margin:.4rem 0 0 .2rem;line-height:1.7">${fs.map(x=>`<a href="${esc(embedSP(x.webUrl)||'#')}" target="_blank" rel="noopener" style="color:var(--accent-dark);text-decoration:none;font-family:'DM Mono',monospace">${esc(x.name)}</a>${/\.(pdf|jpe?g|png)$/i.test(x.name)&&REC.matriz&&!conhecidos.has(x.name)?' <span class="tag" style="background:var(--amber-light);color:var(--amber)">não passou pelo verificador</span>':''}${subst[x.name]?` <span class="tag">versão anterior — a mais recente é ${esc(subst[x.name])}</span>`:''}${gestAcoes(x,REC.pasta.id)}`).join('<br>')||'—'}
+    ${ds.length?`<div style="margin-top:.5rem">${(REC.filhos||[]).filter(x=>x.folder).sort((a,b)=>a.name.localeCompare(b.name,'pt')).map(x=>`<details class="subp" data-id="${esc(x.id)}" ontoggle="recSubpastaAbrir(this)" style="margin:.15rem 0"><summary style="cursor:pointer">📁 ${esc(x.name)}${x.webUrl?` <a href="${esc(embedSP(x.webUrl))}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="font-size:11px;color:var(--text-faint)">abrir no SharePoint ↗</a>`:''}${gestAcoes(x,REC.pasta.id,true)}</summary><div class="subp-lista" style="margin:.2rem 0 .3rem 1.2rem;color:var(--text-faint)">…</div></details>`).join('')}</div>`:''}</div></details>`;
+  el.querySelectorAll('details.subp').forEach(d=>{if(subAbertas.has(d.dataset.id))d.open=true;});
 }
+
+/* ═══════════ ARRUMAR A PASTA DO CLIENTE (20/10/2026) ═══════════
+   Como a pasta já não se abre no SharePoint, é aqui que se criam subpastas e que
+   se renomeiam, movem e apagam documentos. Apagar manda para a reciclagem do
+   SharePoint (recuperável). A MATRIZ_VERIFICADOR.json acompanha: o nome novo
+   passa para a matriz, o documento apagado sai dela, e o que vai para uma
+   subpasta fica com a indicação de onde está. */
+const gestNomeSub=id=>{const f=(REC.filhos||[]).find(x=>x.id===id);return f?f.name:'';};
+function gestAcoes(x,pai,ehPasta){
+  const a=`'${esc(x.id)}','${esc(pai)}'`;
+  const b=(t,ic,fn)=>`<button class="btn" title="${t}" style="padding:0 5px;font-size:11px;line-height:1.5;margin-left:3px" onclick="event.preventDefault();event.stopPropagation();${fn}(${a}${ehPasta?',true':''})">${ic}</button>`;
+  return`<span class="gest" style="white-space:nowrap;margin-left:6px">${b(ehPasta?'Mudar o nome da subpasta':'Mudar o nome','✏️','gestRenomear')}${ehPasta?'':b('Mover para outra pasta','↪','gestMover')}${b(ehPasta?'Apagar a subpasta':'Apagar','🗑','gestApagar')}</span>`;
+}
+async function gestItem(id){return gq(`${GRAPH}/drives/${REC.drive}/items/${id}?$select=id,name,folder,parentReference`);}
+/* Grava a matriz depois de uma arrumação, se mudou alguma coisa. */
+async function gestGravarMatriz(){
+  if(!REC.matriz)return;
+  try{const {alertas}=ordenarVersoes(REC.matriz);REC.versoes=alertas;
+    await recEnviar(REC.pasta.id,MATRIZ_NOME,new TextEncoder().encode(JSON.stringify(REC.matriz,null,1)),'application/json',true);}
+  catch(e){REC.msg='A arrumação foi feita, mas a matriz não foi atualizada: '+esc(e.message);}
+}
+async function gestRefrescar(msg){
+  try{await recListar();}catch(e){REC.msg='Não foi possível reler a pasta: '+esc(e.message);}
+  if(msg)REC.msg=msg;pintarRececao();estadoDocs();
+}
+function gestDialogo(titulo,corpo,botoes){
+  return new Promise(ok=>{
+    const ov=document.createElement('div');ov.className='gest-ov';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:9999';
+    ov.innerHTML=`<div style="background:#fff;border-radius:10px;padding:1.1rem 1.2rem;max-width:460px;width:92%;box-shadow:0 12px 40px rgba(0,0,0,.25);font-size:13px">
+      <div style="font-weight:600;margin-bottom:.6rem">${titulo}</div><div>${corpo}</div>
+      <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem">${botoes.map((b,i)=>`<button class="btn${b.primario?' btn-primary':''}" data-i="${i}">${b.t}</button>`).join('')}</div></div>`;
+    ov.addEventListener('click',e=>{const bt=e.target.closest('button[data-i]');if(!bt)return;const v=botoes[+bt.dataset.i].v;const sel=ov.querySelector('select,input');const val=sel?sel.value:'';ov.remove();ok(v?{v,val}:null);});
+    document.body.appendChild(ov);const f=ov.querySelector('input,select');if(f)setTimeout(()=>{f.focus();if(f.select)f.select();},30);
+  });
+}
+window.gestNovaSubpasta=async()=>{
+  if(!REC.pasta)return;
+  const r=await gestDialogo('Nova subpasta',`<input class="inp" id="gest-in" style="width:100%" placeholder="Ex: DPA, Distrate, Correspondência">`,[{t:'Cancelar'},{t:'Criar',v:'ok',primario:true}]);
+  const nome=r&&r.val.trim().replace(/[\\/:*?"<>|#%]/g,'').trim();if(!nome)return;
+  if((REC.filhos||[]).some(x=>x.folder&&x.name.toLowerCase()===nome.toLowerCase())){alert(`Já existe a subpasta «${nome}».`);return;}
+  try{await recSubpasta(nome);await gestRefrescar(`Subpasta «${esc(nome)}» criada.`);}catch(e){alert('Não foi possível criar a subpasta: '+e.message);}
+};
+window.gestRenomear=async(id,pai,ehPasta)=>{
+  let it;try{it=await gestItem(id);}catch(e){alert(e.message);return;}
+  const ext=ehPasta?'':(it.name.match(/\.[^.]+$/)||[''])[0];
+  const base=ehPasta?it.name:it.name.slice(0,it.name.length-ext.length);
+  const r=await gestDialogo(ehPasta?'Mudar o nome da subpasta':'Mudar o nome do documento',`<input class="inp" id="gest-in" style="width:100%" value="${esc(base)}">${ext?`<div style="font-size:11px;color:var(--text-faint);margin-top:4px">A extensão ${esc(ext)} mantém-se.</div>`:''}`,[{t:'Cancelar'},{t:'Gravar',v:'ok',primario:true}]);
+  if(!r)return;let novo=r.val.trim().replace(/[\\/:*?"<>|#%]/g,'').trim();if(!novo||novo===base)return;
+  if(ext&&!novo.toLowerCase().endsWith(ext.toLowerCase()))novo+=ext;
+  try{
+    const resp=await gRaw(`${GRAPH}/drives/${REC.drive}/items/${id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:novo,'@microsoft.graph.conflictBehavior':'fail'})});
+    if(resp.status===409){alert(`Já existe «${novo}» nesta pasta.`);return;}
+    if(!resp.ok)throw new Error(`erro ${resp.status} — ${await erroGraph(resp)}`);
+    if(!ehPasta&&REC.matriz){
+      const naPrincipal=pai===REC.pasta.id,sub=naPrincipal?'':gestNomeSub(pai);
+      (REC.matriz.documentos||[]).forEach(d=>{
+        if(d.ficheiro===it.name&&(d.local||'')===sub){d.ficheiro=novo;d.renomeado_de=d.renomeado_de||it.name;}
+        if(d.substituido_por===it.name)d.substituido_por=novo;});
+      APOIO.forEach(d=>{if(d.ficheiro===it.name)d.ficheiro=novo;});
+      await gestGravarMatriz();pintarApoio();
+    }
+    if(ehPasta)REC.caminho&&delete REC.caminho[id];
+    await gestRefrescar(`«${esc(it.name)}» passou a «${esc(novo)}».`);
+  }catch(e){alert('Não foi possível mudar o nome: '+e.message);}
+};
+window.gestMover=async(id,pai)=>{
+  let it;try{it=await gestItem(id);}catch(e){alert(e.message);return;}
+  const destinos=[{id:REC.pasta.id,n:`Pasta principal — ${REC.pasta.nome}`},...(REC.filhos||[]).filter(x=>x.folder).sort((a,b)=>a.name.localeCompare(b.name,'pt')).map(x=>({id:x.id,n:'📁 '+x.name}))].filter(d=>d.id!==pai);
+  if(!destinos.length){alert('Não há outra pasta para onde mover. Crie primeiro uma subpasta.');return;}
+  const r=await gestDialogo(`Mover «${esc(it.name)}»`,`<select class="inp" style="width:100%">${destinos.map(d=>`<option value="${esc(d.id)}">${esc(d.n)}</option>`).join('')}</select>`,[{t:'Cancelar'},{t:'Mover',v:'ok',primario:true}]);
+  if(!r||!r.val)return;
+  try{
+    const resp=await gRaw(`${GRAPH}/drives/${REC.drive}/items/${id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({parentReference:{id:r.val},'@microsoft.graph.conflictBehavior':'fail'})});
+    if(resp.status===409){alert(`Já existe um documento com o nome «${it.name}» na pasta de destino.`);return;}
+    if(!resp.ok)throw new Error(`erro ${resp.status} — ${await erroGraph(resp)}`);
+    if(REC.matriz){
+      const de=pai===REC.pasta.id?'':gestNomeSub(pai),para=r.val===REC.pasta.id?'':gestNomeSub(r.val);
+      (REC.matriz.documentos||[]).forEach(d=>{if(d.ficheiro===it.name&&(d.local||'')===de){if(para)d.local=para;else delete d.local;}});
+      await gestGravarMatriz();
+    }
+    const dest=destinos.find(d=>d.id===r.val);
+    await gestRefrescar(`«${esc(it.name)}» movido para ${esc(dest?dest.n.replace(/^📁 /,'«')+(dest.n.startsWith('📁')?'»':''):'')}.`);
+  }catch(e){alert('Não foi possível mover: '+e.message);}
+};
+window.gestApagar=async(id,pai,ehPasta)=>{
+  let it;try{it=await gestItem(id);}catch(e){alert(e.message);return;}
+  let aviso='';
+  if(ehPasta){try{const c=await gq(`${GRAPH}/drives/${REC.drive}/items/${id}/children?$top=999&$select=id`);const n=(c.value||[]).length;aviso=n?`<div style="color:var(--red);margin-top:.4rem">A subpasta tem ${n} ficheiro(s), que também são apagados.</div>`:'';}catch(_){}}
+  const r=await gestDialogo(ehPasta?'Apagar a subpasta':'Apagar o documento',`Apagar «${esc(it.name)}»?${aviso}<div style="font-size:11px;color:var(--text-faint);margin-top:.5rem">Vai para a reciclagem do SharePoint, de onde pode ser recuperado.</div>`,[{t:'Cancelar'},{t:'Apagar',v:'ok',primario:true}]);
+  if(!r)return;
+  try{
+    const resp=await gRaw(`${GRAPH}/drives/${REC.drive}/items/${id}`,{method:'DELETE'});
+    if(!resp.ok&&resp.status!==204)throw new Error(`erro ${resp.status} — ${await erroGraph(resp)}`);
+    if(!ehPasta&&REC.matriz){
+      const sub=pai===REC.pasta.id?'':gestNomeSub(pai);
+      const antes=(REC.matriz.documentos||[]).length;
+      REC.matriz.documentos=(REC.matriz.documentos||[]).filter(d=>!(d.ficheiro===it.name&&(d.local||'')===sub));
+      REC.matriz.documentos.forEach(d=>{if(d.substituido_por===it.name)delete d.substituido_por;});
+      if(REC.matriz.documentos.length!==antes){
+        const i=APOIO.findIndex(d=>d.ficheiro===it.name);if(i>=0){APOIO.splice(i,1);pintarApoio();if(DOC)analisar();}
+        await gestGravarMatriz();}
+    }
+    if(!ehPasta)delete REC.naPasta[it.name];
+    await gestRefrescar(`«${esc(it.name)}» apagado (está na reciclagem do SharePoint).`);
+  }catch(e){alert('Não foi possível apagar: '+e.message);}
+};
 /* Subpasta (DPA, _originais…): mostra os ficheiros quando se abre. */
 window.recSubpastaAbrir=async el=>{
   if(!el.open||el.dataset.lida)return;el.dataset.lida='1';const box=el.querySelector('.subp-lista');
   try{const r=await gq(`${GRAPH}/drives/${REC.drive}/items/${el.dataset.id}/children?$top=999&$select=id,name,folder,webUrl`);
     const xs=(r.value||[]).sort((a,b)=>(!!b.folder-!!a.folder)||a.name.localeCompare(b.name,'pt'));
-    box.innerHTML=xs.length?xs.map(x=>`${x.folder?'📁 ':''}<a href="${esc(embedSP(x.webUrl)||'#')}" target="_blank" rel="noopener" style="color:var(--accent-dark);text-decoration:none;font-family:'DM Mono',monospace">${esc(x.name)}</a>`).join('<br>'):'(vazia)';}
+    box.innerHTML=xs.length?xs.map(x=>`${x.folder?'📁 ':''}<a href="${esc(embedSP(x.webUrl)||'#')}" target="_blank" rel="noopener" style="color:var(--accent-dark);text-decoration:none;font-family:'DM Mono',monospace">${esc(x.name)}</a>${x.folder?'':gestAcoes(x,el.dataset.id)}`).join('<br>'):'(vazia)';}
   catch(e){box.textContent='Não foi possível abrir: '+e.message;el.dataset.lida='';}
 };
 const novaLinha=(base,extra)=>({id:++REC.seq,ficheiro:base.ficheiro,ext:base.ext,pags:null,r:null,siglaAuto:'',sigla:'',ident:'',estado:'nr',confirmado:false,manual:'',livre:false,gravado:'',erro:'',...extra});
@@ -2560,6 +2669,9 @@ window.recLerPasta=async(tudo)=>{
         APOIO.push({ficheiro:x.name,nome:x.name,pags:null,tipo:d.tipoLido,dados:d.dados,texto:d.texto||'',ocr:d.leitura==='imagem',nota:d.nota||'',daMatriz:true});daMatriz++;}
       else if(!d)ler.push(x);
       else reler.push(x);});
+    /* Documentos arrumados numa subpasta (20/10/2026): continuam a contar, com os dados da matriz. */
+    mdocs.filter(d=>d.local&&d.tipoLido&&d.dados&&!d.substituido_por).forEach(d=>{APOIO=APOIO.filter(r=>r.ficheiro!==d.ficheiro);
+      APOIO.push({ficheiro:d.ficheiro,nome:`${d.local}/${d.ficheiro}`,pags:null,tipo:d.tipoLido,dados:d.dados,texto:d.texto||'',ocr:d.leitura==='imagem',nota:d.nota||'',daMatriz:true});daMatriz++;});
     const semTipo=[];if(tudo)reler.push(...sel.filter(x=>mdocs.some(m=>m.ficheiro===x.name)&&!reler.includes(x)));
     REC.lendo=true;REC.msg=`${daMatriz} documento(s) da matriz${ler.length?` · a ler ${ler.length} que a matriz não tem…`:''}`;pintarRececao();
     /* Documentos gravados antes de o verificador os saber ler (na matriz sem dados): lê-se outra
