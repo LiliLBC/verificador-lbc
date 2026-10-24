@@ -60,7 +60,7 @@ input.inp,textarea.inp,select.inp{font:inherit;font-size:13px;padding:7px 10px;b
 </head>
 <body>
 <div class="topbar">
-  <div><span class="tt">Analisador predial</span><span class="sub">piloto · v2026-10-24.5</span></div>
+  <div><span class="tt">Analisador predial</span><span class="sub">piloto · v2026-10-24.6</span></div>
   <div class="row"><span id="pasta-info" class="nota"></span></div>
 </div>
 <div class="wrap">
@@ -342,8 +342,12 @@ function analisar(docs,opc){
   opc=opc||{};
   const hoje=opc.hoje||new Date().toISOString().slice(0,10);
   const dataAto=opc.dataAto||hoje;
-  const certs=docs.filter(d=>d.dados&&d.dados.tipo==='certidao');
-  const cads=docs.filter(d=>d.dados&&(d.dados.tipo==='urbana'||d.dados.tipo==='rustica'));
+  /* O mesmo documento duas vezes (o original na pasta principal e a cópia em «Catalogados»):
+     conta uma vez só (24/10/2026). */
+  const duplicados=[];const unico=(lista,chave)=>{const m=new Map();return lista.filter(d=>{const k=chave(d.dados);
+    if(k&&m.has(k)){duplicados.push({nome:d.nome,de:m.get(k).nome});return false;}if(k)m.set(k,d);return true;});};
+  const certs=unico(docs.filter(d=>d.dados&&d.dados.tipo==='certidao'),c=>c.numero||c.codigo?[c.numero,c.freguesia,c.codigo,c.validade].join('|'):'');
+  const cads=unico(docs.filter(d=>d.dados&&(d.dados.tipo==='urbana'||d.dados.tipo==='rustica')),x=>x.artigo?[x.tipo,x.artigo,x.seccao||'',x.fracao||'',(x.freguesia&&x.freguesia.cod)||'',x.emitida||''].join('|'):'');
   const alertas=[];const usados=new Set();
   const A=(grau,titulo,texto,prova,predio)=>alertas.push({grau,titulo,texto,prova:prova||'',predio:predio||''});
   const fregIgual=(a,b)=>{const x=norm(a).replace(/^(UNIAO DAS FREGUESIAS DE|FREGUESIA DE)\s+/,''),y=norm(b).replace(/^(UNIAO DAS FREGUESIAS DE|FREGUESIA DE)\s+/,'');return !x||!y||x===y||x.includes(y)||y.includes(x);};
@@ -358,7 +362,7 @@ function analisar(docs,opc){
   const maes=certs.filter(ehMae);
   const unidades=certs.filter(d=>!ehMae(d));
   const predios=unidades.map((d,i)=>{
-    const c=d.dados;const p={id:c.numero||String(i+1),ord:CARD[i]||String(i+1),doc:d.nome,c,ver:[]};
+    const c=d.dados;const p={id:`${c.numero||'?'}#${i+1}`,ord:CARD[i]||String(i+1),doc:d.nome,c,ver:[]};
     const maeD=c.fracaoLetra?maes.find(m=>mesmaDesc(m.dados,c)):null;const mae=maeD?maeD.dados:null;p.mae=mae;
     const V=(rot,estado,texto)=>p.ver.push({rot,estado,texto});
     const nomeP=`Prédio ${c.numero||'?'}/${c.freguesia||'?'}`;
@@ -415,11 +419,12 @@ function analisar(docs,opc){
       if(g!=='ok')A(g,`${nomeP} — área rústica diferente (${fmt(dif,1)} %)`,`Certidão: ${fmt(c.areaRusticaHa,4)} ha. Caderneta ${rus.cd.dados.artigo}-${rus.cd.dados.seccao}: ${fmt(rus.cd.dados.areaHa,4)} ha.`,'',p.id);
     }else if(rus)V('Área rústica','confirmar','não consegui ler a área num dos documentos');
     const urb=p.cads.find(x=>x.mz.natureza==='urbana'&&x.cd);
-    if(urb&&isFinite(c.areaUrbanaM2)){
-      const cu=urb.cd.dados;const ref=isFinite(cu.areaImplantacao)?cu.areaImplantacao:cu.areaBrutaConstrucao;
+    if(urb&&isFinite(c.areaUrbanaM2)&&!(c.fracao&&!isFinite(urb.cd.dados.areaBrutaPrivativa))){
+      /* fração: compara-se com a área bruta privativa da fração, não com a implantação do edifício */
+      const cu=urb.cd.dados;const ref=c.fracao?cu.areaBrutaPrivativa:isFinite(cu.areaImplantacao)?cu.areaImplantacao:cu.areaBrutaConstrucao;
       const dif=(ref-c.areaUrbanaM2)/c.areaUrbanaM2*100;const g=Math.abs(dif)<=1?'ok':Math.abs(dif)<=10?'confirmar':'grave';
       V('Área urbana',g,`${fmt(c.areaUrbanaM2)} / ${fmt(ref)} m² · ${fmt(dif,1)} %`);
-      if(g!=='ok')A(g,`${nomeP} — área urbana diferente (${fmt(dif,1)} %)`,`Certidão (superfície coberta): ${fmt(c.areaUrbanaM2)} m². Caderneta ${cu.artigo} (implantação): ${fmt(ref)} m².`,'',p.id);
+      if(g!=='ok')A(g,`${nomeP} — área urbana diferente (${fmt(dif,1)} %)`,`Certidão (superfície coberta): ${fmt(c.areaUrbanaM2)} m². Caderneta ${cu.artigo}${c.fracao?'-'+(cu.fracao||'')+' (área bruta privativa)':' (implantação)'}: ${fmt(ref)} m².`,'',p.id);
     }else if(urb&&!c.fracao)V('Área urbana','confirmar','a certidão não indica a superfície coberta');
     /* composição */
     if(urb&&isFinite(c.pisos)&&isFinite(urb.cd.dados.pisos)){
@@ -504,7 +509,7 @@ function analisar(docs,opc){
   alertas.sort((a,b)=>ordem[a.grau]-ordem[b.grau]);
   const nG=alertas.filter(a=>a.grau==='grave').length,nC=alertas.filter(a=>a.grau==='confirmar').length;
   const nOk=predios.reduce((s,p)=>s+p.ver.filter(v=>v.estado==='ok').length,0);
-  return{predios,maes:maes.map(m=>m.dados),alertas,nG,nC,nOk,hoje,dataAto,
+  return{predios,maes:maes.map(m=>m.dados),duplicados,alertas,nG,nC,nOk,hoje,dataAto,
     conclusao:nG?'Não está em condições de escritura.':nC?'Em condições, depois de confirmados os pontos assinalados.':'Sem desconformidades detetadas nos documentos analisados.'};
 }
 
@@ -663,7 +668,8 @@ function relatorioHTML(paraFicheiro){
       <div class="concl ${cls}"><b>${esc(R.conclusao)}</b>${R.nG?' '+esc(R.alertas.filter(a=>a.grau==='grave').map(a=>a.titulo).join(' · ')):''}</div></section>
     <section><h2>2. Alertas</h2>${alertas}</section>
     <section><h2>3. Prédios</h2>${tabela}</section>
-    <section><h2>4. Documentos analisados</h2><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:3px 24px;font-size:12.5px">${docs}</div></section>
+    <section><h2>4. Documentos analisados</h2><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:3px 24px;font-size:12.5px">${docs}</div>
+      ${(R.duplicados||[]).length?`<p class="nota" style="margin:.5rem 0 0">Repetidos, contados uma só vez: ${[...new Set(R.duplicados.map(x=>x.nome===x.de?esc(x.nome):`${esc(x.nome)} (= ${esc(x.de)})`))].join(' · ')}.</p>`:''}</section>
     <div class="rod">Análise automática de apoio à verificação, feita por regras sobre o texto dos documentos. Não substitui a apreciação da solicitadora.</div>`;
 }
 function pintarRel(){
