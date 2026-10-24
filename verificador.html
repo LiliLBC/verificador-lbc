@@ -54,7 +54,7 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
 </head>
 <body>
 <div class="topbar">
-  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-24.7</span></div>
+  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-24.8</span></div>
   <div style="display:flex;gap:.6rem;align-items:center"><span id="login-info" style="font-size:11px;color:var(--text-faint)"></span>
     <button class="btn" id="btn-entrar" onclick="entrar()">Entrar</button>
     <button class="btn btn-p" id="btn-desc" onclick="descarregar()" disabled>Descarregar Word revisto</button></div>
@@ -2182,6 +2182,8 @@ const SIGLAS=[['CC','Cartão de cidadão'],['CRP','Certidão permanente predial'
   ['CRC','Certidão de registo comercial'],['DIST','Distrate (cancelamento de hipoteca)'],['BC','Boletim de contrato CGD'],['DC','Documento complementar CGD'],['AU','Autorização de utilização'],['FTH','Ficha técnica da habitação'],
   ['RCC','NIF da herança'],['RCBE','Comprovativo RCBE'],['LIV','Livrança'],['AUT-LIV','Autorização de preenchimento de livrança'],
   ['MED','Declaração de mediação imobiliária'],['MIN-LF','Minuta do contrato de locação financeira'],['OUTROS','Outros']];
+/* Na lista de escolha, por ordem alfabética da sigla; «Outros» fica no fim (24/10/2026). */
+SIGLAS.sort((a,b)=>a[0]==='OUTROS'?1:b[0]==='OUTROS'?-1:a[0].localeCompare(b[0],'pt'));
 const ROT_SIGLA=Object.fromEntries(SIGLAS);
 const MATRIZ_NOME='MATRIZ_VERIFICADOR.json';
 /* Pasta onde ficam os documentos catalogados e a matriz (20/10/2026). Substitui «_originais»:
@@ -2424,7 +2426,7 @@ function pintarFicheirosPasta(){
   el.innerHTML=(vers.length?`<div class="item" style="border-left-color:var(--amber);margin:.4rem 0"><div class="cab">⚠ Documentos com versão mais recente — na verificação e no gerador conta só a mais recente</div>
       <div class="nota" style="white-space:pre-wrap;margin:0">${vers.map(v=>`${esc(ROT_TIPO(v.tipo))} (${esc(v.chave)}): mais recente ${esc(v.novo)} (${esc(v.data)}); anterior(es): ${v.antigos.map(a=>`${esc(a.ficheiro)} (${esc(a.data)}${a.igual?', mesmos dados':''})`).join(', ')}`).join('\n')}</div></div>`:'')
     +`<details style="margin:.5rem 0;border:1px solid var(--border);border-radius:8px;padding:.5rem .7rem;background:var(--surface2)"${aberto===false?'':' open'}><summary style="cursor:pointer;font-size:13px;font-weight:600">📁 Pasta «${esc(REC.pasta.nome)}» — ${fs.length} ficheiro(s) recebido(s) · ${cs.length} catalogado(s)</summary>
-    <div style="margin:.4rem 0;display:flex;gap:.4rem;flex-wrap:wrap;align-items:center">${(()=>{const n=fs.filter(x=>/por catalogar/.test(estado(x))).length;
+    <div style="margin:.4rem 0;display:flex;gap:.4rem;flex-wrap:wrap;align-items:center">${(()=>{const n=fs.filter(x=>/por catalogar/.test(estado(x))&&!(REC.lidos&&REC.lidos[x.id]===(x.lastModifiedDateTime||'?')&&REC.linhas.some(l=>l.ficheiro===x.name&&!l.gravado))).length;
       return REC.lendo?`<span class="nota" style="margin:0">⏳ A ler os documentos da pasta… (pode demorar um pouco nos digitalizados)</span>`
         :n?`<button class="btn btn-p" style="padding:2px 12px" onclick="recLerPasta()">📥 Ler os ${n} documento(s) por catalogar</button>`:'';})()}
       <button class="btn" style="padding:2px 10px" onclick="recLerPasta(true)" ${REC.lendo?'disabled':''}>🔄 Voltar a ler os documentos catalogados</button>
@@ -2915,14 +2917,19 @@ window.recLerPasta=async(tudo)=>{
        antes de existir «Catalogados») voltam a ser propostos para catalogar (24/10/2026): ao gravar,
        a cópia em «Catalogados» substitui o registo antigo na matriz (mesmos dados → «igual a»). */
     const catalogado=x=>!!REC.matriz.catalogados[x.id];
-    const ler=tudo?[]:sel.filter(x=>!catalogado(x));
-    let daMatriz=0;const reler=[],semFich=[];
+    /* Só se lê o que é novo: o que já foi lido nesta sessão (e não mudou) fica como está (24/10/2026). */
+    REC.lidos=REC.lidos||{};
+    const jaLido=x=>REC.lidos[x.id]===(x.lastModifiedDateTime||'?')&&REC.linhas.some(l=>l.ficheiro===x.name&&!l.gravado);
+    const ler=tudo?[]:sel.filter(x=>!catalogado(x)&&!jaLido(x));
+    let daMatriz=0;const reler=[],semFich=[],semTipoCat=[];
     mdocs.filter(d=>!d.substituido_por).forEach(d=>{
       const f=docFich(d);
       if(!f){if(d.tipoLido)semFich.push(d.ficheiro);return;}
       if(d.tipoLido&&d.dados&&!tudo){APOIO=APOIO.filter(r=>r.ficheiro!==d.ficheiro);
         APOIO.push({ficheiro:d.ficheiro,nome:d.ficheiro,pags:null,tipo:d.tipoLido,dados:d.dados,texto:d.texto||'',ocr:d.leitura==='imagem',nota:d.nota||'',daMatriz:true});daMatriz++;}
-      else reler.push({d,f});});
+      /* Catalogado sem tipo reconhecido (OUTROS…): não se volta a ler a cada abertura — só com «Voltar a ler». */
+      else if(tudo||d.tipoLido)reler.push({d,f});
+      else semTipoCat.push(d.ficheiro);});
     const semTipo=[];
     REC.lendo=true;REC.msg=`${daMatriz} documento(s) da matriz${ler.length?` · a ler ${ler.length} ainda por catalogar…`:''}`;pintarRececao();
     /* Documentos catalogados sem dados (ou «Voltar a ler todos»): lê-se outra vez o ficheiro catalogado e a matriz é atualizada. */
@@ -2943,7 +2950,7 @@ window.recLerPasta=async(tudo)=>{
     const subst=new Set(REC.matriz.documentos.filter(d=>d.substituido_por).map(d=>d.ficheiro));
     APOIO=APOIO.filter(r=>!subst.has(r.ficheiro));
     if(ler.length){const files=[];
-      for(const x of ler){const r=await gRaw(`${GRAPH}/drives/${REC.drive}/items/${x.id}/content`);if(r.ok){const f=new File([await r.blob()],x.name);files.push(f);REC.files.set(x.name,f);REC.naPasta[x.name]=x.id;}}
+      for(const x of ler){const r=await gRaw(`${GRAPH}/drives/${REC.drive}/items/${x.id}/content`);if(r.ok){const f=new File([await r.blob()],x.name);files.push(f);REC.files.set(x.name,f);REC.naPasta[x.name]=x.id;REC.lidos[x.id]=x.lastModifiedDateTime||'?';}}
       APOIO=APOIO.filter(r=>!files.some(f=>f.name===r.ficheiro&&r.daMatriz));
       /* Primeiro os PDF com texto (rápidos), logo prontos a catalogar; depois os digitalizados,
          que precisam de leitura de imagem e demoram mais (24/10/2026). */
@@ -2959,7 +2966,7 @@ window.recLerPasta=async(tudo)=>{
     estadoDocs([ler.length?`<span style="color:var(--amber)">${ler.length} ficheiro(s) da pasta ainda por catalogar — confirme os nomes e grave em «Catalogados» (4)</span>`:''].filter(Boolean).join(' · '));
     pintarFicheirosPasta();
     REC.msg=esc(`Para verificação: ${daMatriz} documento(s) com os dados da matriz${ler.length?` e ${ler.length} da pasta ainda por catalogar (estão abaixo: confirme o nome e grave — vão para «Catalogados»; o ficheiro da pasta passa para «Recebidos»)`:''}.`)
-      +(semTipo.length?'\n'+esc(`Sem dados para cruzar (gravados sem tipo reconhecido): ${semTipo.join(', ')} — Verificar documento.`):'')
+      +(semTipo.length||semTipoCat.length?'\n'+esc(`Sem dados para cruzar (gravados sem tipo reconhecido): ${[...semTipo,...semTipoCat].join(', ')} — Verificar documento.`):'')
       +(semFich.length?'\n'+esc(`Na matriz mas já não na pasta: ${semFich.join(', ')}.`):'');
   }catch(e){REC.msg='Não foi possível ler a pasta: '+esc(e.message);}
   REC.lendo=false;pintarRececao();
