@@ -54,7 +54,7 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
 </head>
 <body>
 <div class="topbar">
-  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-24.3</span></div>
+  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-24.4</span></div>
   <div style="display:flex;gap:.6rem;align-items:center"><span id="login-info" style="font-size:11px;color:var(--text-faint)"></span>
     <button class="btn" id="btn-entrar" onclick="entrar()">Entrar</button>
     <button class="btn btn-p" id="btn-desc" onclick="descarregar()" disabled>Descarregar Word revisto</button></div>
@@ -2858,7 +2858,16 @@ window.recLerPasta=async(tudo)=>{
     if(ler.length){const files=[];
       for(const x of ler){const r=await gRaw(`${GRAPH}/drives/${REC.drive}/items/${x.id}/content`);if(r.ok){const f=new File([await r.blob()],x.name);files.push(f);REC.files.set(x.name,f);REC.naPasta[x.name]=x.id;}}
       APOIO=APOIO.filter(r=>!files.some(f=>f.name===r.ficheiro&&r.daMatriz));
-      await juntarApoio(files);montarLinhas(files.map(f=>f.name));if(files.length)$('rec-det').open=true;}
+      /* Primeiro os PDF com texto (rápidos), logo prontos a catalogar; depois os digitalizados,
+         que precisam de leitura de imagem e demoram mais (24/10/2026). */
+      const comTexto=[],imagem=[];
+      for(const f of files){let t=!/\.(jpe?g|png)$/i.test(f.name);
+        if(/\.pdf$/i.test(f.name)){try{const pg=await pdfLinhas(await f.arrayBuffer());t=pg.some(L=>L.join('').replace(/\s/g,'').length>250);}catch(_){t=true;}}
+        (t?comTexto:imagem).push(f);}
+      if(comTexto.length){REC.msg=`A ler ${comTexto.length} documento(s) com texto…${imagem.length?` Depois, ${imagem.length} digitalizado(s).`:''}`;pintarRececao();
+        await juntarApoio(comTexto);montarLinhas(comTexto.map(f=>f.name));$('rec-det').open=true;pintarRececao();}
+      if(imagem.length){REC.msg=`Prontos a catalogar: ${comTexto.length}. A ler ${imagem.length} documento(s) digitalizado(s) (${imagem.map(f=>esc(f.name)).join(', ')}) — os que já estão prontos aparecem no cartão 4 para rever os nomes.`;pintarRececao();
+        await juntarApoio(imagem);montarLinhas(imagem.map(f=>f.name));$('rec-det').open=true;}}
     else{pintarApoio();if(DOC)analisar();}
     estadoDocs([ler.length?`<span style="color:var(--amber)">${ler.length} ficheiro(s) da pasta ainda por catalogar — confirme os nomes e grave em «Catalogados» (4)</span>`:''].filter(Boolean).join(' · '));
     pintarFicheirosPasta();

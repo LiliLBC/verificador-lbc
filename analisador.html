@@ -60,7 +60,7 @@ input.inp,textarea.inp,select.inp{font:inherit;font-size:13px;padding:7px 10px;b
 </head>
 <body>
 <div class="topbar">
-  <div><span class="tt">Analisador predial</span><span class="sub">piloto · v2026-10-24.4</span></div>
+  <div><span class="tt">Analisador predial</span><span class="sub">piloto · v2026-10-24.5</span></div>
   <div class="row"><span id="pasta-info" class="nota"></span></div>
 </div>
 <div class="wrap">
@@ -610,6 +610,8 @@ $('quem').value=nomeConta();if($('quem').value){$('quem').readOnly=true;$('quem'
 /* ── pasta do cliente ── */
 if(PASTA){$('pasta-acoes').style.display='flex';$('pasta-info').textContent=PASTA.nome?`Pasta: ${PASTA.nome}`:'Pasta do cliente';
   const m=String(PASTA.nome||'').match(/^(\d{4})(\d{2})(\d{2})\b/);if(m&&!qs.get('loja'))$('data-ato').value=`${m[1]}-${m[2]}-${m[3]}`;}
+/* Aberto já com a pasta (Portal, barra LBC): lê logo os PDF da pasta principal e de «Catalogados». */
+if(PASTA)setTimeout(()=>{if(tokPortal()&&!DOCS.length)window.carregarDaPasta();},400);
 /* Análises REMAX: não há escritura marcada — os prazos contam a partir de hoje. */
 if(qs.get('loja'))$('campo-ato').style.display='none';
 window.carregarDaPasta=async()=>{
