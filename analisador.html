@@ -59,7 +59,7 @@ input.inp,textarea.inp,select.inp{font:inherit;font-size:13px;padding:7px 10px;b
 </head>
 <body>
 <div class="topbar">
-  <div><span class="tt">Analisador predial</span><span class="sub">piloto · v2026-10-24.1</span></div>
+  <div><span class="tt">Analisador predial</span><span class="sub">piloto · v2026-10-24.2</span></div>
   <div class="row"><span id="pasta-info" class="nota"></span></div>
 </div>
 <div class="wrap">
@@ -552,7 +552,7 @@ window.carregarDaPasta=async()=>{
 };
 
 /* ── análise e relatório ── */
-window.correr=()=>{R=ANL.analisar(DOCS.filter(d=>d.dados),{dataAto:$('data-ato').value});R.quando=new Date();R.por=$('quem').value.trim();pintarRel();};
+window.correr=()=>{R=ANL.analisar(DOCS.filter(d=>d.dados),{dataAto:$('data-ato').value});R.quando=new Date();R.por=$('quem').value.trim();if(RX)rxPreencher();pintarRel();};
 const GRAU={grave:'🔴',confirmar:'🟡',ok:'🟢'};
 const chipE=(e,rot)=>`<span class="chip ${e==='ok'?'ok':e==='grave'?'grave':'conf'}">${rot}</span>`;
 function relatorioHTML(paraFicheiro){
@@ -589,6 +589,7 @@ function pintarRel(){
       <button class="btn" onclick="window.print()">🖨 Imprimir / guardar PDF</button>
       ${PASTA?`<button class="btn btn-p" onclick="gravar()">💾 Gravar na pasta («Análises»)</button>`:`<button class="btn" onclick="descarregar()">⬇ Descarregar relatório</button>`}
       <span class="nota" id="grav-nota"></span></div>
+    ${RX?rxCard():''}
     <div class="rel">${relatorioHTML(false)}</div>`;
 }
 window.decidir=(i,v)=>{const a=R.alertas[i];const d=DEC[a.titulo]||(DEC[a.titulo]={});d.decisao=v;d.por=$('quem').value.trim();d.quando=new Date().toLocaleString('pt-PT',{dateStyle:'short',timeStyle:'short'});pintarRel();};
@@ -611,6 +612,193 @@ window.gravar=async()=>{const n=$('grav-nota');n.textContent='A gravar…';
     n.textContent='Gravado na subpasta «Análises» da pasta do cliente. Para PDF, use também «Imprimir / guardar PDF».';
   }catch(e){n.textContent='Erro: '+e.message;}};
 window.descarregar=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([ficheiroHTML()],{type:'text/html'}));a.download=`${carimbo()}_Relatorio_analise.html`;a.click();};
+
+/* ═══════════ RELATÓRIO PARA A REMAX (24/10/2026) ═══════════
+   Só aparece quando o Analisador é aberto a partir de um processo REMAX do Portal
+   (parâmetros loja, av, site, lista). A LBC escreve em cada campo:
+     ✕ Impeditivo de escritura  · ⚠ Complemento de documentação · Recomendações
+   e o resultado sai sozinho (impeditivo > complemento > OK).
+   «Lançar relatório e enviar por e-mail»:
+     1. gera o PDF para a REMAX (sem NIF, sem nomes dos titulares, sem documentos);
+     2. grava o PDF e o relatório interno na subpasta «Análises» da pasta do cliente;
+     3. envia o PDF por e-mail, a partir da conta da LBC, aos coordenadores marcados;
+     4. regista o evento em «_remax.json» na pasta (o assunto passa para o lado da REMAX
+        — é aqui que o relógio da LBC para);
+     5. fecha o processo em Avencas_Processos (Concluído + nota). Só reabre se entrarem
+        novos documentos na pasta. */
+const REMAX_COORD={
+  'Beja':[{n:'Tânia Freitas',e:'taniafreitas@remax.pt'},{n:'Hugo Relíquias',e:'hreliquias@remax.pt'}],
+  'Montemor':[{n:'Luísa Nunes',e:'idealmor@remax.pt'},{n:'Damião Arranja',e:'darranja@remax.pt'}],
+  'Grândola':[{n:'Francisco Nunes',e:'fdnunes@remax.pt'}]
+};
+const RX=(()=>{const loja=qs.get('loja');if(!PASTA||!loja)return null;
+  const tit=(qs.get('titulo')||'').trim();const k=tit.lastIndexOf(',');
+  return{loja,av:qs.get('av')||'',site:qs.get('site')||'',lista:qs.get('lista')||'',entrada:qs.get('entrada')||'',
+    imovel:k>0?tit.slice(0,k).trim():tit,cidade:k>0?tit.slice(k+1).trim():'',
+    imp:'',comp:'',rec:'',sujo:{imp:false,comp:false},para:new Set((REMAX_COORD[loja]||[]).slice(0,1).map(c=>c.e)),enviado:null};})();
+const RES={ok:{s:'✓',t:'OK — tudo em conformidade',c:'ok'},complemento:{s:'⚠',t:'Complemento de documentação',c:'conf'},impeditivo:{s:'✕',t:'Impeditivo de escritura',c:'grave'}};
+const linhasDe=t=>String(t||'').split('\n').map(x=>x.replace(/^[\s•\-–*]+/,'').trim()).filter(Boolean);
+function rxResultado(){return linhasDe(RX.imp).length?'impeditivo':linhasDe(RX.comp).length?'complemento':'ok';}
+/* Pré-preenche a partir dos alertas (só enquanto ninguém escreveu no campo). */
+function rxPreencher(){if(!RX||!R)return;
+  const ls=g=>R.alertas.filter(a=>a.grau===g&&!/não lid|ocr/i.test(a.titulo)).map(a=>a.titulo).join('\n'); // documentos não lidos são assunto interno
+  if(!RX.sujo.imp)RX.imp=ls('grave');if(!RX.sujo.comp)RX.comp=ls('confirmar');}
+function rxCard(){
+  const r=RES[rxResultado()];const coords=REMAX_COORD[RX.loja]||[];
+  return`<section class="card nao-imprimir" id="rx-card" style="margin-bottom:1rem;border-color:#B9B1D6">
+    <h2>Relatório para a REMAX · Loja de ${esc(RX.loja)}</h2>
+    <div class="row" style="align-items:flex-end">
+      <div style="flex:1;min-width:200px"><label class="l" for="rx-imovel">Imóvel (morada)</label><br><input class="inp" style="width:100%" id="rx-imovel" value="${esc(RX.imovel)}" oninput="RX.imovel=this.value"></div>
+      <div style="flex:1;min-width:160px"><label class="l" for="rx-cidade">Cidade</label><br><input class="inp" style="width:100%" id="rx-cidade" value="${esc(RX.cidade)}" oninput="RX.cidade=this.value"></div>
+      <div><label class="l">Resultado</label><br><span id="rx-res" class="chip ${r.c}" style="font-size:13px;padding:6px 12px;font-weight:700">${r.s} ${esc(r.t)}</span></div>
+    </div>
+    <div style="margin-top:.7rem"><label class="l" for="rx-imp" style="color:var(--red-t)">✕ Impeditivo de escritura</label> <span class="nota">— partilhas, procuração, penhora… (uma linha por ponto)</span>
+      <textarea class="inp" id="rx-imp" rows="3" style="width:100%;border-color:#E8B4AF" oninput="rxCampo('imp',this.value)">${esc(RX.imp)}</textarea></div>
+    <div style="margin-top:.5rem"><label class="l" for="rx-comp" style="color:var(--amber-t)">⚠ Complemento de documentação</label> <span class="nota">— cadernetas atualizadas, licença de utilização…</span>
+      <textarea class="inp" id="rx-comp" rows="3" style="width:100%;border-color:#EBCB8F" oninput="rxCampo('comp',this.value)">${esc(RX.comp)}</textarea></div>
+    <div style="margin-top:.5rem"><label class="l" for="rx-rec">Recomendações (opcional)</label>
+      <textarea class="inp" id="rx-rec" rows="2" style="width:100%" oninput="RX.rec=this.value">${esc(RX.rec)}</textarea></div>
+    <p class="nota" style="margin:.4rem 0 0">Os campos vêm pré-preenchidos com os títulos dos alertas 🔴 e 🟡 — reescreva em linguagem para a agência. Se houver algum impeditivo, o resultado é ✕; senão, se houver complemento, é ⚠; com os dois vazios, ✓. O PDF não leva NIF, nomes dos titulares nem cópias dos documentos.</p>
+    <div style="margin-top:.7rem"><label class="l">Enviar a</label>
+      <div class="row" style="margin-top:4px;flex-wrap:wrap">${coords.map(c=>`<label style="display:inline-flex;gap:6px;align-items:center;font-size:13px"><input type="checkbox" ${RX.para.has(c.e)?'checked':''} onchange="rxPara('${c.e}',this.checked)"> ${esc(c.n)} <span class="nota">&lt;${esc(c.e)}&gt;</span></label>`).join('')}
+        <input class="inp" style="flex:1;min-width:220px" placeholder="Outro e-mail (opcional — ex.: o seu, para testar)" value="${esc(RX.extra||'')}" oninput="RX.extra=this.value"></div></div>
+    <div class="row" style="margin-top:.8rem">
+      <button class="btn" onclick="rxPrever()">👁 Pré-visualizar PDF</button>
+      <button class="btn btn-p" id="rx-btn" onclick="rxLancar()">📤 Lançar relatório e enviar por e-mail</button>
+      <span class="nota" id="rx-nota">${RX.enviado?esc(RX.enviado):''}</span>
+    </div>
+  </section>`;
+}
+window.rxCampo=(k,v)=>{RX[k]=v;RX.sujo[k]=true;const r=RES[rxResultado()];const el=$('rx-res');if(el){el.className='chip '+r.c;el.textContent=r.s+' '+r.t;}};
+window.rxPara=(e,on)=>{on?RX.para.add(e):RX.para.delete(e);};
+
+/* ── PDF (pdf-lib, Helvetica — só carateres WinAnsi) ── */
+const PDFLIB_URL='https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js';
+async function pdfLib(){if(!window.PDFLib)await new Promise((res,rej)=>{const s=document.createElement('script');s.src=PDFLIB_URL;s.onload=res;s.onerror=()=>rej(new Error('não consegui carregar o gerador de PDF'));document.head.appendChild(s);});return window.PDFLib;}
+const TROCA={'→':'->','≤':'<=','≥':'>=','✓':'','✕':'x','⚠':'!','🔴':'','🟡':'','🟢':'','\u00A0':' '};
+async function rxPDF(){
+  const {PDFDocument,StandardFonts,rgb}=await pdfLib();
+  const doc=await PDFDocument.create();doc.setTitle(`Análise — ${RX.imovel}, ${RX.cidade}`);doc.setAuthor('LBC — Solicitadora, SP, RL');
+  const F=await doc.embedFont(StandardFonts.Helvetica),FB=await doc.embedFont(StandardFonts.HelveticaBold);
+  const limpa=(s,f)=>[...String(s||'')].map(ch=>{if(ch in TROCA)return TROCA[ch];try{f.widthOfTextAtSize(ch,10);return ch;}catch(_){return'';}}).join('');
+  const W=595.28,H=841.89,M=56,LW=W-2*M;
+  const C={txt:rgb(.14,.13,.17),mut:rgb(.37,.35,.41),red:rgb(.56,.16,.13),redBg:rgb(.98,.89,.88),amb:rgb(.48,.31,.05),ambBg:rgb(.98,.94,.84),grn:rgb(.12,.37,.23),grnBg:rgb(.89,.95,.91),rose:rgb(.79,.64,.55),roxo:rgb(.36,.30,.60)};
+  let pg=doc.addPage([W,H]),y=H-M;
+  const nova=()=>{pg=doc.addPage([W,H]);y=H-M;};
+  const parte=(t,f,sz,larg)=>{const out=[];for(const par of limpa(t,f).split('\n')){let l='';for(const w of par.split(/\s+/)){const x=l?l+' '+w:w;if(f.widthOfTextAtSize(x,sz)>larg&&l){out.push(l);l=w;}else l=x;}out.push(l);}return out;};
+  const texto=(t,{f=F,sz=10.5,cor=C.txt,x=M,larg=LW,esp=1.38}={})=>{for(const l of parte(t,f,sz,larg)){if(y<M+sz*2)nova();pg.drawText(l,{x,y:y-sz,size:sz,font:f,color:cor});y-=sz*esp;}};
+  const simbolo=(tipo,cx,cy,r)=>{const cor=tipo==='impeditivo'?C.red:tipo==='complemento'?rgb(.79,.54,.07):C.grn;
+    pg.drawCircle({x:cx,y:cy,size:r,color:cor});const w=rgb(1,1,1),k=r*.42;
+    if(tipo==='impeditivo'){pg.drawLine({start:{x:cx-k,y:cy-k},end:{x:cx+k,y:cy+k},thickness:1.6,color:w});pg.drawLine({start:{x:cx-k,y:cy+k},end:{x:cx+k,y:cy-k},thickness:1.6,color:w});}
+    else if(tipo==='complemento'){pg.drawLine({start:{x:cx,y:cy+r*.5},end:{x:cx,y:cy-r*.12},thickness:1.8,color:w});pg.drawCircle({x:cx,y:cy-r*.45,size:1.1,color:w});}
+    else{pg.drawLine({start:{x:cx-r*.45,y:cy},end:{x:cx-r*.1,y:cy-r*.38},thickness:1.6,color:w});pg.drawLine({start:{x:cx-r*.1,y:cy-r*.38},end:{x:cx+r*.48,y:cy+r*.4},thickness:1.6,color:w});}};
+  const q=new Date();const dh=q.toLocaleString('pt-PT',{dateStyle:'short',timeStyle:'short'});
+  texto('LBC — SOLICITADORA, SP, RL',{f:F,sz:8.5,cor:C.mut});y-=4;
+  texto('Relatório de análise predial',{f:FB,sz:11,cor:C.roxo});y-=2;
+  texto(`${RX.imovel}${RX.cidade?', '+RX.cidade:''}`,{f:FB,sz:20});y-=2;
+  texto(`REMAX · Loja de ${RX.loja} · análise de ${dh}`,{sz:10,cor:C.mut});y-=6;
+  pg.drawLine({start:{x:M,y},end:{x:W-M,y},thickness:.8,color:C.rose});y-=16;
+  const res=rxResultado(),bg=res==='impeditivo'?C.redBg:res==='complemento'?C.ambBg:C.grnBg,fg=res==='impeditivo'?C.red:res==='complemento'?C.amb:C.grn;
+  pg.drawRectangle({x:M,y:y-30,width:LW,height:30,color:bg});simbolo(res,M+18,y-15,8);
+  pg.drawText(limpa(RES[res].t,FB),{x:M+34,y:y-19.5,size:12.5,font:FB,color:fg});y-=46;
+  const bloco=(tipo,titulo,linhas,cor)=>{if(!linhas.length)return;if(y<M+60)nova();simbolo(tipo,M+6,y-6,6);
+    pg.drawText(limpa(titulo,FB),{x:M+18,y:y-10,size:11.5,font:FB,color:cor});y-=22;
+    for(const l of linhas){if(y<M+30)nova();pg.drawText('•',{x:M+6,y:y-10.5,size:10.5,font:F,color:cor});texto(l,{x:M+18,larg:LW-18});y-=3;}y-=8;};
+  bloco('impeditivo','Impeditivo de escritura',linhasDe(RX.imp),C.red);
+  bloco('complemento','Complemento de documentação',linhasDe(RX.comp),C.amb);
+  const rec=linhasDe(RX.rec);if(rec.length){if(y<M+60)nova();texto('Recomendações',{f:FB,sz:11.5});y-=3;for(const l of rec){if(y<M+30)nova();pg.drawText('•',{x:M+6,y:y-10.5,size:10.5,font:F});texto(l,{x:M+18,larg:LW-18});y-=3;}y-=8;}
+  if(res==='ok'){texto('Os documentos analisados estão em conformidade para a escritura.',{});y-=8;}
+  const nCert=DOCS.filter(d=>d.dados&&d.dados.tipo==='certidao').length,nCad=DOCS.filter(d=>d.dados&&/urbana|rustica/.test(d.dados.tipo)).length;
+  y-=4;texto(`Documentos analisados: ${nCert} certidão(ões) permanente(s) do registo predial e ${nCad} caderneta(s) predial(ais).`,{sz:9.5,cor:C.mut});
+  // rodapé em todas as páginas
+  const pags=doc.getPages();pags.forEach((p,i)=>{p.drawLine({start:{x:M,y:M-14},end:{x:W-M,y:M-14},thickness:.5,color:C.rose});
+    p.drawText(limpa('Relatório informativo, feito sobre os documentos enviados. Não dispensa a verificação final da LBC no ato.',F),{x:M,y:M-26,size:8,font:F,color:C.mut});
+    p.drawText(`${i+1}/${pags.length}`,{x:W-M-14,y:M-26,size:8,font:F,color:C.mut});});
+  return await doc.save();
+}
+const b64=u8=>{let s='';for(let i=0;i<u8.length;i+=0x8000)s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));return btoa(s);};
+const nomePDF=()=>`${carimbo()}_Relatorio_REMAX_${(RX.imovel||'imovel').replace(/[\\/:*?"<>|#%]/g,'').replace(/\s+/g,'_').slice(0,50)}.pdf`;
+window.rxPrever=async()=>{const n=$('rx-nota');n.textContent='A gerar o PDF…';
+  try{const u8=await rxPDF();window.open(URL.createObjectURL(new Blob([u8],{type:'application/pdf'})),'_blank');n.textContent='';}catch(e){n.textContent='Erro: '+e.message;}};
+
+function rxEmailHTML(){
+  const h=new Date().getHours(),sauda=h<13?'Bom dia':h<20?'Boa tarde':'Boa noite';
+  const r=RES[rxResultado()],cor=r.c==='grave'?'#8E2A22':r.c==='conf'?'#7A4F0C':'#1F5E3A';
+  const lista=(tit,ls,c)=>ls.length?`<p style="margin:12px 0 4px;color:${c};font-weight:bold">${tit}</p><ul style="margin:0;padding-left:20px">${ls.map(l=>`<li>${esc(l)}</li>`).join('')}</ul>`:'';
+  return`<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#24212B;line-height:1.5">
+<p>${sauda},</p>
+<p>Segue em anexo o relatório da análise do imóvel <b>${esc(RX.imovel)}${RX.cidade?', '+esc(RX.cidade):''}</b>.</p>
+<p style="padding:8px 12px;border-radius:6px;background:${r.c==='grave'?'#FBE3E1':r.c==='conf'?'#FBEFD5':'#E3F2E9'};color:${cor};font-weight:bold">${r.s} ${esc(r.t)}</p>
+${lista('✕ Impeditivo de escritura',linhasDe(RX.imp),'#8E2A22')}
+${lista('⚠ Complemento de documentação',linhasDe(RX.comp),'#7A4F0C')}
+${lista('Recomendações',linhasDe(RX.rec),'#24212B')}
+<p style="margin-top:16px">Com os melhores cumprimentos,<br>${esc(nomeConta()||'LBC')}<br>LBC — Solicitadora, SP, RL</p></div>`;
+}
+/* Área REMAX: publica só os dados do relatório no site REMAX-Partilha (o porteiro lê-os
+   daí e a página dos coordenadores gera o PDF). Nada dos clientes sai para lá. */
+const PARTILHA_SITE='lbcsolicitadorapt.sharepoint.com:/sites/REMAXPartilha';
+const slug=t=>String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,60)||'imovel';
+async function rxPublicar(quando,para){
+  const dr=await (await gq(`${GRAPH}/sites/${PARTILHA_SITE}:/drive?$select=id`)).json();
+  const id=`${quando.toISOString().slice(0,16).replace(/[-:T]/g,'').replace(/^(\d{8})/,'$1-')}-${slug(RX.imovel)}`;
+  const nCert=DOCS.filter(d=>d.dados&&d.dados.tipo==='certidao').length,nCad=DOCS.filter(d=>d.dados&&/urbana|rustica/.test(d.dados.tipo)).length;
+  const dados={versao:1,id,loja:RX.loja,imovel:RX.imovel.trim(),cidade:RX.cidade.trim(),resultado:rxResultado(),
+    impeditivo:linhasDe(RX.imp),complemento:linhasDe(RX.comp),recomendacoes:linhasDe(RX.rec),
+    documentos:{certidoes:nCert,cadernetas:nCad},entrada:RX.entrada||null,enviado:quando.toISOString(),porLBC:nomeConta()||'',para};
+  await gq(`${GRAPH}/drives/${dr.id}/root:/${encodeURIComponent(RX.loja)}/Analises/${id}.json:/content`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(dados,null,2)});
+  return id;
+}
+async function lerJSON(caminho){try{const r=await fetch(`${GRAPH}/drives/${PASTA.drive}/items/${PASTA.item}:/${caminho}:/content`,{headers:{Authorization:'Bearer '+await tok()}});return r.ok?await r.json():null;}catch(_){return null;}}
+
+window.rxLancar=async()=>{
+  const n=$('rx-nota'),btn=$('rx-btn');
+  const extra=String(RX.extra||'').split(/[;,\s]+/).filter(Boolean);
+  if(extra.some(e=>!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e))){n.textContent='Verifique o «Outro e-mail».';return;}
+  const para=[...new Set([...RX.para,...extra.map(e=>e.toLowerCase())])];
+  if(!RX.imovel.trim()){n.textContent='Indique o imóvel (morada).';return;}
+  if(!para.length){n.textContent='Marque pelo menos um coordenador ou indique um e-mail.';return;}
+  const r=RES[rxResultado()];
+  if(!confirm(`Lançar o relatório «${r.s} ${r.t}» e enviar por e-mail a:\n${para.join('\n')}\n\nO processo fica concluído e o relógio da LBC para neste momento.`))return;
+  btn.disabled=true;const passo=t=>n.textContent=t;let mailOK=false;
+  try{
+    passo('A gerar o PDF…');const u8=await rxPDF();const nome=nomePDF();const quando=new Date();
+    passo('A gravar na pasta do cliente…');
+    await gq(`${GRAPH}/drives/${PASTA.drive}/items/${PASTA.item}:/${encodeURIComponent('Análises')}/${encodeURIComponent(nome)}:/content`,{method:'PUT',headers:{'Content-Type':'application/pdf'},body:u8});
+    for(const [nm,tipo,conteudo] of [[`${carimbo()}_Relatorio_analise.html`,'text/html',ficheiroHTML()],[`${carimbo()}_analise.json`,'application/json',dadosJSON()]])
+      await gq(`${GRAPH}/drives/${PASTA.drive}/items/${PASTA.item}:/${encodeURIComponent('Análises')}/${encodeURIComponent(nm)}:/content`,{method:'PUT',headers:{'Content-Type':tipo},body:conteudo});
+    passo('A enviar o e-mail…');
+    await gq(`${GRAPH}/me/sendMail`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:{
+      subject:`Análise — ${RX.imovel}${RX.cidade?', '+RX.cidade:''} · ${r.s} ${r.t}`,
+      body:{contentType:'HTML',content:rxEmailHTML()},
+      toRecipients:para.map(e=>({emailAddress:{address:e}})),
+      attachments:[{'@odata.type':'#microsoft.graph.fileAttachment',name:nome,contentType:'application/pdf',contentBytes:b64(u8)}]},saveToSentItems:true})});
+    mailOK=true;
+    passo('A registar…');
+    const reg=(await lerJSON('_remax.json'))||{versao:1,eventos:[]};
+    Object.assign(reg,{loja:RX.loja,imovel:RX.imovel,cidade:RX.cidade,av:RX.av||reg.av||'',resultado:rxResultado()});
+    (reg.eventos=reg.eventos||[]).push({quando:quando.toISOString(),entrada:RX.entrada||null,tipo:'relatorio',lado:'REMAX',resultado:rxResultado(),por:nomeConta()||$('quem').value.trim(),para,ficheiro:'Análises/'+nome,
+      impeditivo:linhasDe(RX.imp),complemento:linhasDe(RX.comp)});
+    await gq(`${GRAPH}/drives/${PASTA.drive}/items/${PASTA.item}:/_remax.json:/content`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(reg,null,2)});
+    let avisoLista='';
+    try{const idp=await rxPublicar(quando,para);reg.eventos[reg.eventos.length-1].partilha=idp;
+      await gq(`${GRAPH}/drives/${PASTA.drive}/items/${PASTA.item}:/_remax.json:/content`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(reg,null,2)});}
+    catch(e){console.info('[REMAX] área partilhada ainda não montada — só e-mail:',e.message);} // via e-mail: o site REMAX-Partilha é opcional
+    if(RX.av&&RX.site&&RX.lista){
+      try{const base=`${GRAPH}/sites/${RX.site}/lists/${RX.lista}/items/${RX.av}`;
+        const it=await (await gq(`${base}?$expand=fields($select=Notas)`)).json();
+        const dpt=quando.toLocaleString('pt-PT',{dateStyle:'short',timeStyle:'short'});
+        const linha=`[${dpt}] Relatório enviado (${r.s} ${r.t}) a ${para.join(', ')}`;
+        const f={Notas:[(it.fields&&it.fields.Notas)||'',linha].filter(Boolean).join('\n')};
+        // A análise fecha com o envio: a REMAX trata do que falta. Só reabre se entrarem novos documentos na pasta.
+        f.Estado='Concluído';f.Data_Conclusao=quando.toISOString().slice(0,10)+'T12:00:00Z';
+        await gq(`${base}/fields`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(f)});
+      }catch(e){avisoLista=' (não consegui atualizar a linha do processo: '+e.message+')';}
+    }
+    RX.enviado=`✓ Enviado a ${para.join(', ')} às ${quando.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})} · PDF em «Análises»${avisoLista}`;
+    passo(RX.enviado);
+  }catch(e){passo(mailOK?'O e-mail foi enviado, mas falhou o registo: '+e.message+' — não volte a lançar; avise a Liliana.':'Erro: '+e.message+' — o e-mail não foi enviado; pode tentar de novo.');}
+  btn.disabled=false;
+};
 </script>
 </body>
 </html>
