@@ -54,7 +54,7 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
 </head>
 <body>
 <div class="topbar">
-  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-24.6</span></div>
+  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-24.7</span></div>
   <div style="display:flex;gap:.6rem;align-items:center"><span id="login-info" style="font-size:11px;color:var(--text-faint)"></span>
     <button class="btn" id="btn-entrar" onclick="entrar()">Entrar</button>
     <button class="btn btn-p" id="btn-desc" onclick="descarregar()" disabled>Descarregar Word revisto</button></div>
@@ -114,37 +114,7 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
     <div id="proc-lista"></div>
   </div>
 
-  <div class="card">
-    <div class="card-h"><div class="num">?</div><div><div class="card-t">O que verifica nesta versão</div><div class="card-d">Regras fixas. As de negritos e redação entram depois dos primeiros DPA revistos.</div></div></div>
-    <div class="nota">
-      <b>Receção de documentos</b> — abre-se a partir da pasta do cliente no Portal (as pastas criam-se no Portal); cada documento é separado e nomeado (SIGLA_identificação_data); os lidos de imagem pedem confirmação do nome; os não reconhecidos ficam com o nome original até escolher uma sigla (OUTROS_1, OUTROS_2…) ou forçar um nome. Grava os documentos catalogados na subpasta «Catalogados», sem nunca substituir ficheiros, e atualiza lá a MATRIZ_VERIFICADOR.json; os ficheiros recebidos passam para «Recebidos», tal como vieram, e na pasta principal fica só o que falta catalogar («🧹 Arrumar a pasta» faz o mesmo nas pastas antigas). Documento que já está na pasta com os mesmos dados não se grava outra vez; com dados diferentes, surge o aviso «doc com dados novos, atualizar gerador».<br>
-      <b>Juntar e separar à mão</b> — na receção cada documento mostra as miniaturas das páginas (clique para ver em grande). «⤒ Juntar ao de cima» junta páginas que pertencem ao documento anterior; «✂ Separar» divide um bloco a partir da página indicada.<br>
-      <b>Distrate (cancelamento de hipoteca)</b> — o distrate, o termo de autenticação e a folha do registo online do ato formam um só documento. Validade de uso face à data do ato, termo de autenticação, descrição igual à da certidão predial e hipotecas em vigor na certidão iguais às inscrições a cancelar.<br>
-      <b>Sociedades (certidão comercial)</b> — todas as páginas da certidão formam um só documento. Conferidos com o DPA: código de acesso e validade, firma e NIPC, sede, capital social, objeto (compra e venda de imóveis), órgãos atuais e forma de obrigar (quem tem de intervir), mandato, sócios e quotas, e o depósito das contas do último exercício cujo prazo já terminou (até ao 15.º dia do 7.º mês após o fim do exercício ⚠).<br>
-      <b>Espaços</b> — espaços duplos, espaço antes de vírgula, ponto, ponto e vírgula, dois pontos ou parêntese; corrigidos como alteração marcada.<br>
-      <b>Por preencher</b> — «…», reticências, [ ], { }, ⚠, XXX e linhas a preencher no meio do texto.<br>
-      <b>Palavras repetidas</b> — «na na», «de de»…<br>
-      <b>Grafia</b> — «nº» em vez de «n.º».<br>
-      <b>NIF/NIPC</b> — dígito de controlo errado; o mesmo número com nomes diferentes.<br>
-      <b>Validades</b> — cartões de cidadão e certidões «válido(a) até» antes da data do ato.<br>
-      <b>Valores</b> — o número e o extenso entre parênteses não coincidem.<br>
-      <b>Concordância</b> — «o Primeira», «a Segundo», «os Segundos Outorgante»; «portador» com estado civil no feminino e vice-versa.<br>
-      <b>Procurações</b> — com a sessão iniciada, confere os códigos (PR-…) das entidades registadas e, se houver lista, os procuradores.<br>
-      <b>Documentos de apoio (piloto)</b> — com a caderneta, as certidões prediais (do prédio e da fração, ligadas pelo n.º da descrição) e as fichas dos cartões: descrição, conservatória, freguesia da descrição e da matriz, autorização de utilização, artigo, fração, freguesia, câmara do concelho certo, VPT, áreas, titular inscrito, ónus por cancelar, validade da certidão e dados de cada cartão de cidadão. Cartões digitalizados em imagem: são lidas as linhas «&lt;&lt;&lt;» do verso (com os dígitos de controlo) e a frente — o que vem de imagem fica sempre como aviso a confirmar.<br>
-      <b>Verificar documento</b> — regra de base: o que o verificador não conseguiu conferir com certeza (documento não reconhecido, campo ilegível, leitura de imagem que não bate letra a letra) aparece SEMPRE como «Verificar documento». Silêncio = conferido.<br>
-      <b>Trato sucessivo</b> — dos titulares inscritos na certidão (e usufrutos/reservas) até aos vendedores: se não forem os mesmos, reconstrói as sucessões com as habilitações e participações (óbito, data, freguesia, testamento, herdeiros com estado civil, repetindo para herdeiros falecidos) e confere que nenhum herdeiro final falta no DPA, nem o cônjuge em comunhão geral.<br>
-      <b>Correções marcadas</b> — «notaria», «á ordem», «reprsent…», «Propria», «CREDITO AGRICOLA», «Conservatória de…» sem o tipo de registo, «os Primeiros… que vende», cabeçalho PRIMEIRO/PRIMEIROS.<br>
-      <b>Termo e contrato</b> — no contrato (das partes) não pode haver «arquivo», «verifiquei», «adverti»…<br>
-      <b>Preço e pagamentos</b> — soma igual ao preço; cheques com banco, à ordem de, valor e número; transferências com IBAN; quitação. Com os comprovativos: IBAN e valor de cada transferência (sem nomes de titulares); cheque visado descrito como bancário; nome «à ordem de» diferente do cheque.<br>
-      <b>IMT e Selo</b> — guias referidas no termo (número e valor), pagas, do artigo certo; Selo 1.1 a 0,8 %; habitação própria e permanente ↔ cláusula de destino; vendedor = herança do primeiro a falecer.<br>
-      <b>Participação de Imposto do Selo</b> — o artigo vendido tem de constar da relação de bens; trato sucessivo entre heranças.<br>
-      <b>Procurações e habilitações</b> — procuração notarial ≠ autenticada; data, entidade e poderes (vender, receber o preço, artigo); habilitações referidas com número/código e data.<br>
-      <b>Toponímia</b> — morada atual no contrato; a anterior e a certidão no termo.<br>
-      <b>Certificado energético</b> — número e validade iguais ao DPA e não caducado; declaração provisória com menos de 10 anos desde a emissão; o artigo ou a descrição do prédio têm de corresponder (erro só se nenhum bater); fração certa.<br>
-      <b>Direitos de preferência (Casa Pronta)</b> — consulta impressa no dia do ato; n.º do pedido, data de disponibilização, artigo, descrição, preço e compradores iguais ao DPA; entidades notificadas referidas no DPA e a pronúncia de cada uma.<br>
-            <b>Condomínio</b> — havendo fração autónoma, o termo tem de mencionar a declaração do condomínio (art. 1424.º-A do Código Civil).
-    </div>
-  </div>
+  <!-- (24/10/2026) «O que verifica nesta versão» retirado a pedido da Liliana -->
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -561,7 +531,9 @@ function pintarProcs(){
   $('login-info').innerHTML=conta?`${esc(conta.username)} · <a href="#" onclick="sair();return false">sair</a>`:'';
   $('btn-entrar').style.display=conta?'none':'';
   $('proc-estado').textContent=conta?(PROCS.length?`${PROCS.length} entidade(s) com procuração registada — a verificação confere os códigos.`:'Sem procurações registadas.'):'Entre com a conta da LBC para a verificação conferir os códigos das procurações.';
-  $('card-proc').style.display=souAdmin()?'block':'none';
+  /* (24/10/2026) O cartão das procurações registadas deixou de aparecer (a pedido da Liliana);
+     as que já estão registadas continuam a ser conferidas. */
+  $('card-proc').style.display='none';
   if(!souAdmin())return;
   $('proc-lista').innerHTML=PROCS.length?PROCS.map(p=>`<div class="item" style="border-left-color:var(--accent)">
       <div class="cab">${esc(p.entidade)}<span class="tag">${p.codigos.length} código(s)</span><span style="margin-left:auto;font-weight:400;font-size:11px;color:var(--text-faint)">${p.atualizado?'atualizado em '+esc(p.atualizado):''}</span>
