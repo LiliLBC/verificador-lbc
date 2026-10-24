@@ -54,7 +54,7 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
 </head>
 <body>
 <div class="topbar">
-  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-24.1</span></div>
+  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-24.3</span></div>
   <div style="display:flex;gap:.6rem;align-items:center"><span id="login-info" style="font-size:11px;color:var(--text-faint)"></span>
     <button class="btn" id="btn-entrar" onclick="entrar()">Entrar</button>
     <button class="btn btn-p" id="btn-desc" onclick="descarregar()" disabled>Descarregar Word revisto</button></div>
@@ -2340,12 +2340,15 @@ function pintarFicheirosPasta(){
   const doc=/\.(pdf|jpe?g|png)$/i;
   const estado=x=>{if(!doc.test(x.name)&&!/^DC_.*\.docx$/i.test(x.name))return'';
     const c=cats[x.id];if(c)return` <span class="tag" style="background:#e7f3e9;color:#2e6b3a">✓ catalogado${c.documentos&&c.documentos.length?' → '+esc(c.documentos.join(', ')):''}</span>`;
-    if(mdocs.some(d=>!d.cat&&d.ficheiro===x.name))return` <span class="tag" style="background:#e7f3e9;color:#2e6b3a">✓ na matriz</span>`;
+    if(mdocs.some(d=>!d.cat&&!d.substituido_por&&d.ficheiro===x.name))return` <span class="tag" style="background:var(--amber-light);color:var(--amber)">na matriz antiga — por catalogar</span>`;
     return' <span class="tag" style="background:var(--amber-light);color:var(--amber)">por catalogar</span>';};
   el.innerHTML=(vers.length?`<div class="item" style="border-left-color:var(--amber);margin:.4rem 0"><div class="cab">⚠ Documentos com versão mais recente — na verificação e no gerador conta só a mais recente</div>
       <div class="nota" style="white-space:pre-wrap;margin:0">${vers.map(v=>`${esc(ROT_TIPO(v.tipo))} (${esc(v.chave)}): mais recente ${esc(v.novo)} (${esc(v.data)}); anterior(es): ${v.antigos.map(a=>`${esc(a.ficheiro)} (${esc(a.data)}${a.igual?', mesmos dados':''})`).join(', ')}`).join('\n')}</div></div>`:'')
     +`<details style="margin:.5rem 0;border:1px solid var(--border);border-radius:8px;padding:.5rem .7rem;background:var(--surface2)"${aberto===false?'':' open'}><summary style="cursor:pointer;font-size:13px;font-weight:600">📁 Pasta «${esc(REC.pasta.nome)}» — ${fs.length} ficheiro(s) recebido(s) · ${cs.length} catalogado(s)</summary>
-    <div style="margin:.4rem 0"><button class="btn" style="padding:2px 10px" onclick="recLerPasta(true)" ${REC.lendo?'disabled':''}>🔄 Voltar a ler os documentos catalogados</button></div>
+    <div style="margin:.4rem 0;display:flex;gap:.4rem;flex-wrap:wrap;align-items:center">${(()=>{const n=fs.filter(x=>/por catalogar/.test(estado(x))).length;
+      return REC.lendo?`<span class="nota" style="margin:0">⏳ A ler os documentos da pasta… (pode demorar um pouco nos digitalizados)</span>`
+        :n?`<button class="btn btn-p" style="padding:2px 12px" onclick="recLerPasta()">📥 Ler os ${n} documento(s) por catalogar</button>`:'';})()}
+      <button class="btn" style="padding:2px 10px" onclick="recLerPasta(true)" ${REC.lendo?'disabled':''}>🔄 Voltar a ler os documentos catalogados</button></div>
     <div style="font-size:11px;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:.04em;margin-top:.4rem">Recebidos (pasta principal — ficam como vieram)</div>
     <div style="font-size:12px;margin:.2rem 0 0 .2rem;line-height:1.7">${fs.map(x=>lnk(x)+estado(x)).join('<br>')||'—'}</div>
     <div style="font-size:11px;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:.04em;margin-top:.6rem">📁 ${esc(CAT_NOME)} (com a matriz)${mpdf?` · <a href="${esc(embedSP(mpdf.webUrl)||'#')}" target="_blank" rel="noopener" style="text-transform:none;letter-spacing:0;color:var(--accent-dark)">abrir a MATRIZ.pdf ↗</a>`:''}</div>
@@ -2570,6 +2573,8 @@ window.recEscolher=async id=>{
   REC.matriz=null;
   try{await recListar();REC.matriz=await recLerMatriz();}catch(e){REC.msg='Não foi possível ler a pasta: '+esc(e.message);}
   recComparar();recNomes();pintarRececao();
+  /* Como quando se abre pelo Portal: os documentos por catalogar são lidos logo (24/10/2026). */
+  if(REC.pasta===p&&!REC.lendo&&(REC.existentes||[]).some(n=>/\.(pdf|jpe?g|png)$/i.test(n)))await recLerPasta();
 };
 async function recSubpasta(nome){
   (REC.caminho=REC.caminho||{})[REC.pasta.id]=REC.pasta.nome;
@@ -2819,8 +2824,10 @@ window.recLerPasta=async(tudo)=>{
     const mdocs=REC.matriz.documentos||[];
     const docFich=d=>d.cat?(REC.catFilhos||[]).find(x=>!x.folder&&x.name===d.ficheiro):(REC.filhos||[]).find(x=>!x.folder&&x.name===d.ficheiro);
     const sel=REC.filhos.filter(x=>!x.folder&&x.name!==MATRIZ_NOME&&(/\.(pdf|jpe?g|png)$/i.test(x.name)||/^DC_.*\.docx$/i.test(x.name)));
-    /* Já catalogado: pelo id do ficheiro de origem, ou (matriz antiga) por ser ele próprio um documento da matriz. */
-    const catalogado=x=>!!REC.matriz.catalogados[x.id]||mdocs.some(d=>!d.cat&&d.ficheiro===x.name);
+    /* Já catalogado: pelo id do ficheiro de origem. Os da matriz antiga (lidos na pasta principal,
+       antes de existir «Catalogados») voltam a ser propostos para catalogar (24/10/2026): ao gravar,
+       a cópia em «Catalogados» substitui o registo antigo na matriz (mesmos dados → «igual a»). */
+    const catalogado=x=>!!REC.matriz.catalogados[x.id];
     const ler=tudo?[]:sel.filter(x=>!catalogado(x));
     let daMatriz=0;const reler=[],semFich=[];
     mdocs.filter(d=>!d.substituido_por).forEach(d=>{
@@ -2850,6 +2857,7 @@ window.recLerPasta=async(tudo)=>{
     APOIO=APOIO.filter(r=>!subst.has(r.ficheiro));
     if(ler.length){const files=[];
       for(const x of ler){const r=await gRaw(`${GRAPH}/drives/${REC.drive}/items/${x.id}/content`);if(r.ok){const f=new File([await r.blob()],x.name);files.push(f);REC.files.set(x.name,f);REC.naPasta[x.name]=x.id;}}
+      APOIO=APOIO.filter(r=>!files.some(f=>f.name===r.ficheiro&&r.daMatriz));
       await juntarApoio(files);montarLinhas(files.map(f=>f.name));if(files.length)$('rec-det').open=true;}
     else{pintarApoio();if(DOC)analisar();}
     estadoDocs([ler.length?`<span style="color:var(--amber)">${ler.length} ficheiro(s) da pasta ainda por catalogar — confirme os nomes e grave em «Catalogados» (4)</span>`:''].filter(Boolean).join(' · '));
