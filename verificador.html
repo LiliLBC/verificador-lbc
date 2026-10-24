@@ -54,7 +54,7 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
 </head>
 <body>
 <div class="topbar">
-  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-20.9</span></div>
+  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-24.1</span></div>
   <div style="display:flex;gap:.6rem;align-items:center"><span id="login-info" style="font-size:11px;color:var(--text-faint)"></span>
     <button class="btn" id="btn-entrar" onclick="entrar()">Entrar</button>
     <button class="btn btn-p" id="btn-desc" onclick="descarregar()" disabled>Descarregar Word revisto</button></div>
@@ -524,7 +524,13 @@ const GRAPH='https://graph.microsoft.com/v1.0';
 const ADMIN='liliana.cardoso@lbc-solicitadora.pt';
 let msalApp=null,conta=null,token=null,SITE=null,LID=null,COLD='Dados',PROCS=[],procEd=null;
 const tokPortal=()=>{try{return(window.opener&&window.opener.graphToken)||'';}catch(_){return'';}};
-async function tok(){if(!conta&&tokPortal()){try{if(typeof window.opener.renovarToken==='function')await window.opener.renovarToken();}catch(_){}token=tokPortal();return;}try{const r=await msalApp.acquireTokenSilent({scopes:SCOPES,account:conta});token=r.accessToken;}catch(e){await msalApp.acquireTokenRedirect({scopes:SCOPES});}}
+async function tok(){if(!conta&&tokPortal()){try{if(typeof window.opener.renovarToken==='function')await window.opener.renovarToken();}catch(_){}token=tokPortal();return;}try{const r=await msalApp.acquireTokenSilent({scopes:SCOPES,account:conta});token=r.accessToken;try{localStorage.setItem('lbc_graph_token',token);}catch(_){}}catch(e){await msalApp.acquireTokenRedirect({scopes:SCOPES});}}
+/* Barra LBC: as abas abertas daqui usam esta sessão. */
+try{Object.defineProperty(window,'graphToken',{get:()=>token||tokPortal(),configurable:true});}catch(_){}
+window.renovarToken=()=>tok();
+window.LBC_FERRAMENTA='verificador';
+window.lbcPastaAtual=()=>REC&&REC.pasta&&REC.drive?{driveId:REC.drive,id:REC.pasta.id,nome:REC.pasta.nome}:null;
+window.lbcToken=async()=>{await tok();return token;};
 async function gq(url,opt={}){await tok();const r=await fetch(url,{...opt,headers:{Authorization:'Bearer '+token,'Content-Type':'application/json',...(opt.headers||{})}});
   if(!r.ok&&r.status!==204)throw new Error(`Erro ${r.status}: ${(await r.text()).slice(0,200)}`);return r.status===204?{}:r.json();}
 async function entrar(){try{await msalApp.loginRedirect({scopes:SCOPES});}catch(e){alert('Não consegui entrar: '+e.message);}}
@@ -2558,7 +2564,7 @@ async function recInicio(){
 }
 window.recEscolher=async id=>{
   const p=REC.pastas.find(x=>x.id===id);if(!p)return;
-  REC.pasta=p;$('rec-pasta').value=p.nome;$('rec-dd').style.display='none';
+  REC.pasta=p;$('rec-pasta').value=p.nome;$('rec-dd').style.display='none';if(window.lbcBarraAtualizar)lbcBarraAtualizar();
   /* A pasta começa pela data do DPA (AAAAMMDD): passa para a data do ato, se estiver vazia. */
   const m=p.nome.match(/^(\d{4})(\d{2})(\d{2})\b/);if(m&&!$('data-ato').dataset.tocada){$('data-ato').value=`${m[1]}-${m[2]}-${m[3]}`;if(DOC)analisar();}
   REC.matriz=null;
@@ -2885,6 +2891,69 @@ pintarRececao();
 })();
 
 window._v={regras,paragrafos,valorExtenso,nifValido,corrigirParagrafo};
+</script>
+<script>
+/* ═══════════ BARRA LBC — saltar entre ferramentas com a mesma pasta (24/10/2026) ═══════════
+   Faixa fina no topo de cada ferramenta: Portal · Pasta · Gerador · Verificador · Analisador.
+   Leva sempre a pasta do cliente em que se está a trabalhar. Cada ferramenta abre numa aba
+   própria por pasta (lbc-<ferramenta>-<id da pasta>): se já estiver aberta, salta para ela em
+   vez de a recarregar — não se perde trabalho por preencher.
+   A ferramenta indica onde está com window.LBC_FERRAMENTA e, se tiver pasta escolhida dentro
+   dela, com window.lbcPastaAtual() → {driveId, id, nome}. A sessão passa de aba em aba
+   (window.graphToken / renovarToken de quem abriu; em último caso, a última guardada). */
+(function(){
+  if(window.__barraLBC)return;window.__barraLBC=true;
+  const BASE='https://lililbc.github.io';
+  const URL_={portal:BASE+'/portal-lbc/',gerador:BASE+'/portal-lbc/gerador.html',verificador:BASE+'/verificador-lbc/verificador.html',analisador:BASE+'/verificador-lbc/analisador.html'};
+  const ROT={portal:'🏠 Portal',pasta:'📂 Pasta',gerador:'✍ Gerador',verificador:'✔ Verificador',analisador:'🔎 Analisador'};
+  const aqui=()=>window.LBC_FERRAMENTA||'';
+  function ctx(){
+    try{if(typeof window.lbcPastaAtual==='function'){const c=window.lbcPastaAtual();if(c&&c.driveId&&c.id)return c;}}catch(_){}
+    const q=new URLSearchParams(location.search),p=q.get('pasta');if(!p)return null;
+    const [driveId,id]=p.split('|');return driveId&&id?{driveId,id,nome:q.get('nome')||''}:null;}
+  const link=(t,c)=>c?`${URL_[t]}?pasta=${encodeURIComponent(c.driveId+'|'+c.id)}&nome=${encodeURIComponent(c.nome||'')}`:URL_[t];
+  function irPara(nome,url){
+    // abre (ou volta a) uma aba com nome: window.open('',nome) devolve a aba existente sem a recarregar
+    let w=null;try{w=window.open('',nome);}catch(_){}
+    if(!w){window.open(url,'_blank');return;}
+    try{const h=w.location.href;if(!h||h==='about:blank')w.location.href=url;}catch(_){/* outra origem: já está aberta */}
+    try{w.focus();}catch(_){}}
+  async function token(){
+    try{if(typeof window.lbcToken==='function'){const t=await window.lbcToken();if(t)return t;}}catch(_){}
+    try{if(window.graphToken)return window.graphToken;}catch(_){}
+    try{if(window.opener&&window.opener.graphToken)return window.opener.graphToken;}catch(_){}
+    try{return localStorage.getItem('lbc_graph_token')||'';}catch(_){return'';}}
+  async function abrirPasta(){
+    const c=ctx();if(!c){alert('Escolha primeiro a pasta do cliente.');return;}
+    const w=window.open('about:blank','lbc-pasta');
+    try{const r=await fetch(`https://graph.microsoft.com/v1.0/drives/${c.driveId}/items/${c.id}?$select=webUrl`,{headers:{Authorization:'Bearer '+await token()}});
+      if(!r.ok)throw new Error(r.status);const j=await r.json();
+      const u=j.webUrl+(j.webUrl.includes('?')?'&':'?')+'env=WebView';w.location.href=u;}
+    catch(e){try{w.close();}catch(_){}alert('Não consegui abrir a pasta ('+e.message+').');}}
+  window.lbcIr=t=>{
+    if(t==='pasta')return abrirPasta();
+    const c=ctx();
+    // guardar a sessão para a aba seguinte (mesma origem: lililbc.github.io)
+    token().then(tk=>{try{if(tk)localStorage.setItem('lbc_graph_token',tk);}catch(_){}});
+    if(t==='portal')return irPara('lbc-portal',URL_.portal);
+    if(!c&&t!=='gerador'){alert('Escolha primeiro a pasta do cliente.');return;}
+    irPara(`lbc-${t}${c?'-'+c.id:''}`,link(t,c));};
+  function pintar(){
+    let b=document.getElementById('barra-lbc');
+    if(!b){b=document.createElement('nav');b.id='barra-lbc';b.setAttribute('aria-label','Ferramentas LBC');document.body.insertBefore(b,document.body.firstChild);
+      const st=document.createElement('style');st.textContent=`#barra-lbc{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;padding:5px 14px;background:#24212B;color:#EDEAF5;font:500 12px 'DM Sans',system-ui,sans-serif;position:relative;z-index:50}
+#barra-lbc .bl-m{font-weight:700;letter-spacing:.06em;margin-right:4px;color:#C9C1E3}#barra-lbc .bl-p{color:#B7B0C8;margin-right:auto;max-width:44vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#barra-lbc button{font:inherit;color:#EDEAF5;background:transparent;border:1px solid #4A4458;border-radius:999px;padding:3px 10px;cursor:pointer;min-height:26px}
+#barra-lbc button:hover{background:#3A3448}#barra-lbc button[aria-current="page"]{background:#5B4C9A;border-color:#5B4C9A;cursor:default}
+@media print{#barra-lbc{display:none!important}}`;document.head.appendChild(st);}
+    const c=ctx();
+    // esta aba fica com o nome da ferramenta+pasta, para as outras a encontrarem sem a recarregar
+    try{if(aqui()&&(!window.name||window.name.startsWith('lbc-')))window.name=aqui()==='portal'?'lbc-portal':`lbc-${aqui()}${c?'-'+c.id:''}`;}catch(_){}
+    b.innerHTML=`<span class="bl-m">LBC</span><span class="bl-p" title="${c?String(c.nome).replace(/"/g,'&quot;'):''}">${c?'📁 '+String(c.nome||'pasta do cliente').replace(/</g,'&lt;'):'sem pasta escolhida'}</span>`+
+      ['portal','pasta','gerador','verificador','analisador'].map(t=>`<button type="button" ${t===aqui()?'aria-current="page"':''} onclick="${t===aqui()?'':`lbcIr('${t}')`}" ${(!c&&t!=='portal'&&t!=='gerador'&&t!==aqui())?'disabled style="opacity:.45;cursor:default"':''}>${ROT[t]}</button>`).join('');}
+  window.lbcBarraAtualizar=pintar;
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',pintar);else pintar();
+})();
 </script>
 </body>
 </html>
