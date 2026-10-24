@@ -54,7 +54,7 @@ label.l{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:up
 </head>
 <body>
 <div class="topbar">
-  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-24.5</span></div>
+  <div><span class="page-title">Verificador de Escrituras</span><span class="page-sub">piloto · v2026-10-24.6</span></div>
   <div style="display:flex;gap:.6rem;align-items:center"><span id="login-info" style="font-size:11px;color:var(--text-faint)"></span>
     <button class="btn" id="btn-entrar" onclick="entrar()">Entrar</button>
     <button class="btn btn-p" id="btn-desc" onclick="descarregar()" disabled>Descarregar Word revisto</button></div>
@@ -711,8 +711,9 @@ function apoioCAD(L){
     freguesia:rod?rod[2]:(g(/FREGUESIA:\s*\d+\s*-\s*([^\n]+(?:\n(?!\s*ARTIGO|\s*TEVE)[A-ZÀ-Ý ]{2,30}(?=\n))?)/).replace(/\n/g,' ').trim()),
     artigo:rod?rod[4]:g(/ARTIGO MATRICIAL:\s*(\d+)/),
     fracao:rod&&rod[5]?rod[5]:g(/FRA\S{1,3}O\s+AUT\S{1,2}NOMA:\s*([A-Z]+)/i),
-    vpt:(g(/Valor patrimonial actual\s*\S{0,8}:\s*€?\s*([\d.]+[,.]\d{2})\b/i).replace(/\.(\d{2})$/,',$1')),
-    abp:g(/\S?rea bruta privativa:\s*([\d.,]+)/i),
+    /* Prédio com andares ou divisões independentes: valem os totais do prédio, não os do 1.º andar (24/10/2026). */
+    vpt:(g(/Valor patrimonial total:\s*€?\s*([\d.]+[,.]\d{2})\b/i)||g(/Valor patrimonial actual\s*\S{0,8}:\s*€?\s*([\d.]+[,.]\d{2})\b/i)).replace(/\.(\d{2})$/,',$1'),
+    abp:g(/\S?rea bruta privativa total:\s*([\d.,]+)/i)||g(/\S?rea bruta privativa:\s*([\d.,]+)/i),
     ati:g(/\S?rea do terreno integrante:\s*([\d.,]+)/i),
     emitida:g(/Emitido via internet em\s*(\d{4}-\d{2}-\d{2})/),
     /* Artigos de onde este proveio («Teve origem nos artigos»): servem para achar a correspondência
@@ -1234,10 +1235,16 @@ const mesmoNome=(a,b)=>{const A=tokNome(a),B=tokNome(b);if(!A.length||!B.length|
 /* ── Tipo de cada página ── */
 function tipoPagina(t){
   if(/Certificado\s+Energ[ée]tico|Pr[ée]-?\s*Certificado|Declara\S*\s+Provis[óo]ria/i.test(t)&&/SCE\s?\d{6,}|ADENE/i.test(t))return'SCE';
-  if(/Certid\S{1,2}o\s+de\s+Registo/i.test(t)&&/C\S{1,2}digo\s+de\s+acesso:?\s*\d{4}-\d{4}-\d{4}/i.test(t))return'CRC';
+  if((/Certid\S{1,2}o\s+de\s+Registo/i.test(t)||(/Certid\S{1,2}o\s+Permanente/i.test(t)&&/Registo\s+Comercial|\bMatr[íi]cula\b|\bNIPC\b|\bFirma:/i.test(t)))&&/C\S{1,2}digo\s+de\s+acesso:?\s*\d{4}-\d{4}-\d{4}/i.test(t))return'CRC';
   if(/CADERNETA\s+PREDIAL\s+(URBANA|R\S{1,2}STICA)/.test(t))return'CAD';
   if(ehCRP(t))return'CRP';
   if(/Consulta de Estado do Pedido|Direitos de Prefer\S+/i.test(t)&&/An[úu]ncio|Vendedor/i.test(t))return'CP';
+  /* (24/10/2026) RCBE, livrança, autorização de preenchimento, declaração de mediação, minuta de locação financeira. */
+  if(/Registo\s+Central\s+d[oe]\s+Benefici\S+\s+Efetivo|Declara\S+\s+RCBE|C\S{1,2}digo\s+RCBE/i.test(t))return'RCBE';
+  if(/preenchimento\s+d[ae]\s+(?:\S+\s+)?livran/i.test(t))return'AUTLIV';
+  if(/media(?:\S{1,3}o|dor(?:es)?)\s+imobili/i.test(t)&&/mediador|interven\S{1,3}o|IMPIC|licen\S{1,2}a/i.test(t)&&!/CONDI\S{1,3}ES\s+PARTICULARES/i.test(t))return'MED';
+  if(/LOCA\S{1,3}O\s+FINANCEIRA/i.test(t)&&/MINUTA|CONDI\S{1,3}ES\s+PARTICULARES|CONDI\S{1,3}ES\s+GERAIS/i.test(t))return'MINLF';
+  if(/\bLIVRAN\S{1,2}A\b/i.test(t)&&!/preenchimento/i.test(t))return'LIV';
   if(/IMPOSTO MUNICIPAL SOBRE AS TRANSMISS/i.test(t))return'IMT';
   if(/IMPOSTO\s+(DO\s+)?SELO\s*[-–]\s*Verba/i.test(t))return'ISV';
   if(/TRANSMISS[OÕ]ES\s+GRATUITAS/i.test(t))return'ISM1';
@@ -1277,7 +1284,10 @@ function agruparPaginas(pags){
       ((tp==='IMT'||tp==='ISV')&&tp===cur.tipo&&(!numDoc(t)||numDoc(t)===cur.num))||
       (tp==='ISM1'&&cur.tipo==='ISM1'&&(!numPart(t)||!cur.num||numPart(t)===cur.num))||
       (tp==='PROC'&&(cur.tipo==='PROCT'||cur.tipo==='PROC'||cur.tipo==='TERMOA'))||
-      (tp==='HAB'&&cur.tipo==='HAB'));
+      (tp==='HAB'&&cur.tipo==='HAB')||
+      /* A minuta é longa: as páginas seguintes ficam com ela, salvo se forem claramente outro documento. */
+      (cur.tipo==='MINLF'&&!/^(CRP|CAD|CRC|HAB|PROC|RCBE|AUTLIV|MED|LIV|IMT|ISV|ISM1|CP|SCE|DIST)$/.test(tp))||
+      (tp===cur.tipo&&/^(RCBE|AUTLIV|MED|LIV)$/.test(tp)));
     if(cont){cur.pags.push(p.pag);cur.texto+='\n'+t;if(!cur.num)cur.num=tp==='ISM1'?numPart(t):numDoc(t);if(tp==='CHQV')cur.visado=true;return;}
     cur={tipo:tp==='CHQV'?'CHQ':tp,pags:[p.pag],texto:t,num:tp==='ISM1'?numPart(t):numDoc(t),visado:tp==='CHQV'};docs.push(cur);
   });
@@ -1288,7 +1298,7 @@ function agruparPaginas(pags){
   docs.forEach(d=>{if(d.tipo==='TERMOA')d.tipo=/PROCURA/i.test(d.texto)?'PROC':'';if(d.tipo==='ANEXO')d.tipo='';if(d.tipo==='PROCT')d.tipo='PROC';if(d.tipo==='CHQ'&&/CHEQUE\s+VISADO/i.test(d.texto))d.visado=true;});
   return docs;
 }
-const ROT_NOVOS={DIST:'Distrate (cancelamento de hipoteca)',SCE:'Certificado energético',CP:'Direitos de preferência (Casa Pronta)',IMT:'Guia de IMT',ISV:'Guia de Imposto do Selo',ISM1:'Participação de Imposto do Selo',RCC:'Inscrição da herança (NIF)',PROC:'Procuração',HAB:'Habilitação de herdeiros',TOP:'Certidão de toponímia',TRF:'Comprovativo de transferência',CHQ:'Cheque'};
+const ROT_NOVOS={RCBE:'Comprovativo RCBE',LIV:'Livrança',AUTLIV:'Autorização de preenchimento de livrança',MED:'Declaração de mediação imobiliária',MINLF:'Minuta do contrato de locação financeira',DIST:'Distrate (cancelamento de hipoteca)',SCE:'Certificado energético',CP:'Direitos de preferência (Casa Pronta)',IMT:'Guia de IMT',ISV:'Guia de Imposto do Selo',ISM1:'Participação de Imposto do Selo',RCC:'Inscrição da herança (NIF)',PROC:'Procuração',HAB:'Habilitação de herdeiros',TOP:'Certidão de toponímia',TRF:'Comprovativo de transferência',CHQ:'Cheque'};
 const g1=(t,re,i=1)=>((t.match(re)||[])[i]||'').trim();
 function lerDocumento(d){
   const t=d.texto,T=AP_N(t);
@@ -1349,6 +1359,20 @@ function lerDocumento(d){
       validade:val?val.split('/').reverse().join('-'):'',data:lerData(t.split(/TERMO\s+DE\s+AUTENTICA/i)[0].slice(-600))||lerData(t),
       autenticado:/TERMO\s+DE\s+AUTENTICA|reconhe\S*\s+(?:a\s+)?assinatura/i.test(t),
       registoAto:g1(tl,/COM\s+O\s+N\S{0,3}\s*:?\s*([0-9A-Z]+\/[A-Z]?\d+)/i)};}
+  case'RCBE':{const tl=t.replace(/[ \t]+/g,' ');
+    return{tipo:'RCBE',nipc:g1(tl,/N[úu]mero\s+Fiscal\s+da\s+Entidade:?\s*\n?\s*(\d{9})/i)||g1(tl,/\bNIPC:?\s*(\d{9})/i),
+      codigo:g1(tl,/C\S{1,2}digo\s+RCBE:?\s*([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i),
+      data:(g1(tl,/submetida\s+em:?\s*(\d{2}\/\d{2}\/\d{4})/i)||g1(tl,/(\d{2}\/\d{2}\/\d{4})/)).split('/').reverse().join('-'),
+      entidade:g1(tl,/(?:Firma|Denomina\S+|Nome\s+da\s+Entidade):?\s*([^\n]{3,80})/i).replace(/^(?:ou\s+)?Denomina\S+\s*:?\s*/i,''),
+      beneficiarios:[...new Set([...tl.matchAll(/Benefici\S+\s+[Ee]fetivo[\s\S]{0,200}?Nome\(s\)\s+pr\S+prio\(s\)\s+([^\n]+)\n\s*Apelido\(s\)\s+([^\n]+)/g)].map(m=>(m[1]+' '+m[2]).replace(/\s+/g,' ').trim()))]};}
+  case'LIV':case'AUTLIV':case'MED':case'MINLF':{const tl=t.replace(/\s+/g,' ');
+    const contrato=g1(tl,/Contrato\s+de\s+Loca\S{1,3}o\s+Financeira(?:\s+Imobili\S+)?\s+n\S{0,3}\s*(\d{5,12})/i)||g1(tl,/contrato\s+n\S{0,3}\s*(\d{6,12})/i);
+    const base={tipo:d.tipo,contrato,data:lerData(tl.slice(0,4000))||''};
+    if(d.tipo==='MED')return{...base,semMediacao:/N[ãa]o\s+foi\s+objeto\s+de\s+interven/i.test(tl)&&!/AMI\s*n?\S{0,3}\s*\d{3,}/i.test(tl),ami:g1(tl,/(?:AMI|IMPIC|licen\S{1,2}a\s+de\s+media\S+)[^0-9]{0,30}(\d{3,6})/i)};
+    if(d.tipo==='MINLF')return{...base,valorCompra:eurN(g1(tl,/Valor\s+de\s+compra:?\s*([\d.]+,\d{2})/i)),financiamento:eurN(g1(tl,/Montante\s+global\s+do\s+financiamento:?\s*([\d.]+,\d{2})/i)),
+      prazo:g1(tl,/Prazo:?\s*(\d{1,3})\s*meses/i),locatario:g1(tl,/\be\s+([A-ZÀ-Ý][A-ZÀ-Ý &,.]{3,60}?(?:LDA|S\.?A\.?|UNIPESSOAL)\.?),\s*com\s+sede/),
+      artigo:g1(tl,/artigo\s+(\d{1,6})\b/i),descricao:g1(tl,/ficha\s+n\S{0,3}\s*0*(\d{1,6})/i)};
+    return{...base,numero:d.tipo==='LIV'?g1(tl,/N\S{0,2}\s*(\d{15,20})\b/):'',valor:eurN(g1(tl,/(?:Import\S+ncia|Valor)[^0-9]{0,20}([\d.]+,\d{2})/i))};}
   case'RCC':return{tipo:'RCC',nifHeranca:g1(t,/\n\s*(\d{9})\s+[A-Z][A-Z ]+-\s*CABE/),autor:g1(t,/Autor da Heran\S*[\s\S]{0,40}?Nome:\s*([^\n]+)/i)};
   case'PROC':{
     const termo=/TERMO\s+DE\s+AUTENTICA/i.test(t),notarial=!termo&&/perante mim/i.test(t)&&/not[áa]ri[ao]/i.test(t.slice(0,1500));
@@ -1365,7 +1389,7 @@ function lerDocumento(d){
     return{tipo:'HAB',forma:pshh?'pshh':'notarial',nifHeranca:g1(t,/NIF da Heran\S*:?\s*(\d{9})/i),numero:g1(t,/Habilita\S*\s+de\s+Herdeiros\s+n\S{0,3}\s*(\d+\/\d{4})/i),codigo:g1(t,/(CN-[A-Z0-9]{4,}(?:-[A-Z0-9]{3,}){2,})/i).toUpperCase(),
       data:g1(t,/Data do documento[\s\S]{0,40}?(\d{4}-\d{2}-\d{2})/i)||(pshh?lerData(g1(t,/(Data:\s*\d{1,2}\s+de\s+\w+\s+de\s+\d{4})/i)):lerData(g1(t,/(No dia [^\n]{10,120}(?:\n[^\n]{0,120})?)/i))),
       entidade:pshh?g1(t,/(Conservat\S*\s+do\s+Registo\s+Civil\s+de\s+[A-ZÀ-Ý][a-zà-ú]+)/i):g1(t,/(Cart[óo]rio Notarial(?: de)? [A-ZÀ-Ý][^\n\-]{3,40})/i),
-      falecido:(pshh?g1(t,/Autora?\s+da\s+Heran\S*,\s*([^,\n]+)/i):limpaNomeOCR(g1(t.replace(/\n/g,' '),/faleceu\s+([A-ZÀ-Ý][A-ZÀ-Ý!| ]{6,}?)(?:,|$)/))).replace(/\s+/g,' ')};}
+      falecido:(pshh?g1(t,/Autora?\s+da\s+Heran\S*,\s*([^,\n]+)/i):limpaNomeOCR(g1(t.replace(/\n/g,' '),/por\s+\S{1,2}bito\s+de\s+([A-ZÀ-Ý][A-ZÀ-Ý!| ]{6,}?)\s*,/)||g1(t.replace(/\n/g,' '),/faleceu,?\s+(?:sem\s+[a-zà-ú]+,\s*)?([A-ZÀ-Ý][A-ZÀ-Ý!| ]{6,}?)(?:,|$)/))).replace(/\s+/g,' ')};}
   case'TOP':{
     const tl=t.split('\n').filter(l=>!/^(HASH|Lu[ií]s .*\(\d|Presidente$|Data Assinatura)/i.test(l.trim())).join(' ').replace(/\s+/g,' ');
     return{tipo:'TOP',artigo:g1(tl,/sob\s+\S{1,2}\s+artigo\s+(\d+)/i)||g1(tl,/artigo\s+(\d+)\b(?!\s*\.?\s*[º°])/i),anterior:g1(tl,/anteriormente\s+situado\s+(?:n[oa]s?\s+|em\s+)?([^,]+)/i),
@@ -1395,6 +1419,10 @@ function resumoDoc(d){
   case'CP':return`pedido ${x.pedido} · disponibilizado ${x.disponivel} · artigo ${x.artigo} · descrição ${x.descricao} · preço ${euroPT(x.preco)} € · ${x.entidades.map(e=>e.n+': '+e.intencao).join('; ')} · impresso ${x.impresso?isoPT(x.impresso):'— (sem data no topo)'}${x.previsivel?' · data previsível '+x.previsivel:''}`;
   case'SCE':return`${x.provisoria?'declaração provisória':'certificado'} ${x.numero} · ${x.validade?'válido até '+isoPT(x.validade):x.emissao?'emitido em '+isoPT(x.emissao):'—'} · artigo ${x.artigo||'—'} · descrição ${x.descricao||'—'}${x.fracao?' · fração '+x.fracao:''} · ${x.morada}`;
   case'DIST':return`${x.credor||'credor?'} · cancelamento ${x.total?'total':''} de ${x.inscricoes.map(a=>'AP. '+a.num+' de '+a.data).join(' e ')||'?'} · descrição ${x.descricao||'?'}${x.freguesia?' ('+x.freguesia+')':''}${x.conservatoria?' · CRP '+x.conservatoria:''}${x.beneficiario?' · no interesse de '+x.beneficiario:''} · válido até ${isoPT(x.validade)||'?'}${x.autenticado?' · com termo de autenticação':' · SEM termo de autenticação'}`;
+  case'RCBE':return`entidade ${x.entidade||'—'} · NIPC ${x.nipc||'?'} · submetida ${isoPT(x.data)||'?'}${x.codigo?' · código '+x.codigo:''}`;
+  case'LIV':case'AUTLIV':return`contrato ${x.contrato||'?'}${x.valor?' · '+euroPT(x.valor)+' €':''}${x.data?' · '+isoPT(x.data):''}`;
+  case'MED':return`contrato ${x.contrato||'?'} · ${x.semMediacao?'sem intervenção de mediador':'com mediador'+(x.ami?' (AMI '+x.ami+')':'')} · ${isoPT(x.data)||''}`;
+  case'MINLF':return`contrato ${x.contrato||'?'} · compra ${euroPT(x.valorCompra)} € · financiamento ${euroPT(x.financiamento)} € · ${x.prazo?x.prazo+' meses':''} · locatário ${x.locatario||'?'}${x.artigo?' · artigo '+x.artigo:''}`;
   case'RCC':return`NIF da herança ${x.nifHeranca} · ${x.autor}`;
   case'PROC':return`${x.forma==='notarial'?'notarial (documento autêntico)':x.forma==='autenticada'?'autenticada':x.forma} · ${isoPT(x.data)||'data?'} · ${x.entidade||'—'}${x.cedula?' (CP '+x.cedula+')':''}${x.cartorio?' · '+x.cartorio:''} · poderes: ${x.vender?'vender':'—'}${x.receber?', receber o preço':''}${x.artigos.length?' · artigo '+x.artigos.join(', '):''}`;
   case'HAB':return`${x.forma==='pshh'?'procedimento simplificado':'escritura notarial'} · ${x.numero||x.codigo||'—'} · ${isoPT(x.data)||'data?'} · ${x.entidade||''} · ${x.falecido}`;
@@ -1657,7 +1685,7 @@ function apoioCRC(L){
   const natureza=g(/Natureza Jur[íi]dica:\s*([^\n]+)/i,1,mat);
   return{tipo:'CRC',codigo:g(/C[óo]digo de acesso:\s*(\d{4}-\d{4}-\d{4})/i),validade:val?val.split('/').reverse().join('-'):'',
     subscrita:g(/subscrita em\s*(\d{2}\/\d{2}\/\d{4})/i).split('/').reverse().join('-'),
-    nipc:g(/NIF\/NIPC:\s*(\d{9})/i,1,mat),firma:g(/Firma:\s*([^\n]+)/i,1,mat),natureza,
+    nipc:g(/(?:^|\n)\s*NIPC:\s*(\d{9})/i,1,mat)||g(/NIF\/NIPC:\s*(\d{9})/i,1,mat),firma:g(/Firma:\s*([^\n]+)/i,1,mat),natureza,
     anonima:/AN[óÓo]NIMA/i.test(natureza),quotas:/QUOTAS/i.test(natureza)||/UNIPESSOAL/i.test(natureza),
     sede:sedeM?sedeM[1].trim():'',sedeLocal:sedeM&&sedeM[2]?sedeM[2].replace(/\s+—\s+/g,', ').trim():'',sedePostal:sedeM&&sedeM[3]?sedeM[3].trim():'',
     objeto,imoveis:/compra\s+e\s+venda\s+de\s+(?:de\s+)?(?:bens\s+)?(?:im[óo]ve|imobili)|revenda\s+dos\s+(?:im[óo]veis\s+)?adquiridos|aquisi\S+\s+de\s+im[óo]veis\s+para\s+revenda/i.test(objeto),
@@ -1773,7 +1801,7 @@ function separarDocumentos(paginas){
     if(t.replace(/\s/g,'').length<250&&!/Dados de Cart|CADERNETA|Certid\S+o Permanente|Informa\S+o\s+(?:Predial\s+)?Simplificada|BOLETIM/i.test(t)){imagens++;imgPags.push(i+1);atual=null;return;}
     let ini='';
     if(/Dados de Cart[ãa]o de Cidad[ãa]o/i.test(t))ini='CC';
-    else if(/Certid\S{1,2}o\s+de\s+Registo/i.test(t)&&/C\S{1,2}digo\s+de\s+acesso:?\s*\d{4}-\d{4}-\d{4}/i.test(t))ini='CRC';
+    else if((/Certid\S{1,2}o\s+de\s+Registo/i.test(t)||(/Certid\S{1,2}o\s+Permanente/i.test(t)&&/Registo\s+Comercial|\bMatr[íi]cula\b|\bNIPC\b|\bFirma:/i.test(t)))&&/C\S{1,2}digo\s+de\s+acesso:?\s*\d{4}-\d{4}-\d{4}/i.test(t))ini='CRC';
     else if(ehCRP(t))ini='CRP';
     else if(/BOLETIM DE CONTRATO/i.test(t)&&/Caixa Geral de Dep[óo]sitos/i.test(t))ini='BC';
     else if(/CADERNETA\s+PREDIAL\s+(URBANA|R\S{1,2}STICA)/.test(t)&&!/Certificado\s+Energ/i.test(t)&&(!atual||atual.tipo!=='CAD'||/P[áa]gina\s+1\s+de/i.test(t)))ini='CAD';
@@ -1841,7 +1869,44 @@ function ocrAparar(cv){
   const cx=caixa(true)||caixa(false);if(!cx)return cv;const {x0,x1,y0,y1}=cx;
   const o=document.createElement('canvas');o.width=x1-x0;o.height=y1-y0;o.getContext('2d').drawImage(cv,x0,y0,o.width,o.height,0,0,o.width,o.height);return o;
 }
+/* Folha com vários cartões fotografados (e às vezes uma nota escrita): o OCR da folha inteira
+   só apanha a nota. Corta a folha nos blocos que tem (faixas separadas por branco) e lê cada um
+   (24/10/2026). */
+function ocrBlocos(cv){
+  const W=cv.width,H=cv.height,k=Math.max(1,Math.round(Math.max(W,H)/700));
+  const d=cv.getContext('2d').getImageData(0,0,W,H).data;
+  const tinta=(x,y)=>{const i=(y*W+x)*4;return d[i]+d[i+1]+d[i+2]<660;};
+  const faixas=(n,m,pt,minFr)=>{const v=[];for(let a=0;a<n;a++){let c=0;for(let b=0;b<m;b++)if(pt(a,b))c++;v.push(c/m>minFr);}
+    const rs=[];let s0=-1;v.forEach((x,i)=>{if(x&&s0<0)s0=i;if(!x&&s0>=0){rs.push([s0,i-1]);s0=-1;}});if(s0>=0)rs.push([s0,v.length-1]);
+    const g=Math.max(2,Math.round(n*0.015)),out=[];rs.forEach(r=>{const u=out[out.length-1];if(u&&r[0]-u[1]<=g)u[1]=r[1];else out.push([...r]);});return out;};
+  const ny=Math.floor(H/k),nx=Math.floor(W/k);
+  const linhas=faixas(ny,nx,(a,b)=>tinta(b*k,a*k),0.02).filter(r=>(r[1]-r[0])/ny>0.12);
+  const out=[];
+  for(const [y0,y1] of linhas){
+    const cols=faixas(nx,y1-y0+1,(a,b)=>tinta(a*k,(y0+b)*k),0.05).filter(r=>(r[1]-r[0])/nx>0.15);
+    const blocos=cols.length?cols:[[0,nx-1]];
+    for(const [x0,x1] of blocos){const m=Math.round(Math.max(W,H)*0.006);
+      const X0=Math.max(0,x0*k-m),Y0=Math.max(0,y0*k-m),X1=Math.min(W,(x1+1)*k+m),Y1=Math.min(H,(y1+1)*k+m);
+      if((X1-X0)*(Y1-Y0)>0.8*W*H)continue;
+      const o=document.createElement('canvas');o.width=X1-X0;o.height=Y1-Y0;o.getContext('2d').drawImage(cv,X0,Y0,o.width,o.height,0,0,o.width,o.height);out.push(o);}
+  }
+  return out;
+}
 async function ocrPagina(cv){
+  const r=await ocrUm(cv);
+  const cartao=t=>/CITIZEN CARD|<<|[A-Z0-9]{2}<PRT|CART[AÃ]O DE CIDAD/i.test(t);
+  /* Só se tenta por blocos quando a folha não deu um cartão, ou deu só o verso (sem a frente com o nome). */
+  if(r.texto.replace(/\s/g,'').length>600&&!cartao(r.texto))return r;
+  if(cartao(r.texto)&&/APELI|SURNAM|GIVEN\s+NAME/i.test(r.texto))return r;
+  let blocos=[];try{blocos=ocrBlocos(cv);}catch(_){}
+  if(blocos.length<1)return r;
+  const partes=[];for(const b of blocos)partes.push(await ocrUm(b));
+  if(!partes.some(p=>cartao(p.texto)))return r;
+  if(cartao(r.texto)&&!partes.some(p=>/APELI|SURNAM|GIVEN/i.test(p.texto)))return r;
+  /* Os blocos com cartão primeiro (a frente antes do verso), a nota no fim. */
+  return{texto:partes.map(p=>p.texto).join('\n')+'\n'+r.texto,conf:Math.max(...partes.map(p=>p.conf)),graus:partes[0].graus};
+}
+async function ocrUm(cv){
   cv=ocrAparar(cv);
   /* Imagens pequenas (cartões fotografados ou digitalizados a baixa resolução): ampliar ajuda muito o OCR. */
   if(Math.max(cv.width,cv.height)<1400){const k=Math.min(3,1800/Math.max(cv.width,cv.height)),o=document.createElement('canvas');
@@ -1917,7 +1982,7 @@ function lerMRZ(texto){
     r.cortado=l3.length>=29&&!/<$/.test(l3);}
   return r;
 }
-const CC_ROTULOS=/^(CARTAO|CIDADAO|CITIZEN|CARD|REPUBLICA|PORTUGUESA|PORTUGUESE|REPUBLIC|PORTUGAL|SEXO|SEX|ALTURA|HEIGHT|NACIONALIDADE|NATIONALITY|DATA|DATE|BIRTH|NASCIMENTO|DOCUMENTO|DOCUMENT|VALIDADE|EXPIRY|APELIDO|APELIDOS|SURNAME|NOME|NOMES|GIVEN|NAME|ASSINATURA|SIGNATURE|TITULAR|HOLDER|CIVIL|IDENTIFICACAO|PRT)$/;
+const CC_ROTULOS=/^(CARTAO|CIDADAO|CITIZEN|CARD|REPUBLICA|PORTUGUESA|PORTUGUESE|REPUBLIC|PORTUGAL|SEXO|SEX|ALTURA|HEIGHT|NACIONALIDADE|NATIONALITY|DATA|DATE|BIRTH|NASCIMENTO|DOCUMENTO|DOCUMENT|VALIDADE|EXPIRY|APELIDO|APELIDOS|SURNAME|NOME|NOMES|GIVEN|NAME|ASSINATURA|SIGNATURE|TITULAR|HOLDER|CIVIL|IDENTIFICACAO|PRT)$|APELI|SURNAM|GIVEN|NATIONAL|SIGNAT|NASCIM|VALIDAD/;
 const PARTICULA=/^(DA|DE|DO|DOS|DAS|E)$/;
 function linhasNome(texto){
   return String(texto).split('\n').map(l=>{
@@ -1930,6 +1995,9 @@ function linhasNome(texto){
 function completarNome(parte,frente){
   if(!parte||!frente)return parte||'';const p=AP_N(parte);
   for(const l of linhasNome(frente))if(l.startsWith(p)&&l.length>p.length)return l;
+  /* Verso com nomes do meio abreviados («DOS SANTOS BORR LINAN»): a linha da frente com as mesmas palavras por esta ordem. */
+  const P=p.split(' ');
+  for(const l of linhasNome(frente)){const L=l.split(' ');if(L.length===P.length&&l!==p&&P.every((x,i)=>L[i].startsWith(x)))return l;}
   return parte;
 }
 function lerFrente(texto){
@@ -1947,6 +2015,15 @@ function nifDoVerso(texto){
   return'';
 }
 /* Junta frentes e versos (pelo n.º civil, ou pela ordem das páginas) e devolve fichas CC. */
+/* Nota escrita na folha do cartão (24/10/2026): «Rua …, n.º 43, 7000-839 Évora.» e «Viúva.» / «Solteiro, maior.» */
+function notaCartao(t){
+  const o={};const L=String(t||'').split('\n').map(l=>l.trim()).filter(Boolean);
+  const mor=L.find(l=>/^(Rua|R\.|Avenida|Av\.|Largo|Travessa|Tv\.|Pra[çc]a|Estrada|Bairro|Urbaniza|Quinta|Monte|Herdade|Beco|Cal[çc]ada|Alameda)\b/i.test(l)&&/\d{4}\s?-\s?\d{3}/.test(l));
+  if(mor){const m=mor.replace(/\.$/,'').match(/^(.*?),?\s*(\d{4}\s?-\s?\d{3})\s+(.+)$/);if(m){o.arruamento=m[1].replace(/,\s*$/,'').trim();o.postal=m[2].replace(/\s/g,'');o.localidade=m[3].trim();}}
+  const ec=L.find(l=>/^(Solteir[oa]|Casad[oa]|Vi[úu]v[oa]|Divorciad[oa]|Separad[oa])\b/i.test(l));
+  if(ec)o.estadoCivil=ec.replace(/\.$/,'').trim();
+  return o;
+}
 function ccDeImagens(pags){
   const fr=[],ve=[],resto=[];
   pags.forEach(p=>{const m=lerMRZ(p.texto);
@@ -1961,10 +2038,11 @@ function ccDeImagens(pags){
       ||(ap1.length>=4?livres.find(x=>AP_N(x.texto).includes(ap1)):null)
       ||livres.find(x=>x.pag===v.pag-1)||livres.find(x=>x.pag===v.pag+1);
     if(f)f.usada=true;
-    const m=v.m,ft=f?f.texto:'';
+    /* Frente e verso na mesma página (dois cartões fotografados numa folha): a frente está no próprio texto. */
+    const m=v.m,ft=f?f.texto:v.texto.split('\n').filter(l=>!l.includes('<')).join('\n');
     const nomes=completarNome(m.nomes,ft),apel=completarNome(m.apelidos,ft);
     const avisos=[];if(!m.ok)avisos.push('alguns dígitos de controlo não bateram ('+m.avisos.join(', ')+') — pode haver um algarismo mal lido');
-    if(m.cortado&&nomes===m.nomes&&apel===m.apelidos)avisos.push('o nome do verso pode estar cortado');
+    if(m.cortado&&(nomes===m.nomes||apel===m.apelidos))avisos.push('o nome do verso pode estar cortado — confirme '+(apel===m.apelidos?'os apelidos':'os nomes próprios')+' com a frente');
     const nif=nifDoVerso(v.texto);if(!nif)avisos.push('não consegui ler o NIF');
     /* Validade plausível: o cartão vale no máximo 10 anos. Se a do verso falhou o controlo
        ou é impossível, usa a da frente; se nenhuma serve, fica em branco. */
@@ -1974,7 +2052,7 @@ function ccDeImagens(pags){
     if(!validade)avisos.push('não consegui ler a validade');
     fichas.push({pags:[f?.pag,v.pag].filter(Boolean).sort((a,b)=>a-b),avisos,
       dados:{tipo:'CC',ocr:true,nome:[nomes,apel].filter(Boolean).join(' '),partes:m.cortado&&nomes===m.nomes&&apel===m.apelidos?[nomes,apel]:null,numero:m.numero||f?.f.numero||'',
-        validade,nif,nascimento:m.nascimento||'',localidade:'',postal:'',arruamento:''}});
+        validade,nif,nascimento:m.nascimento||'',localidade:'',postal:'',arruamento:'',...notaCartao(v.texto+'\n'+(f?f.texto:''))}});
   });
   fr.filter(x=>!x.usada).forEach(f=>fichas.push({pags:[f.pag],avisos:['só tenho a frente — junte também o verso (as linhas «<<<» são as que se leem bem)','não consegui ler o NIF'],
     dados:{tipo:'CC',ocr:true,nome:[f.f.nomes,f.f.apelidos].filter(Boolean).join(' '),numero:f.f.numero||'',validade:f.f.validade||'',nif:'',nascimento:'',localidade:'',postal:'',arruamento:''}}));
@@ -2130,7 +2208,8 @@ const SIGLAS=[['CC','Cartão de cidadão'],['CRP','Certidão permanente predial'
   ['IMT','Guia de IMT'],['IS','Guia de Imposto do Selo'],['PART-IS','Participação de Imposto do Selo'],['HAB','Habilitação de herdeiros'],['PROC','Procuração'],
   ['TOP','Certidão de toponímia'],['SCE','Certificado energético'],['CP','Preferências (Casa Pronta)'],['TRF','Comprovativo de transferência'],['CHQ','Cheque'],
   ['CRC','Certidão de registo comercial'],['DIST','Distrate (cancelamento de hipoteca)'],['BC','Boletim de contrato CGD'],['DC','Documento complementar CGD'],['AU','Autorização de utilização'],['FTH','Ficha técnica da habitação'],
-  ['RCC','NIF da herança'],['OUTROS','Outros']];
+  ['RCC','NIF da herança'],['RCBE','Comprovativo RCBE'],['LIV','Livrança'],['AUT-LIV','Autorização de preenchimento de livrança'],
+  ['MED','Declaração de mediação imobiliária'],['MIN-LF','Minuta do contrato de locação financeira'],['OUTROS','Outros']];
 const ROT_SIGLA=Object.fromEntries(SIGLAS);
 const MATRIZ_NOME='MATRIZ_VERIFICADOR.json';
 /* Pasta onde ficam os documentos catalogados e a matriz (20/10/2026). Substitui «_originais»:
@@ -2179,7 +2258,7 @@ const isoDe=s=>{let m=String(s||'').match(/(\d{4})-(\d{2})-(\d{2})/);if(m)return
 function siglaDe(r){
   if(!r)return'';
   if(r.tipo==='CAD')return r.dados&&r.dados.natureza==='rústica'?'CPR':'CPU';
-  return({CRP:'CRP',CRC:'CRC',CC:'CC',BC:'BC',DC:'DC',N_IMT:'IMT',N_ISV:'IS',N_ISM1:'PART-IS',N_RCC:'RCC',N_PROC:'PROC',N_HAB:'HAB',N_TOP:'TOP',N_SCE:'SCE',N_CP:'CP',N_TRF:'TRF',N_CHQ:'CHQ',N_DIST:'DIST'})[r.tipo]||'';
+  return({CRP:'CRP',CRC:'CRC',CC:'CC',BC:'BC',DC:'DC',N_IMT:'IMT',N_ISV:'IS',N_ISM1:'PART-IS',N_RCC:'RCC',N_PROC:'PROC',N_HAB:'HAB',N_TOP:'TOP',N_SCE:'SCE',N_CP:'CP',N_TRF:'TRF',N_CHQ:'CHQ',N_DIST:'DIST',N_RCBE:'RCBE',N_LIV:'LIV',N_AUTLIV:'AUT-LIV',N_MED:'MED',N_MINLF:'MIN-LF'})[r.tipo]||'';
 }
 /* Identificação para o nome: só o que foi lido; se faltar, fica SIGLA_1, SIGLA_2… */
 function identDe(r){
@@ -2201,6 +2280,9 @@ function identDe(r){
   case'N_CP':return (x.pedido||'').replace(/\//g,'-');
   case'N_TRF':return x.valor?j(String(x.valor).replace('.',','),isoDe(x.data)):'';
   case'N_CHQ':return x.numero||'';
+  case'N_RCBE':return j(x.nipc,isoDe(x.data));
+  case'N_LIV':return x.contrato||x.numero||'';
+  case'N_AUTLIV':case'N_MED':case'N_MINLF':return x.contrato||'';
   case'N_DIST':return j(parteNome((()=>{const w=(x.credor||'').split(/[\s,]+/).filter(w=>w.length>1&&!/^S\.?A\.?$/i.test(w));return w[0]&&w[0].length<=4&&w[1]?w[0]+w[1]:w[0]||'';})()),(x.descricao||'').split(/[ ,e]+/)[0],isoDe(x.data));
   }
   return'';
@@ -2210,7 +2292,7 @@ const baseOriginal=f=>f.replace(/\.[^.]+$/,'');
    traz um só documento (num ficheiro com vários, o nome original não é de nenhum em particular)
    («CC_MariePeixoto (2).pdf» → CC_MARIEPEIXOTO); nomes sem significado («scan0001»,
    «IMG_2034», «documento (3)») ficam numerados: SIGLA_1, SIGLA_2… */
-const PAL_TIPO=/\b(cc|cartao|cidadao|crp|certidao|permanente|predial|crc|comercial|dist|distrate|cancelamento|hipoteca|registo|consulta|cpu|cpr|caderneta|urbana|rustica|imt|is|imposto|selo|guia|duc|part|participacao|hab|habilitacao|herdeiros|pshh|proc|procuracao|top|toponimia|sce|certificado|energetico|cp|preferencia|preferencias|casa|pronta|trf|transferencia|comprovativo|chq|cheque|bc|boletim|dc|complementar|au|autorizacao|utilizacao|fth|ficha|tecnica|rcc|outros|doc|documento|copia|scan|digitalizacao|digitalizado|img|imagem|image|file|ficheiro|pdf|whatsapp|untitled|sem|titulo|novo|merged|final|pagamentos|pagamento|docs|documentos)\b/g;
+const PAL_TIPO=/\b(cc|cartao|cidadao|crp|certidao|permanente|predial|crc|comercial|dist|distrate|cancelamento|hipoteca|registo|consulta|cpu|cpr|caderneta|urbana|rustica|imt|is|imposto|selo|guia|duc|part|participacao|hab|habilitacao|herdeiros|pshh|proc|procuracao|top|toponimia|sce|certificado|energetico|cp|preferencia|preferencias|casa|pronta|trf|transferencia|comprovativo|chq|cheque|bc|boletim|dc|complementar|au|autorizacao|utilizacao|fth|ficha|tecnica|rcc|rcbe|livranca|liv|aut|preenchimento|med|mediacao|declaracao|minuta|min|lf|locacao|financeira|rubricada|contrato|outros|doc|documento|copia|scan|digitalizacao|digitalizado|img|imagem|image|file|ficheiro|pdf|whatsapp|untitled|sem|titulo|novo|merged|final|pagamentos|pagamento|docs|documentos)\b/g;
 function identOriginal(fn){
   let b=semAcento(baseOriginal(fn)).toLowerCase().replace(/\(\d+\)/g,' ').replace(/^[0-9a-f]{8}-/,'').replace(/[_\-.]+/g,' ');
   b=b.replace(/\b(scan|img|image|imagem|dsc|pxl|foto|photo|doc|wa)\d+\b/g,' ').replace(PAL_TIPO,' ').replace(/\b\w*\d\w*\b/g,' ').replace(/\s+/g,' ').trim();
