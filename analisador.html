@@ -60,7 +60,7 @@ input.inp,textarea.inp,select.inp{font:inherit;font-size:13px;padding:7px 10px;b
 </head>
 <body>
 <div class="topbar">
-  <div><span class="tt">Analisador predial</span><span class="sub">piloto · v2026-10-24.6</span></div>
+  <div><span class="tt">Analisador predial</span><span class="sub">piloto · v2026-10-25.2</span></div>
   <div class="row"><span id="pasta-info" class="nota"></span></div>
 </div>
 <div class="wrap">
@@ -717,7 +717,8 @@ window.descarregar=()=>{const a=document.createElement('a');a.href=URL.createObj
 const REMAX_COORD={
   'Beja':[{n:'Tânia Freitas',e:'taniafreitas@remax.pt'},{n:'Hugo Relíquias',e:'hreliquias@remax.pt'}],
   'Montemor':[{n:'Luísa Nunes',e:'idealmor@remax.pt'},{n:'Damião Arranja',e:'darranja@remax.pt'}],
-  'Grândola':[{n:'Francisco Nunes',e:'fdnunes@remax.pt'}]
+  'Grândola':[{n:'Francisco Nunes',e:'fdnunes@remax.pt'}],
+  'Évora':[]
 };
 const RX=(()=>{const loja=qs.get('loja');if(!PASTA||!loja)return null;
   const tit=(qs.get('titulo')||'').trim();const k=tit.lastIndexOf(',');
@@ -848,7 +849,8 @@ async function rxPDF(){
     resultado:rxResultado(),impeditivo:linhasDe(RX.imp),complemento:linhasDe(RX.comp),recomendacoes:linhasDe(RX.rec),documentos:{certidoes:nCert,cadernetas:nCad}});
 }
 const b64=u8=>{let s='';for(let i=0;i<u8.length;i+=0x8000)s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));return btoa(s);};
-const nomePDF=()=>`${carimbo()}_Relatorio_REMAX_${(RX.imovel||'imovel').replace(/[\\/:*?"<>|#%]/g,'').replace(/\s+/g,'_').slice(0,50)}.pdf`;
+/* Nome pelo imóvel — rua, número e localidade, como a pasta (25/10/2026). */
+const nomePDF=()=>`${`${RX.imovel||'Imóvel'}${RX.cidade?', '+RX.cidade:''}`.replace(/[\\/:*?"<>|#%]/g,'').replace(/\s+/g,' ').trim().slice(0,90)} – Análise ${carimbo().slice(0,10)}.pdf`;
 window.rxPrever=async()=>{const n=$('rx-nota');n.textContent='A gerar o PDF…';
   try{const u8=await rxPDF();window.open(URL.createObjectURL(new Blob([u8],{type:'application/pdf'})),'_blank');n.textContent='';}catch(e){n.textContent='Erro: '+e.message;}};
 
