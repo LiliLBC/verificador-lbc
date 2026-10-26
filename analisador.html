@@ -193,8 +193,10 @@ function lerCertidao(linhas){
   const area=k=>{const m=descTxt.match(new RegExp(k+':\\s*([\\d.,]+)\\s*M2','i'));return m?num(m[1]):NaN;};
   c.areaTotal=area('[ÁA]REA TOTAL');c.areaDescoberta=area('[ÁA]REA DESCOBERTA');c.areaCoberta=area('[ÁA]REA COBERTA');
   for(let i=0;i<desc.length;i++){
-    const m=desc[i].match(/^MATRIZ n[ºo°]\s*:?\s*(\d+)(?:\s+NATUREZA:\s*(\S+))?/i);
-    if(m){const mz={artigo:m[1],natureza:m[2]?(/r[úu]st/i.test(m[2])?'rústica':/urb/i.test(m[2])?'urbana':m[2].toLowerCase()):''};
+    /* «2-P» (26/10/2026): artigo provisório na data da descrição; depois da avaliação da AT passa a
+       definitivo com o mesmo número — compara-se com a caderneta do artigo 2 (ou o modelo 1 do IMI). */
+    const m=desc[i].match(/^MATRIZ n[ºo°]\s*:?\s*(\d+)(\s*-\s*P\b)?(?:\s+NATUREZA:\s*(\S+))?/i);
+    if(m){const mz={artigo:m[1],provisorio:!!m[2],natureza:m[3]?(/r[úu]st/i.test(m[3])?'rústica':/urb/i.test(m[3])?'urbana':m[3].toLowerCase()):''};
       const s=(desc[i+1]||'').match(/^SEC[ÇC][ÃA]O N[ºo°]\s*:?\s*(\S+)/i);if(s){mz.seccao=s[1];i++;}
       c.matrizes.push(mz);}
   }
@@ -391,9 +393,9 @@ function analisar(docs,opc){
       else if(naoLidos.length){p.cads.push({mz,cd:null});A('confirmar',`${nomeP} — caderneta do artigo ${mz.artigo}${mz.seccao?'-'+mz.seccao:''} não lida`,
         `Não há caderneta lida para este artigo, mas há ${naoLidos.length} documento(s) por ler (${naoLidos.map(x=>x.nome).join(', ')}). Confirmar se é a caderneta e verificar no documento os titulares, a área e o valor.`,`Certidão ${c.numero}: MATRIZ nº ${mz.artigo}`,p.id);}
       else{p.cads.push({mz,cd:null});A('grave',`${nomeP} — falta a caderneta do artigo ${mz.natureza==='rústica'?'rústico':'urbano'} ${mz.artigo}${mz.seccao?'-'+mz.seccao:''}`,
-        `A certidão indica o artigo ${mz.artigo}${mz.seccao?', secção '+mz.seccao:''} (${mz.natureza}), mas não há caderneta correspondente entre os documentos.`,`Certidão ${c.numero}: MATRIZ nº ${mz.artigo}`,p.id);}
+        `A certidão indica o artigo ${mz.artigo}${mz.seccao?', secção '+mz.seccao:''} (${mz.natureza}), mas não há caderneta correspondente entre os documentos.${mz.provisorio?` Na descrição o artigo está como provisório («${mz.artigo}-P»): basta a caderneta já com o artigo ${mz.artigo} definitivo ou o modelo 1 do IMI desse artigo.`:''}`,`Certidão ${c.numero}: MATRIZ nº ${mz.artigo}`,p.id);}
     });
-    V('Artigos (certidão / cadernetas)',p.cads.length&&p.cads.every(x=>x.cd)?'ok':naoLidos.length||!p.cads.length?'confirmar':'grave',p.cads.map(x=>`${x.mz.artigo}${x.mz.fracao?'-'+x.mz.fracao:''}${x.mz.seccao?'-'+x.mz.seccao:''} ${x.mz.natureza==='rústica'?'R':'U'}${x.cd?'':' (sem caderneta)'}`).join(' + ')||'sem artigos');
+    V('Artigos (certidão / cadernetas)',p.cads.length&&p.cads.every(x=>x.cd)?'ok':naoLidos.length||!p.cads.length?'confirmar':'grave',p.cads.map(x=>`${x.mz.artigo}${x.mz.fracao?'-'+x.mz.fracao:''}${x.mz.seccao?'-'+x.mz.seccao:''} ${x.mz.natureza==='rústica'?'R':'U'}${x.mz.provisorio?(x.cd?' (P na descrição; definitivo na caderneta)':' (P na descrição)'):''}${x.cd?'':' (sem caderneta)'}`).join(' + ')||'sem artigos');
     /* natureza */
     const temR=p.cads.some(x=>x.mz.natureza==='rústica'),temU=p.cads.some(x=>x.mz.natureza==='urbana');
     const natOK=c.fracao?(temU&&!temR)||!p.cads.length:c.natureza==='misto'?(temR&&temU):c.natureza==='rústico'?(temR&&!temU):c.natureza==='urbano'?(temU&&!temR):true;
@@ -762,7 +764,7 @@ window.descarregar=()=>{const a=document.createElement('a');a.href=URL.createObj
 /* ═══════════ RELATÓRIO PARA A REMAX (24/10/2026) ═══════════
    Só aparece quando o Analisador é aberto a partir de um processo REMAX do Portal
    (parâmetros loja, av, site, lista). A LBC escreve em cada campo:
-     ✕ Impeditivo de escritura  · ⚠ Complemento de documentação · Recomendações
+     ✕ Impeditivo de escritura  · ⚠ Recomendação · Outras recomendações
    e o resultado sai sozinho (impeditivo > complemento > OK).
    «Lançar relatório e enviar por e-mail»:
      1. gera o PDF para a REMAX (sem NIF, sem nomes dos titulares, sem documentos);
@@ -783,7 +785,7 @@ const RX=(()=>{const loja=qs.get('loja');if(!PASTA||!loja)return null;
   return{loja,av:qs.get('av')||'',site:qs.get('site')||'',lista:qs.get('lista')||'',entrada:qs.get('entrada')||'',
     imovel:k>0?tit.slice(0,k).trim():tit,cidade:k>0?tit.slice(k+1).trim():'',
     imp:'',comp:'',rec:'',sujo:{imp:false,comp:false},para:new Set((REMAX_COORD[loja]||[]).slice(0,1).map(c=>c.e)),enviado:null};})();
-const RES={ok:{s:'✓',t:'OK — tudo em conformidade',c:'ok'},complemento:{s:'⚠',t:'Complemento de documentação',c:'conf'},impeditivo:{s:'✕',t:'Impeditivo de escritura',c:'grave'}};
+const RES={ok:{s:'✓',t:'OK — tudo em conformidade',c:'ok'},complemento:{s:'⚠',t:'Recomendação',c:'conf'},impeditivo:{s:'✕',t:'Impeditivo de escritura',c:'grave'}};
 const linhasDe=t=>String(t||'').split('\n').map(x=>x.replace(/^[\s•\-–*]+/,'').trim()).filter(Boolean);
 function rxResultado(){return linhasDe(RX.imp).length?'impeditivo':linhasDe(RX.comp).length?'complemento':'ok';}
 /* Pré-preenche a partir dos alertas (só enquanto ninguém escreveu no campo). */
@@ -801,9 +803,9 @@ function rxCard(){
     </div>
     <div style="margin-top:.7rem"><label class="l" for="rx-imp" style="color:var(--red-t)">✕ Impeditivo de escritura</label> <span class="nota">— partilhas, procuração, penhora… (uma linha por ponto)</span>
       <textarea class="inp" id="rx-imp" rows="3" style="width:100%;border-color:#E8B4AF" oninput="rxCampo('imp',this.value)">${esc(RX.imp)}</textarea></div>
-    <div style="margin-top:.5rem"><label class="l" for="rx-comp" style="color:var(--amber-t)">⚠ Complemento de documentação</label> <span class="nota">— cadernetas atualizadas, licença de utilização…</span>
+    <div style="margin-top:.5rem"><label class="l" for="rx-comp" style="color:var(--amber-t)">⚠ Recomendação</label> <span class="nota">— cadernetas atualizadas, licença de utilização…</span>
       <textarea class="inp" id="rx-comp" rows="3" style="width:100%;border-color:#EBCB8F" oninput="rxCampo('comp',this.value)">${esc(RX.comp)}</textarea></div>
-    <div style="margin-top:.5rem"><label class="l" for="rx-rec">Recomendações (opcional)</label>
+    <div style="margin-top:.5rem"><label class="l" for="rx-rec">Outras recomendações (opcional)</label>
       <textarea class="inp" id="rx-rec" rows="2" style="width:100%" oninput="RX.rec=this.value">${esc(RX.rec)}</textarea></div>
     <p class="nota" style="margin:.4rem 0 0">Os campos vêm pré-preenchidos com os títulos dos alertas 🔴 e 🟡 — reescreva em linguagem para a agência. Se houver algum impeditivo, o resultado é ✕; senão, se houver complemento, é ⚠; com os dois vazios, ✓. O PDF não leva NIF, nomes dos titulares nem cópias dos documentos.</p>
     <div style="margin-top:.7rem"><label class="l">Enviar a</label>
@@ -884,15 +886,15 @@ async function pdfRelatorioREMAX(PDFLib,d){
         for(const l of ls){txt(l,M+18,y-10.5,F,10.5,C.txt);y-=14.5;}y-=4;}
       y-=4;}
     y-=12;};
-  seccao('impeditivo','O que impede a escritura',d.impeditivo,C.red);
-  seccao('complemento','Documentação a completar',d.complemento,C.amb);
+  seccao('impeditivo','Impeditivo de escritura',d.impeditivo,C.red);
+  seccao('complemento','Recomendação',d.complemento,C.amb);
   /* Pontos em conformidade escritos pela LBC (26/10/2026): secção verde com a lista. */
-  if(d.conforme&&d.conforme.length)seccao('ok','Em conformidade',d.conforme,C.grnT);
+  if(d.conforme&&d.conforme.length)seccao('ok','OK',d.conforme,C.grnT);
   else if(d.resultado==='ok'){ // nada a apontar: uma secção verde, no mesmo desenho das outras
-    simbolo('ok',M+6,y-5,6);txt('EM CONFORMIDADE',M+18,y-9,FB,9.5,C.grnT);y-=16;
+    simbolo('ok',M+6,y-5,6);txt('OK',M+18,y-9,FB,9.5,C.grnT);y-=16;
     pg.drawLine({start:{x:M,y},end:{x:W-M,y},thickness:.6,color:C.linha});y-=10;
     for(const l of parte(frasesResumo(d),F,10.5,LW-18)){txt(l,M+18,y-10.5,F,10.5,C.txt);y-=14.5;}y-=16;}
-  seccao(null,'Recomendações',d.recomendacoes,C.roxo);
+  seccao(null,'Outras recomendações',d.recomendacoes,C.roxo);
   if(d.documentos&&(d.documentos.certidoes||d.documentos.cadernetas)){precisa(30);pg.drawLine({start:{x:M,y},end:{x:W-M,y},thickness:.6,color:C.linha});y-=14;
     const nc=d.documentos.certidoes,nk=d.documentos.cadernetas;
     txt(`Documentos analisados: ${nc} ${nc===1?'certidão permanente':'certidões permanentes'} do registo predial e ${nk} ${nk===1?'caderneta predial':'cadernetas prediais'}.`,M,y-9,F,9,C.mut);y-=16;}
@@ -922,8 +924,8 @@ function rxEmailHTML(){
 <p>${sauda},</p>
 <p>Segue em anexo o relatório da análise do imóvel <b>${esc(RX.imovel)}${RX.cidade?', '+esc(RX.cidade):''}</b>.</p>
 <div style="padding:10px 14px;border-radius:6px;border-left:4px solid ${cor};background:${r.c==='grave'?'#FDEEEC':r.c==='conf'?'#FFF7E6':'#EEF7F1'}"><b style="color:${cor}">${r.s} ${esc(r.t)}</b><br><span>${esc(frasesResumo({resultado:rxResultado(),impeditivo:linhasDe(RX.imp),complemento:linhasDe(RX.comp)}))}</span></div>
-${lista('✕ O que impede a escritura',linhasDe(RX.imp),'#8E2A22')}
-${lista('⚠ Documentação a completar',linhasDe(RX.comp),'#7A4F0C')}
+${lista('✕ Impeditivo de escritura',linhasDe(RX.imp),'#8E2A22')}
+${lista('⚠ Recomendação',linhasDe(RX.comp),'#7A4F0C')}
 ${lista('Recomendações',linhasDe(RX.rec),'#24212B')}
 <p style="margin-top:16px">Com os melhores cumprimentos,<br>${esc((R&&R.por)||nomeConta()||'LBC')}<br>LBC — Solicitadora, SP, RL</p></div>`;
 }
