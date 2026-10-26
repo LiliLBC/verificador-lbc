@@ -60,7 +60,7 @@ input.inp,textarea.inp,select.inp{font:inherit;font-size:13px;padding:7px 10px;b
 </head>
 <body>
 <div class="topbar">
-  <div><span class="tt">Analisador predial</span><span class="sub">piloto · v2026-10-25.2</span></div>
+  <div><span class="tt">Analisador predial</span><span class="sub">piloto · v2026-10-26.2</span></div>
   <div class="row"><span id="pasta-info" class="nota"></span></div>
 </div>
 <div class="wrap">
@@ -72,9 +72,10 @@ input.inp,textarea.inp,select.inp{font:inherit;font-size:13px;padding:7px 10px;b
       <input id="fich" type="file" multiple accept=".pdf,.PDF,application/pdf" style="display:none">
     </label>
     <div class="row" id="pasta-acoes" style="margin-top:.7rem;display:none">
-      <button class="btn" onclick="carregarDaPasta()">📂 Ler os PDF da pasta do cliente</button>
+      <button class="btn" onclick="carregarDaPasta()">📂 Certidões e cadernetas da pasta</button>
       <span class="nota" id="pasta-nota"></span>
     </div>
+    <div id="pasta-escolha" style="display:none;margin-top:.5rem"></div>
     <div class="docs" id="docs"></div>
     <div class="row" style="margin-top:.8rem">
       <div id="campo-ato"><label class="l" for="data-ato">Data da escritura</label><br><input class="inp" type="date" id="data-ato"></div>
@@ -619,17 +620,60 @@ if(PASTA){$('pasta-acoes').style.display='flex';$('pasta-info').textContent=PAST
 if(PASTA)setTimeout(()=>{if(tokPortal()&&!DOCS.length)window.carregarDaPasta();},400);
 /* Análises REMAX: não há escritura marcada — os prazos contam a partir de hoje. */
 if(qs.get('loja'))$('campo-ato').style.display='none';
+/* Só certidões permanentes e cadernetas (26/10/2026). O analisador serve apenas para
+   comparar a descrição na conservatória com a inscrição matricial; os outros documentos
+   são do verificador. 1) Se a pasta já passou no verificador, lê só os CRP_, CPU_ e CPR_
+   de «Catalogados» (já reconhecidos). 2) Se não, mostra os PDF da pasta com os que
+   parecem certidões ou cadernetas já marcados, e lê só os marcados. */
+const ehSiglaAnl=n=>/^(CRP|CPU|CPR)_/i.test(n);
+const pareceAnl=n=>/certid|permanente|predial|caderneta|\bcrp\b|\bcpu\b|\bcpr\b|matricial|artigo|\bdescri/i.test(n.replace(/[_.-]/g,' '));
+let ESC_ANL=[];
+async function lerVarios(fichs){
+  const n=$('pasta-nota'),ja=new Set(DOCS.map(d=>d.nome));const fila=fichs.filter(f=>!ja.has(f.name));let k=0,feitos=0;
+  const um=async f=>{const b=await (await gq(`${GRAPH}/drives/${PASTA.drive}/items/${f.id}/content`)).arrayBuffer();return b;};
+  /* descarrega 3 de cada vez e lê pela ordem */
+  for(let i=0;i<fila.length;i+=3){const lote=fila.slice(i,i+3);const bufs=await Promise.all(lote.map(um));
+    for(let x=0;x<lote.length;x++){n.textContent=`A ler ${++k}/${fila.length}: ${lote[x].name}`;await lerFicheiro(lote[x].name,bufs[x]);feitos++;}}
+  return feitos;
+}
 window.carregarDaPasta=async()=>{
-  const n=$('pasta-nota');n.textContent='A ler a pasta…';
+  const n=$('pasta-nota'),box=$('pasta-escolha');n.textContent='A ver a pasta…';box.style.display='none';
   try{
     const lista=async id=>((await (await gq(`${GRAPH}/drives/${PASTA.drive}/items/${id}/children?$top=500&$select=id,name,file,folder`)).json()).value||[]);
     const raiz=await lista(PASTA.item);const cat=raiz.find(x=>x.folder&&/^catalogados$/i.test(x.name));
-    const fichs=[...raiz,...(cat?await lista(cat.id):[])].filter(x=>x.file&&/\.pdf$/i.test(x.name)&&!/relat[óo]rio|matriz/i.test(x.name));
-    const ja=new Set(DOCS.map(d=>d.nome));let k=0;
-    for(const f of fichs){if(ja.has(f.name))continue;n.textContent=`A ler ${++k}/${fichs.length}: ${f.name}`;
-      const b=await (await gq(`${GRAPH}/drives/${PASTA.drive}/items/${f.id}/content`)).arrayBuffer();await lerFicheiro(f.name,b);}
-    n.textContent=`${fichs.length} PDF lido(s). Os que não forem certidões ou cadernetas ficam como «não reconhecido» e podem ser retirados.`;
+    const catF=cat?(await lista(cat.id)).filter(x=>x.file&&/\.pdf$/i.test(x.name)):[];
+    const doVerif=catF.filter(x=>ehSiglaAnl(x.name));
+    if(doVerif.length){const f=await lerVarios(doVerif);
+      n.textContent=`${doVerif.length} certidão(ões)/caderneta(s) já catalogadas pelo verificador${f<doVerif.length?' ('+(doVerif.length-f)+' já estavam lidas)':''}. Para juntar outro PDF, largue-o aqui em cima ou use «Escolher outros PDF da pasta».`;
+      box.style.display='block';box.innerHTML=`<button class="btn" onclick="escolherPDFpasta()" style="font-size:12px">Escolher outros PDF da pasta</button>`;
+      return;}
+    await escolherPDFpasta(raiz,catF);
   }catch(e){n.textContent='Erro: '+e.message;}
+};
+window.escolherPDFpasta=async(raiz,catF)=>{
+  const n=$('pasta-nota'),box=$('pasta-escolha');
+  try{
+    if(!raiz){const lista=async id=>((await (await gq(`${GRAPH}/drives/${PASTA.drive}/items/${id}/children?$top=500&$select=id,name,file,folder`)).json()).value||[]);
+      raiz=await lista(PASTA.item);const cat=raiz.find(x=>x.folder&&/^catalogados$/i.test(x.name));catF=cat?(await lista(cat.id)).filter(x=>x.file&&/\.pdf$/i.test(x.name)):[];}
+    const ja=new Set(DOCS.map(d=>d.nome));
+    ESC_ANL=[...raiz.filter(x=>x.file&&/\.pdf$/i.test(x.name)),...(catF||[])].filter(x=>!/relat[óo]rio|matriz|an[áa]lise/i.test(x.name)&&!ja.has(x.name));
+    if(!ESC_ANL.length){n.textContent='Não há mais PDF na pasta para ler.';box.style.display='none';return;}
+    const marc=ESC_ANL.map(x=>ehSiglaAnl(x.name)||pareceAnl(x.name));
+    n.textContent=marc.some(Boolean)?'Marque só as certidões permanentes e as cadernetas prediais (os outros documentos são do verificador).':'A pasta ainda não passou no verificador e os nomes não dizem o que é cada PDF. Marque as certidões permanentes e as cadernetas.';
+    box.style.display='block';
+    box.innerHTML=`<div style="max-height:260px;overflow:auto;border:1px solid var(--border,#ddd);border-radius:8px;padding:.4rem .6rem;background:#fff">${ESC_ANL.map((x,i)=>`<label style="display:flex;gap:.5rem;align-items:center;padding:3px 0;font-size:13px;cursor:pointer"><input type="checkbox" data-esc="${i}"${marc[i]?' checked':''}> ${esc(x.name)}</label>`).join('')}</div>
+      <div class="row" style="margin-top:.5rem;gap:.5rem"><button class="btn p" onclick="lerEscolhidos()">Ler os marcados</button><span class="nota" style="font-size:12px">Só se leem os marcados.</span></div>`;
+  }catch(e){n.textContent='Erro: '+e.message;}
+};
+window.lerEscolhidos=async()=>{
+  const n=$('pasta-nota'),box=$('pasta-escolha');
+  const sel=[...box.querySelectorAll('[data-esc]:checked')].map(c=>ESC_ANL[+c.dataset.esc]).filter(Boolean);
+  if(!sel.length){n.textContent='Marque pelo menos um PDF.';return;}
+  box.style.display='none';
+  try{await lerVarios(sel);
+    const nr=DOCS.filter(d=>!d.dados).length;
+    n.textContent=`${sel.length} PDF lido(s).${nr?` ${nr} não foi(foram) reconhecido(s) como certidão ou caderneta — pode retirá-lo(s).`:''}`;}
+  catch(e){n.textContent='Erro: '+e.message;}
 };
 
 /* ── análise e relatório ── */
@@ -915,7 +959,7 @@ window.rxLancar=async()=>{
     let avisoLista='';
     try{const idp=await rxPublicar(quando,para);reg.eventos[reg.eventos.length-1].partilha=idp;
       await gq(`${GRAPH}/drives/${PASTA.drive}/items/${PASTA.item}:/_remax.json:/content`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(reg,null,2)});}
-    catch(e){console.info('[REMAX] área partilhada ainda não montada — só e-mail:',e.message);} // via e-mail: o site REMAX-Partilha é opcional
+    catch(e){avisoLista+=' · ⚠ NÃO ficou na Área REMAX dos coordenadores ('+e.message+') — o e-mail seguiu; avise a Liliana.';} // 26/10/2026: a falha deixa de ser silenciosa
     if(RX.av&&RX.site&&RX.lista){
       try{const base=`${GRAPH}/sites/${RX.site}/lists/${RX.lista}/items/${RX.av}`;
         const it=await (await gq(`${base}?$expand=fields($select=Notas)`)).json();
@@ -927,7 +971,7 @@ window.rxLancar=async()=>{
         await gq(`${base}/fields`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(f)});
       }catch(e){avisoLista=' (não consegui atualizar a linha do processo: '+e.message+')';}
     }
-    RX.enviado=`✓ Enviado a ${para.join(', ')} às ${quando.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})} · PDF em «Análises»${avisoLista}`;
+    RX.enviado=`✓ Enviado a ${para.join(', ')} às ${quando.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})} · PDF em «Análises»${avisoLista.includes('Área REMAX')?'':' · publicado na Área REMAX'}${avisoLista}`;
     passo(RX.enviado);
   }catch(e){passo(mailOK?'O e-mail foi enviado, mas falhou o registo: '+e.message+' — não volte a lançar; avise a Liliana.':'Erro: '+e.message+' — o e-mail não foi enviado; pode tentar de novo.');}
   btn.disabled=false;
