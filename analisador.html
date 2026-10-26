@@ -60,7 +60,7 @@ input.inp,textarea.inp,select.inp{font:inherit;font-size:13px;padding:7px 10px;b
 </head>
 <body>
 <div class="topbar">
-  <div><span class="tt">Analisador predial</span><span class="sub">piloto · v2026-10-26.2</span></div>
+  <div><span class="tt">Analisador predial</span><span class="sub">piloto · v2026-10-26.3</span></div>
   <div class="row"><span id="pasta-info" class="nota"></span></div>
 </div>
 <div class="wrap">
@@ -129,6 +129,12 @@ function tipoDoc(linhas){
   const t=linhas.slice(0,40).join('\n');
   /* Conservatórias só prediais e as de Registo Civil, Predial, Comercial e Automóveis (24/10/2026). */
   if(/Certid[ãa]o Permanente/i.test(t)&&(/Registo Predial|Predial,\s*Comercial|DESCRI[ÇC]/i.test(t)))return'certidao';
+  /* Informação predial simplificada (código IS-…), 26/10/2026: a «descrição genérica» tem a
+     estrutura da certidão (descrições, inscrições, pendentes) — lê-se como certidão, marcada
+     como não certificada. O resumo de uma página só diz o essencial: reconhece-se à parte. */
+  if(/Informa\S{1,3}o\s+Predial\s+Simplificada/i.test(t)){
+    if(/DESCRI[ÇC][ÕO]ES\s*-\s*AVERBAMENTOS|INSCRI[ÇC][ÕO]ES\s*-\s*AVERBAMENTOS/i.test(linhas.join('\n')))return'certidao';
+    return'is_resumo';}
   if(/CADERNETA PREDIAL URBANA/i.test(t))return'urbana';
   if(/CADERNETA PREDIAL R[ÚU]STICA/i.test(t))return'rustica';
   return'outro';
@@ -141,7 +147,8 @@ function lerCertidao(linhas){
   /* Cabeçalho = linhas antes de «Certidão Permanente». Dois formatos: «Conservatória do Registo
      Predial de X · Freguesia Y» e «Conservatória do Registo Civil, Predial, Comercial e Automóveis
      de X · Freguesia Y». O n.º da descrição vem como «877/19930310» ou, na fração, «877/19970121 - F». */
-  let iCP=L.findIndex(l=>/Certid[ãa]o Permanente/i.test(l));if(iCP<0)iCP=Math.min(8,L.length);
+  let iCP=L.findIndex(l=>/Certid[ãa]o Permanente|Informa\S{1,3}o\s+Predial\s+Simplificada/i.test(l));if(iCP<0)iCP=Math.min(8,L.length);
+  c.simplificada=/Informa\S{1,3}o\s+Predial\s+Simplificada/i.test(L.slice(0,iCP+1).join(' '));
   const cabL=L.slice(0,iCP).map(l=>l.trim()).filter(Boolean);
   const cabT=cabL.join('  ');
   const mF=cabT.match(/Freguesia\s+(.+?)(?:\s{2,}|$)/);c.freguesia=mF?mF[1].trim():'';
@@ -150,7 +157,7 @@ function lerCertidao(linhas){
   c.crp=cabL.map(l=>l.replace(/Freguesia\s+.+$/,'').replace(/\d+\/\d{8}(?:\s*-\s*[A-Z]{1,3})?\s*$/,'').trim()).filter(Boolean).join(' ').replace(/\s+/g,' ').replace(/,\s*$/,'');
   const cabSet=new Set(cabL);
   const tudo=L.join('\n');
-  c.codigo=(tudo.match(/C[óo]digo de acesso:\s*(P[A-Z]-[\d-]+)/)||[])[1]||'';
+  c.codigo=(tudo.match(/C[óo]digo de acesso:\s*((?:P[A-Z]|IS)-[\d-]+)/i)||[])[1]||'';
   c.validade=dataISO((tudo.match(/v[áa]lida at[ée]\s+(\d{2}-\d{2}-\d{4})/)||[])[1]);
   c.disponibilizada=dataISO((tudo.match(/disponibilizada em\s+(\d{2}-\d{2}-\d{4})/)||[])[1]);
   /* Limpa cabeçalhos e rodapés que se repetem em cada página, e as assinaturas. */
@@ -161,6 +168,7 @@ function lerCertidao(linhas){
   for(const l of L){const t=l.trim();
     if(saltar){saltar--;continue;}
     if(!t||lixo(l))continue;
+    if(c.simplificada&&/^[A-ZÀ-Ý]{1,3}(\s+[A-ZÀ-Ý]{1,3})?$/.test(t))continue;   /* marca de água «INFORMAÇÃO NÃO CERTIFICADA» às letras */
     if(/^O\(A\)\s/.test(t)){saltar=1;continue;}        /* assinatura: cargo + nome */
     limpas.push(t);}
   const iDesc=limpas.findIndex(l=>/^DESCRI[ÇC][ÕO]ES\s*-\s*AVERBAMENTOS|^DESCRI[ÇC][ÃA]O\s+FRAC?[ÇC][ÃA]O/.test(l));
@@ -482,6 +490,11 @@ function analisar(docs,opc){
     V('Registos pendentes',c.pendentes.length?'grave':c.semPendentes?'ok':'confirmar',c.pendentes.length?c.pendentes.join('; '):c.semPendentes?'não':'não consegui confirmar');
     if(c.pendentes.length)A('grave',`${nomeP} — registos pendentes`,c.pendentes.join('; '),'Registos pendentes',p.id);
     /* validade */
+    if(c.simplificada){   /* 26/10/2026: não certificada — serve para analisar, não para a escritura */
+      V('Certidão válida até','confirmar','informação predial simplificada (não certificada)');
+      A('confirmar',`${nomeP} — informação predial simplificada`,`Documento não certificado (${c.codigo||'código IS'}): os dados servem para a análise, mas para a escritura é precisa a certidão permanente.`,'',p.id);
+      p.estado=p.ver.some(v=>v.estado==='grave')?'grave':p.ver.some(v=>v.estado==='confirmar')?'confirmar':'ok';
+      return p;}
     const valOK=c.validade&&c.validade>=dataAto;
     V('Certidão válida até',valOK?'ok':'grave',dPT(c.validade));
     if(!valOK)A('grave',opc.semAto?`${nomeP} — certidão caducada`:`${nomeP} — certidão caducada na data do ato`,opc.semAto?`Válida até ${dPT(c.validade)}. Tirar certidão atualizada.`:`Válida até ${dPT(c.validade)}; ato a ${dPT(dataAto)}.`,'',p.id);
@@ -571,10 +584,11 @@ async function linhasPDF(buf){
 function interpretar(d){
   const t=ANL.tipoDoc(d.linhas);
   d.dados=t==='certidao'?ANL.lerCertidao(d.linhas):t==='urbana'?ANL.lerUrbana(d.linhas):t==='rustica'?ANL.lerRustica(d.linhas):{tipo:'outro'};
+  if(t==='is_resumo'){d.dados={tipo:'outro'};d.estado='Resumo da informação predial simplificada — junte a «Descrição genérica» do mesmo código (IS-…), que tem os dados completos.';}
 }
 async function lerFicheiro(nome,buf){
   const d={id:++seq,nome,buf,linhas:[],semTexto:false,dados:null,estado:'a ler…'};DOCS.push(d);pintarDocs();
-  try{const r=await linhasPDF(buf);d.linhas=r.linhas;d.semTexto=r.semTexto;d.pdf=r.doc;interpretar(d);d.estado='';}
+  try{const r=await linhasPDF(buf);d.linhas=r.linhas;d.semTexto=r.semTexto;d.pdf=r.doc;d.estado='';interpretar(d);}
   catch(e){d.estado='erro: '+e.message;d.dados={tipo:'outro'};}
   pintarDocs();
 }
@@ -583,7 +597,7 @@ function pintarDocs(){
   $('docs').innerHTML=DOCS.map(d=>{const x=d.dados;
     const det=!x?'':x.tipo==='certidao'?`n.º ${esc(x.numero||'?')} · ${esc(x.freguesia)} · ${esc(x.fracao?'fração':x.ph?'prédio-mãe (PH)':x.natureza)}`:x.tipo==='urbana'?`artigo ${esc(x.artigo)}${x.fracao?'-'+esc(x.fracao):''} · ${esc(x.freguesia.nome)}`:x.tipo==='rustica'?`artigo ${esc(x.artigo)}-${esc(x.seccao)} · ${esc(x.freguesia.nome)}`:(d.semTexto?'digitalização sem texto':'');
     return`<div class="doc"><span class="n">${esc(d.nome)}</span>
-      <span class="chip ${x&&x.tipo!=='outro'?'ok':'conf'}">${d.estado?esc(d.estado):esc(ROT[x?x.tipo:'outro'])}${d.ocr?' · OCR':''}</span><span class="nota">${det}</span>
+      <span class="chip ${x&&x.tipo!=='outro'?'ok':'conf'}">${d.estado?esc(d.estado):esc(x&&x.simplificada?'Informação predial simplificada (não certificada)':ROT[x?x.tipo:'outro'])}${d.ocr?' · OCR':''}</span><span class="nota">${det}</span>
       ${d.semTexto&&!d.ocr?`<button class="btn" onclick="ocr(${d.id})" title="Ler a digitalização por reconhecimento ótico (no computador)">Ler por OCR</button>`:''}
       <button class="btn" onclick="tirar(${d.id})" title="Retirar da análise">×</button></div>`;}).join('');
   $('btn-analisar').disabled=!DOCS.some(d=>d.dados&&d.dados.tipo!=='outro');
@@ -702,7 +716,7 @@ function relatorioHTML(paraFicheiro){
   const tabela=R.predios.length?`<div style="overflow-x:auto"><table class="tab"><thead><tr><th>Verificação</th>${R.predios.map(p=>`<th>${esc(p.c.numero||'?')} · ${esc(p.c.fracao?'fração '+p.c.fracaoLetra:p.c.natureza||'')}${p.c.freguesia?`<br><span style="font-weight:400">${esc(p.c.freguesia)}</span>`:''}</th>`).join('')}</tr></thead>
     <tbody>${rotulos.map(r=>`<tr><td>${esc(r)}</td>${R.predios.map(p=>{const v=p.ver.find(x=>x.rot===r);return`<td>${v?`${esc(v.texto)} <span class="est">${GRAU[v.estado]}</span>`:'—'}</td>`;}).join('')}</tr>`).join('')}</tbody></table></div>`:'<p class="nota">Nenhuma certidão permanente lida.</p>';
   const docs=DOCS.filter(d=>d.dados).map(d=>{const x=d.dados;
-    return`<div>${esc(ROT[x.tipo])}${x.tipo==='certidao'?` ${esc(x.numero)}${x.ph?' (prédio-mãe, PH)':x.fracao?' (fração)':''} · ${esc(x.codigo)} · válida até ${ANL.dPT(x.validade)}`:x.tipo==='urbana'?` ${esc(x.artigo)}${x.fracao?'-'+esc(x.fracao):''} · emitida ${ANL.dPT(x.emitida)}`:x.tipo==='rustica'?` ${esc(x.artigo)}-${esc(x.seccao)} · emitida ${ANL.dPT(x.emitida)}`:` — ${esc(d.nome)}`}${d.ocr?' (OCR)':''}</div>`;}).join('');
+    return`<div>${esc(x.simplificada?'Informação predial simplificada':ROT[x.tipo])}${x.tipo==='certidao'?` ${esc(x.numero)}${x.ph?' (prédio-mãe, PH)':x.fracao?' (fração)':''} · ${esc(x.codigo)} · ${x.simplificada?'não certificada':'válida até '+ANL.dPT(x.validade)}`:x.tipo==='urbana'?` ${esc(x.artigo)}${x.fracao?'-'+esc(x.fracao):''} · emitida ${ANL.dPT(x.emitida)}`:x.tipo==='rustica'?` ${esc(x.artigo)}-${esc(x.seccao)} · emitida ${ANL.dPT(x.emitida)}`:` — ${esc(d.nome)}`}${d.ocr?' (OCR)':''}</div>`;}).join('');
   return`<div class="cab"><div class="marca">LBC — SOLICITADORA, SP, RL</div>
       <h1>Relatório de análise predial</h1>
       <div class="nota">${PASTA&&PASTA.nome?`Pasta: <b style="color:var(--text)">${esc(PASTA.nome)}</b> · `:''}${R.predios.length} prédio(s) · ${DOCS.filter(d=>d.dados).length} documento(s) · relatório ${esc(nRel)}</div></div>
@@ -872,12 +886,14 @@ async function pdfRelatorioREMAX(PDFLib,d){
     y-=12;};
   seccao('impeditivo','O que impede a escritura',d.impeditivo,C.red);
   seccao('complemento','Documentação a completar',d.complemento,C.amb);
-  if(d.resultado==='ok'){ // nada a apontar: uma secção verde, no mesmo desenho das outras
+  /* Pontos em conformidade escritos pela LBC (26/10/2026): secção verde com a lista. */
+  if(d.conforme&&d.conforme.length)seccao('ok','Em conformidade',d.conforme,C.grnT);
+  else if(d.resultado==='ok'){ // nada a apontar: uma secção verde, no mesmo desenho das outras
     simbolo('ok',M+6,y-5,6);txt('EM CONFORMIDADE',M+18,y-9,FB,9.5,C.grnT);y-=16;
     pg.drawLine({start:{x:M,y},end:{x:W-M,y},thickness:.6,color:C.linha});y-=10;
     for(const l of parte(frasesResumo(d),F,10.5,LW-18)){txt(l,M+18,y-10.5,F,10.5,C.txt);y-=14.5;}y-=16;}
   seccao(null,'Recomendações',d.recomendacoes,C.roxo);
-  if(d.documentos){precisa(30);pg.drawLine({start:{x:M,y},end:{x:W-M,y},thickness:.6,color:C.linha});y-=14;
+  if(d.documentos&&(d.documentos.certidoes||d.documentos.cadernetas)){precisa(30);pg.drawLine({start:{x:M,y},end:{x:W-M,y},thickness:.6,color:C.linha});y-=14;
     const nc=d.documentos.certidoes,nk=d.documentos.cadernetas;
     txt(`Documentos analisados: ${nc} ${nc===1?'certidão permanente':'certidões permanentes'} do registo predial e ${nk} ${nk===1?'caderneta predial':'cadernetas prediais'}.`,M,y-9,F,9,C.mut);y-=16;}
   const pags=doc.getPages();pags.forEach((p,i)=>{
