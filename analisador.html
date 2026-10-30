@@ -60,10 +60,11 @@ input.inp,textarea.inp,select.inp{font:inherit;font-size:13px;padding:7px 10px;b
 </head>
 <body>
 <div class="topbar">
-  <div><span class="tt">Analisador predial</span><span class="sub">piloto · v2026-10-26.3</span></div>
+  <div><span class="tt">Analisador predial</span><span class="sub">piloto · v2026-10-30.1</span></div>
   <div class="row"><span id="pasta-info" class="nota"></span></div>
 </div>
 <div class="wrap">
+  <div id="aviso-hoje" class="nao-imprimir" style="display:none;background:#FEE2E2;border:1px solid #DC2626;border-left:5px solid #DC2626;color:#7F1D1D;border-radius:10px;padding:.8rem 1rem;margin-bottom:1rem;font-weight:600">⚠ Escritura hoje — carregar CRP, CPU e BC emitidos hoje <span style="font-weight:400">· depois carregue em «Gerar e gravar a ficha na pasta»</span></div>
   <section class="card nao-imprimir">
     <h2>1 · Documentos</h2>
     <label class="drop" id="drop" for="fich">
@@ -83,6 +84,13 @@ input.inp,textarea.inp,select.inp{font:inherit;font-size:13px;padding:7px 10px;b
       <div style="flex:1"></div>
       <button class="btn btn-p" id="btn-analisar" onclick="correr()" disabled>Analisar</button>
     </div>
+  </section>
+  <section class="card nao-imprimir" id="ficha-card">
+    <h2>2 · Ficha da escritura <span class="nota" style="font-weight:400">— uma folha para conferir antes do ato</span></h2>
+    <div class="nota" style="margin-bottom:.6rem">Junta numa folha a certidão permanente (conservatória, descrição, freguesia, morada, composição, áreas, matriz, titulares com estado civil e quotas, propriedade horizontal, hipotecas e outros ónus, código e validade), as cadernetas (artigo, freguesia, VPT, áreas, titulares, data de emissão) e o boletim de contrato (montantes, avaliação e condições da hipoteca). Fica gravada na pasta do cliente e aparece no Portal, na pasta, para descarregar.</div>
+    <div class="row"><button class="btn" id="btn-ficha-ver" onclick="fichaPrever()">👁 Pré-visualizar</button>
+      <button class="btn btn-p" id="btn-ficha" onclick="fichaGravar()" disabled>🖨 Gerar e gravar a ficha na pasta</button>
+      <span class="nota" id="ficha-nota"></span></div>
   </section>
   <div id="resultado"></div>
 </div>
@@ -135,6 +143,8 @@ function tipoDoc(linhas){
   if(/Informa\S{1,3}o\s+Predial\s+Simplificada/i.test(t)){
     if(/DESCRI[ÇC][ÕO]ES\s*-\s*AVERBAMENTOS|INSCRI[ÇC][ÕO]ES\s*-\s*AVERBAMENTOS/i.test(linhas.join('\n')))return'certidao';
     return'is_resumo';}
+  /* Boletim de contrato do banco (CGD) — 30/10/2026 */
+  if(/BOLETIM DE CONTRATO/i.test(linhas.slice(0,80).join('\n')))return'boletim';
   if(/CADERNETA PREDIAL URBANA/i.test(t))return'urbana';
   if(/CADERNETA PREDIAL R[ÚU]STICA/i.test(t))return'rustica';
   return'outro';
@@ -529,7 +539,35 @@ function analisar(docs,opc){
     conclusao:nG?'Não está em condições de escritura.':nC?'Em condições, depois de confirmados os pontos assinalados.':'Sem desconformidades detetadas nos documentos analisados.'};
 }
 
-return{tipoDoc,lerCertidao,lerUrbana,lerRustica,analisar,titularesRegisto,onusVivos,provisoriasAbertas,norm,fmt,dPT,dataISO};
+/* ══════════ BOLETIM DE CONTRATO (CGD) — 30/10/2026 ══════════
+   Para a ficha da escritura: montantes (aquisição, contratado, diferido, retido, 1.ª
+   prestação), avaliação e as condições da hipoteca (juro, sobretaxa, despesas, montante
+   máximo). Lê-se pelos rótulos do boletim; o que não encontrar fica «—» na ficha. */
+function lerBoletim(linhas){
+  const t=linhas.join('\n');const g=(re,i=1)=>(t.match(re)||[])[i]||'';
+  const v=re=>{const x=g(re);return x?num(x):NaN;};
+  const ap=rot=>new RegExp(rot+'\\s*:?[\\s\\S]{0,60}?(\\d{1,3}(?:\\.\\d{3})*,\\d{2})\\s*EUR','i');
+  const mut=[...t.matchAll(/MUT[UÚ]ARIO\S*\s+([^\n]+)\n[\s\S]*?NIF\s*:\s*(\d{9})(?:[\s\S]*?Estado Civil\s*:\s*([^\n]+))?/g)].map(m=>({nome:m[1].trim(),nif:m[2],ec:(m[3]||'').trim()}));
+  return{tipo:'boletim',
+    emprestimo:g(/Empr[ée]stimo\s*:\s*-?\s*([\d.]+)/i),
+    mutuarios:mut,
+    aquisicao:v(ap('Investimento\\s*\\/\\s*Aquisi[çc][ãa]o')),
+    contratado:v(ap('Valor Contratado')),
+    diferido:v(ap('Valor Diferido')),
+    retido:v(ap('Valor Retido')),
+    prestacao:v(ap('Valor da 1[ªa.]?\\s*Presta[çc][ãa]o')),
+    avaliacao:v(ap('Valor (?:Total|de Avalia[çc][ãa]o|da Avalia[çc][ãa]o)')),
+    prazo:g(/(\d+)\s*MESES/i),
+    tan:g(/Taxa Nominal[^\n%]*?([\d]+,\d+)\s*%/i),
+    taeg:g(/TAEG[^\n%]*?([\d]+,\d+)\s*%/i),
+    juroAte:g(/ao juro de at[ée]\s*([\d,]+)\s*%/i),
+    sobretaxa:g(/sobretaxa at[ée]\s*([\d,]+)\s*%/i),
+    despesas:v(/despesas extrajudiciais de\s*([\d.]+,\d{2})/i),
+    maximo:v(/montante m[áa]ximo de capital e acess[óo]rios[\s\S]{0,80}?([\d.]+,\d{2})/i),
+    hipEmprestimo:v(/empr[ée]stimo no valor de\s*([\d.]+,\d{2})/i),
+    saldoMax:v(/saldo devedor\s*([\d.]+,\d{2})/i)};
+}
+return{tipoDoc,lerCertidao,lerUrbana,lerRustica,lerBoletim,analisar,titularesRegisto,onusVivos,provisoriasAbertas,norm,fmt,dPT,dataISO};
 })();
 if(typeof module!=='undefined')module.exports=ANL;
 
@@ -585,7 +623,7 @@ async function linhasPDF(buf){
 }
 function interpretar(d){
   const t=ANL.tipoDoc(d.linhas);
-  d.dados=t==='certidao'?ANL.lerCertidao(d.linhas):t==='urbana'?ANL.lerUrbana(d.linhas):t==='rustica'?ANL.lerRustica(d.linhas):{tipo:'outro'};
+  d.dados=t==='certidao'?ANL.lerCertidao(d.linhas):t==='urbana'?ANL.lerUrbana(d.linhas):t==='rustica'?ANL.lerRustica(d.linhas):t==='boletim'?ANL.lerBoletim(d.linhas):{tipo:'outro'};
   if(t==='is_resumo'){d.dados={tipo:'outro'};d.estado='Resumo da informação predial simplificada — junte a «Descrição genérica» do mesmo código (IS-…), que tem os dados completos.';}
 }
 async function lerFicheiro(nome,buf){
@@ -594,15 +632,16 @@ async function lerFicheiro(nome,buf){
   catch(e){d.estado='erro: '+e.message;d.dados={tipo:'outro'};}
   pintarDocs();
 }
-const ROT={certidao:'Certidão permanente',urbana:'Caderneta urbana',rustica:'Caderneta rústica',outro:'Não reconhecido'};
+const ROT={certidao:'Certidão permanente',urbana:'Caderneta urbana',rustica:'Caderneta rústica',boletim:'Boletim de contrato',outro:'Não reconhecido'};
 function pintarDocs(){
   $('docs').innerHTML=DOCS.map(d=>{const x=d.dados;
-    const det=!x?'':x.tipo==='certidao'?`n.º ${esc(x.numero||'?')} · ${esc(x.freguesia)} · ${esc(x.fracao?'fração':x.ph?'prédio-mãe (PH)':x.natureza)}`:x.tipo==='urbana'?`artigo ${esc(x.artigo)}${x.fracao?'-'+esc(x.fracao):''} · ${esc(x.freguesia.nome)}`:x.tipo==='rustica'?`artigo ${esc(x.artigo)}-${esc(x.seccao)} · ${esc(x.freguesia.nome)}`:(d.semTexto?'digitalização sem texto':'');
+    const det=!x?'':x.tipo==='certidao'?`n.º ${esc(x.numero||'?')} · ${esc(x.freguesia)} · ${esc(x.fracao?'fração':x.ph?'prédio-mãe (PH)':x.natureza)}`:x.tipo==='urbana'?`artigo ${esc(x.artigo)}${x.fracao?'-'+esc(x.fracao):''} · ${esc(x.freguesia.nome)}`:x.tipo==='rustica'?`artigo ${esc(x.artigo)}-${esc(x.seccao)} · ${esc(x.freguesia.nome)}`:x.tipo==='boletim'?`contratado ${isFinite(x.contratado)?ANL.fmt(x.contratado)+' €':'—'} · avaliação ${isFinite(x.avaliacao)?ANL.fmt(x.avaliacao)+' €':'—'}`:(d.semTexto?'digitalização sem texto':'');
     return`<div class="doc"><span class="n">${esc(d.nome)}</span>
       <span class="chip ${x&&x.tipo!=='outro'?'ok':'conf'}">${d.estado?esc(d.estado):esc(x&&x.simplificada?'Informação predial simplificada (não certificada)':ROT[x?x.tipo:'outro'])}${d.ocr?' · OCR':''}</span><span class="nota">${det}</span>
       ${d.semTexto&&!d.ocr?`<button class="btn" onclick="ocr(${d.id})" title="Ler a digitalização por reconhecimento ótico (no computador)">Ler por OCR</button>`:''}
       <button class="btn" onclick="tirar(${d.id})" title="Retirar da análise">×</button></div>`;}).join('');
-  $('btn-analisar').disabled=!DOCS.some(d=>d.dados&&d.dados.tipo!=='outro');
+  $('btn-analisar').disabled=!DOCS.some(d=>d.dados&&/certidao|urbana|rustica/.test(d.dados.tipo));
+  const bf=$('btn-ficha');if(bf)bf.disabled=!DOCS.some(d=>d.dados&&d.dados.tipo!=='outro');
 }
 window.tirar=id=>{const i=DOCS.findIndex(d=>d.id===id);if(i>=0)DOCS.splice(i,1);pintarDocs();};
 
@@ -642,7 +681,8 @@ if(qs.get('loja'))$('campo-ato').style.display='none';
    de «Catalogados» (já reconhecidos). 2) Se não, mostra os PDF da pasta com os que
    parecem certidões ou cadernetas já marcados, e lê só os marcados. */
 const ehSiglaAnl=n=>/^(CRP|CPU|CPR)_/i.test(n);
-const pareceAnl=n=>/certid|permanente|predial|caderneta|\bcrp\b|\bcpu\b|\bcpr\b|matricial|artigo|\bdescri/i.test(n.replace(/[_.-]/g,' '));
+const pareceAnl=n=>/certid|permanente|predial|caderneta|\bcrp\b|\bcpu\b|\bcpr\b|\bbc\b|boletim|matricial|artigo|\bdescri/i.test(n.replace(/[_.-]/g,' '));
+const deHoje=x=>x&&x.lastModifiedDateTime&&new Date(x.lastModifiedDateTime).toDateString()===new Date().toDateString();
 let ESC_ANL=[];
 async function lerVarios(fichs){
   const n=$('pasta-nota'),ja=new Set(DOCS.map(d=>d.nome));const fila=fichs.filter(f=>!ja.has(f.name));let k=0,feitos=0;
@@ -655,11 +695,11 @@ async function lerVarios(fichs){
 window.carregarDaPasta=async()=>{
   const n=$('pasta-nota'),box=$('pasta-escolha');n.textContent='A ver a pasta…';box.style.display='none';
   try{
-    const lista=async id=>((await (await gq(`${GRAPH}/drives/${PASTA.drive}/items/${id}/children?$top=500&$select=id,name,file,folder`)).json()).value||[]);
+    const lista=async id=>((await (await gq(`${GRAPH}/drives/${PASTA.drive}/items/${id}/children?$top=500&$select=id,name,file,folder,lastModifiedDateTime`)).json()).value||[]);
     const raiz=await lista(PASTA.item);const cat=raiz.find(x=>x.folder&&/^catalogados$/i.test(x.name));
     const catF=cat?(await lista(cat.id)).filter(x=>x.file&&/\.pdf$/i.test(x.name)):[];
     const doVerif=catF.filter(x=>ehSiglaAnl(x.name));
-    if(doVerif.length){const f=await lerVarios(doVerif);
+    if(doVerif.length&&!escrituraHoje()){const f=await lerVarios(doVerif);
       n.textContent=`${doVerif.length} certidão(ões)/caderneta(s) já catalogadas pelo verificador${f<doVerif.length?' ('+(doVerif.length-f)+' já estavam lidas)':''}. Para juntar outro PDF, largue-o aqui em cima ou use «Escolher outros PDF da pasta».`;
       box.style.display='block';box.innerHTML=`<button class="btn" onclick="escolherPDFpasta()" style="font-size:12px">Escolher outros PDF da pasta</button>`;
       return;}
@@ -669,15 +709,18 @@ window.carregarDaPasta=async()=>{
 window.escolherPDFpasta=async(raiz,catF)=>{
   const n=$('pasta-nota'),box=$('pasta-escolha');
   try{
-    if(!raiz){const lista=async id=>((await (await gq(`${GRAPH}/drives/${PASTA.drive}/items/${id}/children?$top=500&$select=id,name,file,folder`)).json()).value||[]);
+    if(!raiz){const lista=async id=>((await (await gq(`${GRAPH}/drives/${PASTA.drive}/items/${id}/children?$top=500&$select=id,name,file,folder,lastModifiedDateTime`)).json()).value||[]);
       raiz=await lista(PASTA.item);const cat=raiz.find(x=>x.folder&&/^catalogados$/i.test(x.name));catF=cat?(await lista(cat.id)).filter(x=>x.file&&/\.pdf$/i.test(x.name)):[];}
     const ja=new Set(DOCS.map(d=>d.nome));
     ESC_ANL=[...raiz.filter(x=>x.file&&/\.pdf$/i.test(x.name)),...(catF||[])].filter(x=>!/relat[óo]rio|matriz|an[áa]lise/i.test(x.name)&&!ja.has(x.name));
     if(!ESC_ANL.length){n.textContent='Não há mais PDF na pasta para ler.';box.style.display='none';return;}
-    const marc=ESC_ANL.map(x=>ehSiglaAnl(x.name)||pareceAnl(x.name));
+    /* no dia da escritura, os PDF carregados hoje vêm já marcados (30/10/2026) */
+    const hojeEsc=PASTA&&escrituraHoje();
+    const marc=ESC_ANL.map(x=>hojeEsc?(deHoje(x)||(ehSiglaAnl(x.name)&&deHoje(x))):(ehSiglaAnl(x.name)||pareceAnl(x.name)));
+    ESC_ANL.forEach(x=>{x._hoje=deHoje(x);});
     n.textContent=marc.some(Boolean)?'Marque só as certidões permanentes e as cadernetas prediais (os outros documentos são do verificador).':'A pasta ainda não passou no verificador e os nomes não dizem o que é cada PDF. Marque as certidões permanentes e as cadernetas.';
     box.style.display='block';
-    box.innerHTML=`<div style="max-height:260px;overflow:auto;border:1px solid var(--border,#ddd);border-radius:8px;padding:.4rem .6rem;background:#fff">${ESC_ANL.map((x,i)=>`<label style="display:flex;gap:.5rem;align-items:center;padding:3px 0;font-size:13px;cursor:pointer"><input type="checkbox" data-esc="${i}"${marc[i]?' checked':''}> ${esc(x.name)}</label>`).join('')}</div>
+    box.innerHTML=`<div style="max-height:260px;overflow:auto;border:1px solid var(--border,#ddd);border-radius:8px;padding:.4rem .6rem;background:#fff">${ESC_ANL.map((x,i)=>`<label style="display:flex;gap:.5rem;align-items:center;padding:3px 0;font-size:13px;cursor:pointer"><input type="checkbox" data-esc="${i}"${marc[i]?' checked':''}> ${esc(x.name)}${x._hoje?' <span style="font-size:11px;color:#B91C1C;font-weight:600">· carregado hoje</span>':''}</label>`).join('')}</div>
       <div class="row" style="margin-top:.5rem;gap:.5rem"><button class="btn p" onclick="lerEscolhidos()">Ler os marcados</button><span class="nota" style="font-size:12px">Só se leem os marcados.</span></div>`;
   }catch(e){n.textContent='Erro: '+e.message;}
 };
@@ -690,6 +733,145 @@ window.lerEscolhidos=async()=>{
     const nr=DOCS.filter(d=>!d.dados).length;
     n.textContent=`${sel.length} PDF lido(s).${nr?` ${nr} não foi(foram) reconhecido(s) como certidão ou caderneta — pode retirá-lo(s).`:''}`;}
   catch(e){n.textContent='Erro: '+e.message;}
+};
+
+/* ══════════ FICHA DA ESCRITURA (30/10/2026) ══════════
+   Uma folha A4 para conferir antes do ato, com os dados lidos da certidão permanente, das
+   cadernetas e do boletim de contrato. Grava-se na pasta do cliente como
+   «AAAAMMDD Ficha da escritura – <cliente>.pdf» e fica registada na lista Etiquetas, para o
+   Portal mostrar o botão de descarga na pasta. */
+function escrituraHoje(){const d=new Date();const h=`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;return !!PASTA&&String(PASTA.nome||'').slice(0,8)===h;}
+if(escrituraHoje())$('aviso-hoje').style.display='block';
+const fEUR=n=>isFinite(n)&&n!==null?ANL.fmt(n)+' €':'—';
+const ecTxt=t=>t.estado==='casado'?`casado(a) com ${t.conjuge||'…'}${t.regime?' ('+t.regime.toLowerCase()+')':''}`:t.estado==='divorciado'?'divorciado(a)':t.estado==='solteiro'?'solteiro(a)':t.estado==='viúvo'?'viúvo(a)':'';
+function fichaBlocos(){
+  const uniq=(arr,k)=>{const m=new Map();arr.forEach(x=>{const c=k(x);if(!m.has(c))m.set(c,x);});return[...m.values()];};
+  const certs=uniq(DOCS.filter(d=>d.dados&&d.dados.tipo==='certidao').map(d=>d.dados),c=>[c.numero,c.freguesia,c.codigo].join('|'));
+  const cads=uniq(DOCS.filter(d=>d.dados&&/urbana|rustica/.test(d.dados.tipo)).map(d=>d.dados),c=>[c.tipo,c.artigo,c.seccao,c.fracao,c.freguesia&&c.freguesia.nome].join('|'));
+  const bcs=DOCS.filter(d=>d.dados&&d.dados.tipo==='boletim').map(d=>d.dados);
+  const hoje=new Date().toISOString().slice(0,10);
+  const B=[];
+  certs.forEach(c=>{
+    const kv=[];
+    kv.push(['Conservatória',c.crp||'—']);
+    kv.push(['Descrição',`n.º ${c.numero||'—'}${c.dataDescricao?' / '+c.dataDescricao:''} · freguesia de ${c.freguesia||'—'}`]);
+    kv.push(['Situado',[c.situado,c.denominacao?'«'+c.denominacao+'»':''].filter(Boolean).join(' · ')||(c.fracao?'— (consta da descrição do prédio-mãe)':'—')]);
+    kv.push(['Natureza',c.fracao?'fração autónoma':(c.natureza||'—')+(c.ph?' · em propriedade horizontal':'')]);
+    if(c.composicao)kv.push(['Composição',c.composicao]);
+    const ar=[];if(isFinite(c.areaTotal)&&c.areaTotal)ar.push(`total ${ANL.fmt(c.areaTotal)} m²`);if(isFinite(c.areaCoberta)&&c.areaCoberta)ar.push(`coberta ${ANL.fmt(c.areaCoberta)} m²`);
+    if(isFinite(c.areaDescoberta)&&c.areaDescoberta)ar.push(`descoberta ${ANL.fmt(c.areaDescoberta)} m²`);if(isFinite(c.areaRusticaHa)&&c.areaRusticaHa)ar.push(`parte rústica ${ANL.fmt(c.areaRusticaHa,4)} ha`);
+    if(isFinite(c.areaUrbanaM2)&&c.areaUrbanaM2&&!(isFinite(c.areaCoberta)&&c.areaCoberta===c.areaUrbanaM2))ar.push(`S.C. ${ANL.fmt(c.areaUrbanaM2)} m²`);
+    if(ar.length)kv.push(['Áreas',ar.join(' · ')]);
+    kv.push(['Matriz',(c.matrizes||[]).map(m=>`${m.natureza==='rústica'?'rústica':'urbana'} ${m.artigo}${m.seccao?'-'+m.seccao:''}${m.fracao?'-'+m.fracao:''}${m.provisorio?' (P na descrição)':''}`).join(' · ')||(c.fracao?'— (ver caderneta da fração)':'—')]);
+    const ph=(c.inscricoes||[]).find(r=>/PROPRIEDADE HORIZONTAL/i.test(r.tipo));
+    if(c.ph||ph)kv.push(['Propriedade horizontal',`${ph?`AP. ${ph.ap} de ${ph.data}`:'constituída'}${(c.fracoes||[]).length?' · frações '+c.fracoes.join(', '):''}${c.fracao&&c.permilagens&&c.fracaoLetra&&c.permilagens[c.fracaoLetra]?' · permilagem '+c.permilagens[c.fracaoLetra]:''}`]);
+    const val=c.validade;kv.push(['Código · validade',`${c.codigo||'—'} · ${c.simplificada?'informação simplificada (não certificada)':'válida até '+ANL.dPT(val)}`,c.simplificada||(val&&val<hoje)?'aviso':'']);
+    const tit=ANL.titularesRegisto(c);
+    const titL=tit.map(t=>`${t.nome}${t.nif?' · NIF '+t.nif:''}${ecTxt(t)?' · '+ecTxt(t):''}${t.quota?' · quota '+t.quota:''} — ${t.causa||'aquisição'} (${t.ap})`);
+    const on=ANL.onusVivos(c).map(r=>{const T=(r.linhas||[]).join('\n');const cap=(T.match(/CAPITAL\s*:\s*([\d.,]+)/i)||[])[1],mx=(T.match(/MONTANTE M[ÁA]XIMO[^:]*:\s*([\d.,]+)/i)||[])[1];
+      return`${r.tipo} — AP. ${r.ap} de ${r.data}${r.ativos&&r.ativos.length?' · a favor de '+r.ativos.map(a=>a.nome).join(', '):''}${cap?' · capital '+cap+' €':''}${mx?' · montante máximo '+mx+' €':''}`;});
+    const pv=ANL.provisoriasAbertas(c).map(r=>`${r.tipo} — AP. ${r.ap} de ${r.data} (provisória por converter)`);
+    B.push({t:`CERTIDÃO PERMANENTE · prédio ${c.numero||'—'} · ${c.freguesia||''}`,kv,listas:[['Titulares inscritos',titL.length?titL:['—'],''],['Ónus e hipotecas',on.length?on:['nenhum em vigor'],on.length?'aviso':''],
+      ...(pv.length?[['Provisórias',pv,'aviso']]:[]),...((c.pendentes||[]).length?[['Registos pendentes',c.pendentes,'aviso']]:[])]});
+  });
+  cads.forEach(x=>{
+    const kv=[];const urb=x.tipo==='urbana';
+    kv.push(['Freguesia',x.freguesia?`${x.freguesia.cod?x.freguesia.cod+' - ':''}${x.freguesia.nome}`:'—']);
+    kv.push(['Valor patrimonial',`${fEUR(x.vpt)}${x.vptAno?' (determinado em '+x.vptAno+')':''}`]);
+    const ar=[];
+    if(urb){[['terreno',x.areaTerreno],['implantação',x.areaImplantacao],['bruta de construção',x.areaBrutaConstrucao],['bruta privativa',x.areaBrutaPrivativa],['bruta dependente',x.areaBrutaDependente]].forEach(([k,v])=>{if(isFinite(v)&&v)ar.push(`${k} ${ANL.fmt(v)} m²`);});}
+    else{if(isFinite(x.areaHa))ar.push(`total ${ANL.fmt(x.areaHa,4)} ha`);if(isFinite(x.habitacaoHa)&&x.habitacaoHa)ar.push(`habitação ${ANL.fmt(x.habitacaoHa,4)} ha`);}
+    if(ar.length)kv.push(['Áreas',ar.join(' · ')]);
+    if(urb&&(x.afetacao||x.tipologia))kv.push(['Afetação',[x.afetacao,x.tipologia?'T'+String(x.tipologia).replace(/^T/i,''):'',x.permilagem?'permilagem '+x.permilagem:''].filter(Boolean).join(' · ')]);
+    kv.push(['Emitida em',ANL.dPT(x.emitida)]);
+    B.push({t:`CADERNETA PREDIAL ${urb?'URBANA':'RÚSTICA'} · artigo ${x.artigo}${x.seccao?'-'+x.seccao:''}${x.fracao?' fração '+x.fracao:''}`,kv,
+      listas:[['Titulares',(x.titulares||[]).map(t=>`${t.nome}${t.nif?' · NIF '+t.nif:''}${t.quota?' · '+t.quota:''}`),'']]});
+  });
+  bcs.forEach(b=>{
+    const kv=[];
+    if(b.emprestimo)kv.push(['Empréstimo n.º',b.emprestimo]);
+    if((b.mutuarios||[]).length)kv.push(['Mutuários',b.mutuarios.map(m=>`${m.nome}${m.nif?' (NIF '+m.nif+')':''}`).join('; ')]);
+    kv.push(['Investimento / aquisição',fEUR(b.aquisicao)]);kv.push(['Valor contratado',fEUR(b.contratado)]);
+    kv.push(['Valor diferido',fEUR(b.diferido)]);kv.push(['Valor retido',fEUR(b.retido)]);kv.push(['1.ª prestação',fEUR(b.prestacao)]);
+    kv.push(['Valor de avaliação',fEUR(b.avaliacao)]);
+    if(b.prazo||b.tan)kv.push(['Prazo · taxa',[b.prazo?b.prazo+' meses':'',b.tan?'TAN '+b.tan+' %':'',b.taeg?'TAEG '+b.taeg+' %':''].filter(Boolean).join(' · ')]);
+    kv.push(['Hipoteca',`juro até ${b.juroAte||'—'} % + sobretaxa até ${b.sobretaxa||'—'} % · despesas ${fEUR(b.despesas)} · montante máximo ${fEUR(b.maximo)}`]);
+    B.push({t:'BOLETIM DE CONTRATO',kv,listas:[]});
+  });
+  return B;
+}
+async function fichaPDF(){
+  const B=fichaBlocos();if(!B.length)throw new Error('não há certidões, cadernetas nem boletim lidos');
+  const {PDFDocument,StandardFonts,rgb}=await pdfLib();
+  const doc=await PDFDocument.create();const F=await doc.embedFont(StandardFonts.Helvetica),FB=await doc.embedFont(StandardFonts.HelveticaBold);
+  const TROCA={'→':'->','≤':'<=','≥':'>=','✓':'','✕':'x','⚠':'!','²':'2','«':'"','»':'"',' ':' '};
+  const limpa=(t,f)=>[...String(t==null?'':t)].map(ch=>{if(ch in TROCA)return TROCA[ch];try{f.widthOfTextAtSize(ch,9);return ch;}catch(_){return'';}}).join('');
+  const W=595.28,H=841.89,M=32,LW=W-2*M,LBL=118;
+  const C={txt:rgb(.13,.12,.16),mut:rgb(.42,.40,.46),roxo:rgb(.36,.30,.60),roxoBg:rgb(.94,.93,.97),linha:rgb(.88,.86,.84),red:rgb(.70,.12,.10)};
+  let pg,y;
+  const nova=()=>{pg=doc.addPage([W,H]);pg.drawRectangle({x:0,y:H-5,width:W,height:5,color:C.roxo});y=H-M;};
+  const parte=(t,f,sz,larg)=>{const out=[];for(const par of limpa(t,f).split('\n')){let l='';for(const w of par.split(/\s+/)){const x=l?l+' '+w:w;if(f.widthOfTextAtSize(x,sz)>larg&&l){out.push(l);l=w;}else l=x;}out.push(l);}return out;};
+  const txt=(s0,x,yy,f,sz,cor)=>pg.drawText(limpa(s0,f),{x,y:yy,size:sz,font:f,color:cor});
+  const precisa=h=>{if(y-h<M+22)nova();};
+  const SZ=8,LH=10;
+  nova();
+  txt('FICHA DA ESCRITURA',M,y-7,FB,7.5,C.roxo);
+  const dEsc=PASTA&&/^\d{8}/.test(PASTA.nome||'')?PASTA.nome.slice(6,8)+'/'+PASTA.nome.slice(4,6)+'/'+PASTA.nome.slice(0,4):'';
+  const dh=new Date().toLocaleString('pt-PT',{dateStyle:'short',timeStyle:'short'});
+  txt(`gerada em ${dh}${nomeConta()?' · '+nomeConta():''}`,W-M-F.widthOfTextAtSize(limpa(`gerada em ${dh}${nomeConta()?' · '+nomeConta():''}`,F),7.5),y-7,F,7.5,C.mut);y-=22;
+  for(const l of parte(PASTA?(PASTA.nome||'').replace(/^\d{8}\s*/,''):'Escritura',FB,13,LW)){txt(l,M,y-11,FB,13,C.txt);y-=16;}
+  if(dEsc){txt(`Escritura de ${dEsc}`,M,y-8,F,8.5,C.mut);y-=14;}
+  for(const b of B){
+    precisa(40);y-=4;
+    pg.drawRectangle({x:M,y:y-13,width:LW,height:14,color:C.roxoBg});txt(b.t,M+5,y-9.5,FB,8.5,C.roxo);y-=19;
+    for(const [k,v,cl] of b.kv){const ls=parte(v,F,SZ,LW-LBL);precisa(ls.length*LH+2);
+      txt(k,M+5,y-8,FB,SZ-.5,C.mut);ls.forEach((l,i)=>txt(l,M+LBL,y-8-i*LH,F,SZ,cl==='aviso'?C.red:C.txt));y-=ls.length*LH+2;}
+    for(const [k,itens,cl] of b.listas){if(!itens.length)continue;precisa(LH*2);txt(k,M+5,y-8,FB,SZ-.5,C.mut);
+      let first=true;for(const it of itens){const ls=parte(it,F,SZ,LW-LBL-8);precisa(ls.length*LH+2);
+        pg.drawCircle({x:M+LBL-5,y:y-5.5,size:1.4,color:cl==='aviso'?C.red:C.txt});
+        ls.forEach((l,i)=>txt(l,M+LBL,y-8-i*LH,F,SZ,cl==='aviso'?C.red:C.txt));y-=ls.length*LH+2;first=false;}}
+    y-=3;pg.drawLine({start:{x:M,y},end:{x:W-M,y},thickness:.4,color:C.linha});
+  }
+  const pags=doc.getPages();pags.forEach((p,i)=>{
+    p.drawText(limpa('LBC — SOLICITADORA, SP, RL · ficha de apoio gerada a partir dos documentos carregados; confirmar com os originais.',F),{x:M,y:M-12,size:6.8,font:F,color:C.mut});
+    const n=`${i+1}/${pags.length}`;p.drawText(n,{x:W-M-F.widthOfTextAtSize(n,6.8),y:M-12,size:6.8,font:F,color:C.mut});});
+  return doc.save();
+}
+const nomeFicha=()=>{const n=String(PASTA&&PASTA.nome||'');const d8=/^\d{8}/.test(n)?n.slice(0,8):new Date().toISOString().slice(0,10).replace(/-/g,'');
+  const cli=n.replace(/^\d{8}\s*/,'').replace(/[\\/:*?"<>|#%]/g,'').replace(/\s+/g,' ').trim().slice(0,80)||'cliente';return`${d8} Ficha da escritura – ${cli}.pdf`;};
+window.fichaPrever=async()=>{const n=$('ficha-nota');n.textContent='A gerar…';
+  try{const u8=await fichaPDF();window.open(URL.createObjectURL(new Blob([u8],{type:'application/pdf'})),'_blank');n.textContent='';}catch(e){n.textContent='Erro: '+e.message;}};
+/* Regista a ficha no registo da pasta (lista Etiquetas, site lbcsolicitadora2), sem mexer no resto. */
+async function fichaRegistar(info){
+  const lib=qs.get('lib')||'ESCRITURAS';
+  const site=await (await gq(`${GRAPH}/sites/lbcsolicitadorapt.sharepoint.com:/sites/lbcsolicitadora2?$select=id`)).json();
+  const ls=await (await gq(`${GRAPH}/sites/${site.id}/lists?$select=id,name,displayName&$top=200`)).json();
+  const nrm=t=>String(t||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+  const l=(ls.value||[]).find(x=>nrm(x.name)==='etiquetas'||nrm(x.displayName)==='etiquetas');if(!l)throw new Error('lista Etiquetas não encontrada');
+  const cs=await (await gq(`${GRAPH}/sites/${site.id}/lists/${l.id}/columns?$select=name,displayName`)).json();
+  const col=((cs.value||[]).find(x=>nrm(x.name)==='dados'||nrm(x.displayName)==='dados')||{}).name||'Dados';
+  let url=`${GRAPH}/sites/${site.id}/lists/${l.id}/items?$expand=fields&$top=999`,it=null,d=null;
+  while(url&&!it){const r=await (await gq(url)).json();
+    for(const i of (r.value||[])){let x={};try{x=JSON.parse(i.fields[col]||'{}');}catch(_){}if(x.lib===lib&&x.itemId===PASTA.item){it=i;d=x;break;}}
+    url=r['@odata.nextLink']||null;}
+  const dados={...(d||{lib,itemId:PASTA.item,tipo:'pasta',pasta:'',tags:[]}),ficha:info};
+  const body={Title:PASTA.nome||'',[col]:JSON.stringify(dados)};
+  if(it)await gq(`${GRAPH}/sites/${site.id}/lists/${l.id}/items/${it.id}/fields`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  else await gq(`${GRAPH}/sites/${site.id}/lists/${l.id}/items`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:body})});
+}
+window.fichaGravar=async()=>{const n=$('ficha-nota'),b=$('btn-ficha');
+  if(!PASTA){n.textContent='Abra o Analisador a partir da pasta no Portal para gravar a ficha.';return;}
+  b.disabled=true;
+  try{n.textContent='A gerar o PDF…';const u8=await fichaPDF();const nome=nomeFicha();
+    n.textContent='A gravar na pasta…';
+    const r=await gq(`${GRAPH}/drives/${PASTA.drive}/items/${PASTA.item}:/${encodeURIComponent(nome)}:/content`,{method:'PUT',headers:{'Content-Type':'application/pdf'},body:u8});
+    const it=await r.json();
+    n.textContent='A registar no Portal…';
+    let aviso='';try{await fichaRegistar({id:it.id,nome,url:it.webUrl||'',quando:new Date().toISOString(),por:nomeConta()||''});}catch(e){aviso=' (o botão no Portal não ficou registado: '+e.message+')';}
+    n.textContent=`✓ Ficha gravada na pasta: ${nome}${aviso}`;
+    window.open(URL.createObjectURL(new Blob([u8],{type:'application/pdf'})),'_blank');
+  }catch(e){n.textContent='Erro: '+e.message;}
+  b.disabled=false;
 };
 
 /* ── análise e relatório ── */
@@ -1056,7 +1238,7 @@ window.rxLancar=async()=>{
     // esta aba fica com o nome da ferramenta+pasta, para as outras a encontrarem sem a recarregar
     try{if(aqui()&&(!window.name||window.name.startsWith('lbc-')))window.name=aqui()==='portal'?'lbc-portal':`lbc-${aqui()}${c?'-'+c.id:''}`;}catch(_){}
     b.innerHTML=`<span class="bl-m">LBC</span><span class="bl-p" title="${c?String(c.nome).replace(/"/g,'&quot;'):''}">${c?'📁 '+String(c.nome||'pasta do cliente').replace(/</g,'&lt;'):'sem pasta escolhida'}</span>`+
-      ['portal','pasta','gerador','verificador','analisador'].map(t=>`<button type="button" ${t===aqui()?'aria-current="page"':''} onclick="${t===aqui()?'':`lbcIr('${t}')`}" ${(!c&&t!=='portal'&&t!=='gerador'&&t!==aqui())?'disabled style="opacity:.45;cursor:default"':''}>${ROT[t]}</button>`).join('');}
+      ['portal','pasta','gerador','analisador'].map(t=>`<button type="button" ${t===aqui()?'aria-current="page"':''} onclick="${t===aqui()?'':`lbcIr('${t}')`}" ${(!c&&t!=='portal'&&t!=='gerador'&&t!==aqui())?'disabled style="opacity:.45;cursor:default"':''}>${ROT[t]}</button>`).join('');}
   window.lbcBarraAtualizar=pintar;
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',pintar);else pintar();
 })();
